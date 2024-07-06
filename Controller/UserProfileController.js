@@ -1,102 +1,51 @@
-const urlForMongoDB = process.env.URL_FOR_MONGODB;
-const databaseName = process.env.DATABASE_NAME;
-const collectionForUserProfiles = process.env.COLLECTION_FOR_USER_PROFILES;
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
+const UserProfile = require('../models/UserProfile');
+const bodyParser = require('body-parser');
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const jsonParser = require("body-parser").json();
+router.use(bodyParser.json());
 
-console.log(urlForMongoDB, databaseName, collectionForUserProfiles);
+const isValidEmail = (email) => emailRegex.test(email);
 
-const { MongoClient } = require("mongodb");
-const client = new MongoClient(urlForMongoDB);
+router.post('/createUserProfile', async (req, res) => {
+  const { username, password, emailId } = req.body;
 
-function isValidEmail(emailId) {
-  return emailRegex.test(emailId);
-}
-
-router.get("/getUserProfile", async (req, res) => {
-  console.log("request came");
+  if (!isValidEmail(emailId)) {
+    return res.status(400).json({ message: 'Email Id not valid' });
+  }
 
   try {
-    const emailId = req.query.emailId;
-
-    console.log(emailId);
-
-    if (!isValidEmail(emailId)) {
-      res.status(400).json("Email Id not valid");
-      return;
+    const existingUser = await UserProfile.findOne({ emailId });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with given EmailId already exists' });
     }
 
-    // Fetch user by emailId
-    const user = await getUserByEmailId(emailId);
+    const newUser = new UserProfile({ username, password, emailId });
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error', error });
+  }
+});
+
+router.get('/getUserProfile', async (req, res) => {
+  const { emailId } = req.query;
+
+  if (!isValidEmail(emailId)) {
+    return res.status(400).json({ message: 'Email Id not valid' });
+  }
+
+  try {
+    const user = await UserProfile.findOne({ emailId });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
-
     res.json(user);
   } catch (error) {
-    // Handle errors
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: 'Internal Server Error', error });
   }
 });
-
-router.post("/createUserProfile", jsonParser, async (req, res) => {
-  try {
-    const emailId = req.body.emailId;
-    const newUser = req.body;
-
-    if (!isValidEmail(emailId)) {
-      res.status(400).json("Email Id not valid");
-      return;
-    }
-
-    // Check if user with given emailId already exists
-    const existingUser = await getUserByEmailId(emailId);
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User with given EmailId already exists" });
-    }
-
-    // Create new user
-    await createUser(newUser);
-    res.status(201).json({ message: "User created successfully" });
-  } catch (error) {
-    // Handle errors
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-async function getUserByEmailId(emailId) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionForUserProfiles);
-    const result = await collection.findOne({ _id: emailId });
-    return result;
-  } finally {
-    await client.close();
-  }
-}
-
-async function createUser(user) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionForUserProfiles);
-    const newUser = { ...user, _id: user.emailId };
-    console.log(newUser);
-    delete newUser.emailId;
-    console.log(newUser);
-    const userCreated = await collection.insertOne(newUser);
-    return userCreated;
-  } finally {
-    await client.close();
-  }
-}
 
 module.exports = router;
