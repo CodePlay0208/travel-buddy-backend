@@ -10,6 +10,7 @@ const jsonParser = require("body-parser").json();
 console.log(urlForMongoDB, databaseName, collectionForUserProfiles);
 
 const { MongoClient } = require("mongodb");
+const passport = require("passport");
 const client = new MongoClient(urlForMongoDB);
 
 function isValidEmail(emailId) {
