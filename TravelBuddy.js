@@ -43,14 +43,13 @@ app.use(session({
   secret: secretKeyForSession,
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Set secure: true in production
+  cookie: { secure: false, maxAge: 8 * 60 * 60 * 1000 } // Set secure: true in production
 }));
 
 app.use(express.json());
 
 app.use('/login' , loginController);
 app.use('/user' , userController);
-
 
 
 app.listen(port, () => {
