@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
 const tripDataSchema = new mongoose.Schema({
   key: { type: String, required: true },
@@ -15,7 +14,7 @@ const tripDataSchema = new mongoose.Schema({
   description: { type: String, required: true },
   profileImg: { type: String, required: true },
   destinationImages: [{ type: String, required: true }],
-  user: { type: Schema.Types.ObjectId, ref: 'UserProfile', required: true }
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'UserProfile', required: true }
 });
 
-module.exports = mongoose.model('TripData', tripDataSchema);
+module.exports = mongoose.model('userTrip', tripDataSchema);

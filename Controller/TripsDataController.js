@@ -47,7 +47,7 @@ router.get('/trips', async (req, res) => {
 
     res.json(trips);
   } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error', error });
+    res.status  .json({ message: 'Internal Server Error', error });
   }
 });
 
@@ -61,6 +61,21 @@ router.get('/trips/:id', async (req, res) => {
       return res.status(404).json({ message: 'Trip not found' });
     }
     res.json(trip);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error', error });
+  }
+});
+
+// Fetch trips by user ID
+router.get('/tripsByUser', async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const trips = await TripData.find({ user: userId }).populate('user');
+    if (!trips || trips.length === 0) {
+      return res.status(404).json({ message: 'No trips found for this user' });
+    }
+    res.json(trips);
   } catch (error) {
     res.status(500).json({ message: 'Internal Server Error', error });
   }
