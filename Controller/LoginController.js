@@ -12,10 +12,75 @@ const nodemailer = require("nodemailer");
 const Recipient = require("mailersend").Recipient;
 const EmailParams = require("mailersend").EmailParams;
 const MailerSend = require("mailersend");
+const UserProfile = require("../models/UserProfile");
 
 // const {createUser} = require("./UserController")
 
-async function fetchUserData(accessToken) {
+async function addUserToDataBase(user, collectionName) {
+  try {
+    await client.connect();
+    const database = client.db(databaseName);
+    const collection = database.collection(collectionName);
+    const userAdded = await collection.insertOne(user);
+    return userAdded;
+  } finally {
+    await client.close();
+  }
+}
+
+async function getUserProfileByEmailId(emailId, collectionName) {
+  try {
+    await client.connect();
+    const database = client.db(databaseName);
+    const collection = database.collection(collectionName);
+    const result = await collection.findOne({ emailId: emailId });
+    return result;
+  } finally {
+    await client.close();
+  }
+}
+
+async function updateUserPassword(
+  userEmail,
+  hashedPassword,
+  collectionName
+) {
+  try{
+    await client.connect();
+    console.log(collectionName);
+    const database = client.db(databaseName);
+    database.collection(collectionName).updateOne(
+      { "emailId": userEmail}, // Filter: Match document with this _id
+      { $set: { password: hashedPassword } }, // Update: Set the username to a new value
+      (err, result) => {
+        if (err) {
+          console.error("Error updating user:", err);
+          return;
+        }
+        console.log("User update");
+        client.close(); // Close the connection after update
+      }
+    );
+  }
+
+  catch(error){
+    console.log(error);
+  }
+}
+
+// async function createUserProfile(user) {
+//   try {
+//     await client.connect();
+//     const database = client.db(databaseName);
+//     const collection = database.collection("users");
+//     const userCreated = await collection.insertOne(user);
+//     return userCreated;
+//   } finally {
+//     await client.close();
+//   }
+// }
+
+async function getUserDataFromGoogle(accessToken) {
   try {
     const url =
       "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,photos";
@@ -41,10 +106,13 @@ async function fetchUserData(accessToken) {
 
 router.post("/googleLogin", jsonParser, async (req, res) => {
   const { token } = req.body;
+  console.log("hello");
 
   try {
     // Fetch user data from Google
-    const userData = await fetchUserData(token);
+    const userData = await getUserDataFromGoogle(token);
+
+    console.log("the code came here");
 
     // Extract user information
     const { emailAddresses, names, photos } = userData;
@@ -54,23 +122,29 @@ router.post("/googleLogin", jsonParser, async (req, res) => {
 
     console.log("the session value is", req.session);
 
-    req.session.user = { userEmail, userName, profileImageUrl };
 
-    const isEmailAlreadyPresent = await checkIfUserWithEmailAlreadyPresent(
-      userEmail
+    var currentUser = await getUserProfileByEmailId(
+      userEmail, "userProfiles"
     );
 
-    if (!isEmailAlreadyPresent) {
-      await addEmailToDataBase(userEmail);
+    if (!currentUser) {
+      await addUserToDataBase(new UserProfile({
+        username: "",
+        password: "",
+        emailId: userEmail
+      }), "userProfiles");
     }
-    // Example processing of userData and profile image URL
-    console.log("Received user data:", {
-      userEmail,
-      userName,
-      profileImageUrl,
-    });
 
-    const val = req.session.user;
+    currentUser = await getUserProfileByEmailId(
+      userEmail, "userProfiles"
+    );
+
+    console.log("now the user is" , currentUser);
+
+    const currentUserId = currentUser._id;
+    // Example processing of userData and profile image URL
+    req.session.user = { id:currentUserId };
+
     // Respond with success
     res
       .status(200)
@@ -108,61 +182,28 @@ router.post("/logout", (req, res) => {
   });
 });
 
-async function createUser(user) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection("users");
-    const userCreated = await collection.insertOne(user);
-    return userCreated;
-  } finally {
-    await client.close();
-  }
-}
 
-async function updateUserPassword(
-  userEmail,
-  hashedPassword,
-  collectionName
-) {
-  try{
-    await client.connect();
-    console.log(collectionName);
-    const database = client.db(databaseName);
-    database.collection(collectionName).updateOne(
-      { "userEmail": userEmail}, // Filter: Match document with this _id
-      { $set: { password: hashedPassword } }, // Update: Set the username to a new value
-      (err, result) => {
-        if (err) {
-          console.error("Error updating user:", err);
-          return;
-        }
-        console.log("User update");
-        client.close(); // Close the connection after update
-      }
-    );
-  }
-
-  catch(error){
-    console.log(error);
-  }
-
-}
 
 router.post("/signUp", jsonParser, async (req, res) => {
   try{
     const { userEmail, password } = req.body;
-    const isEmailAlreadyPresent = await checkIfUserWithEmailAlreadyPresent(
+    const currentUser = await getUserProfileByEmailId(
       userEmail,
-      "users"
+      "userProfiles"
     );
     const hashedPassword = await bcrypt.hash(password, 10);
-    if (isEmailAlreadyPresent) {
+    if (currentUser) {
       res.status(400).json({success: false, message: "email aready exist"});
       return;
     }
-    await createUser({ userEmail: userEmail, password: hashedPassword });
-    await addEmailToDataBase({ userEmail: userEmail });
+    await addUserToDataBase(new UserProfile(
+      { 
+        username: "",
+        isGoogleSignUp: false,
+        emailId: userEmail, 
+        password: hashedPassword,
+        }
+  ));
     res.status(201).json({success: true, message: "Account Created"});
   }
 
@@ -174,23 +215,25 @@ router.post("/signUp", jsonParser, async (req, res) => {
 
 router.post("/", jsonParser, async (req, res) => {
   const { userEmail, password , rememberMe} = req.body;
-  const isEmailAlreadyPresent = await checkIfUserWithEmailAlreadyPresent(
-    userEmail,
-    "users"
+  const currentUser = await getUserProfileByEmailId(
+     userEmail,
+    "userProfiles"
   );
-  if (!isEmailAlreadyPresent) {
+  if (!currentUser) {
     res.status(400).json("user doesn't exist");
     return;
   }
-  const storedHash = isEmailAlreadyPresent.password;
+  const storedHashPassword = currentUser.password;
+  const userId = currentUser._id;
 
-  bcrypt.compare(password, storedHash, (err, result) => {
+  bcrypt.compare(password, storedHashPassword, (err, result) => {
     if (err) {
       console.error("Error comparing password:", err);
       res.status(500).json("Internal Server Error");
-    } else if (result) {
+    }
+     else if (result) {
       console.log("Password is valid!");
-      req.session.user = {userEmail};
+      req.session.user = {id:userId};
       if (rememberMe) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
       } 
@@ -201,7 +244,6 @@ router.post("/", jsonParser, async (req, res) => {
     }
   });
 });
-
 
 
 function generateOTP() {
@@ -251,12 +293,12 @@ async function sendOTP(email, otp){
 
 router.post("/forgotPassword", jsonParser, async (req, res) => {
   const { userEmail } = req.body;
-  const isEmailAlreadyPresent = await checkIfUserWithEmailAlreadyPresent(
+  const currentUser = await getUserProfileByEmailId(
     userEmail,
-    "users"
+    "userProfiles"
   );
   console.log("the request came here", userEmail);
-  if (!isEmailAlreadyPresent) {
+  if (!currentUser) {
     res.status(400).json("user doesn't exist");
     return;
   }
@@ -311,7 +353,7 @@ router.post("/verify-reset-password", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await updateUserPassword(userEmail, hashedPassword, "users");
+    await updateUserPassword(userEmail, hashedPassword, "userProfiles");
 
     // If OTP matches, proceed with the next action (e.g., allow password reset)
     // You can clear the OTP after successful verification if it's for one-time use
@@ -330,29 +372,5 @@ router.post("/verify-reset-password", async (req, res) => {
   }
 });
 
-async function addEmailToDataBase(emailId) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection("emails");
-    const newEmailId = { userEmail: emailId };
-    const emailAdded = await collection.insertOne(newEmailId);
-    return emailAdded;
-  } finally {
-    await client.close();
-  }
-}
-
-async function checkIfUserWithEmailAlreadyPresent(emailId, collectionName) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionName);
-    const result = await collection.findOne({ userEmail: emailId });
-    return result;
-  } finally {
-    await client.close();
-  }
-}
 
 module.exports = router;

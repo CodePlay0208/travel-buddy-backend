@@ -19,8 +19,14 @@ router.post('/trips', async (req, res) => {
   const {
     key, destination, startDate, endDate, details,
     startLocation, endLocation, totalMembers, age, sex,
-    description, profileImg, destinationImages, user
+    description, profileImg, destinationImages
   } = req.body;
+
+  const user = req.session? req.session.user ? req.session.user.id : null : null;
+
+  console.log(req.session);
+  console.log(req.session.user);
+  console.log(user);
 
   try {
     // Ensure the user exists
