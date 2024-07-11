@@ -44,7 +44,12 @@ app.use(session({
   secret: secretKeyForSession,
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false, maxAge: 8 * 60 * 60 * 1000 } // Set secure: true in production
+  cookie: { 
+    secure: false,
+     maxAge: 8 * 60 * 60 * 1000,
+     httpOnly: false, // Allows JavaScript to access the cookie
+     sameSite: 'lax' 
+    } // Set secure: true in production
 }));
 
 app.use('/login', loginController);
