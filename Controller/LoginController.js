@@ -13,6 +13,8 @@ const Recipient = require("mailersend").Recipient;
 const EmailParams = require("mailersend").EmailParams;
 const MailerSend = require("mailersend");
 const UserProfile = require("../models/UserProfile");
+
+const {getUserById} = require("../Utils");
 // const {createUser} = require("./UserController")
 
 const fetch = require("node-fetch");
@@ -120,7 +122,7 @@ router.post("/googleLogin", jsonParser, async (req, res) => {
     const userName = names[0].displayName;
     const profileImageUrl = photos && photos.length > 0 ? photos[0].url : null;
 
-    console.log("the session value is", req.session);
+   
 
 
     var currentUser = await getUserProfileByEmailId(
@@ -143,25 +145,39 @@ router.post("/googleLogin", jsonParser, async (req, res) => {
 
     const currentUserId = currentUser._id;
     // Example processing of userData and profile image URL
-    req.session.user = { id:currentUserId };
+    req.session.user = { id:currentUserId.toString() };
+    console.log("the session value is", req.session);
 
+    let {_id , username , profilePic , emailId} = currentUser;
+  
     // Respond with success
+    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
+    console.log(userValuesToBeReturned);
     res
       .status(200)
-      .json({ success: true, message: "Google login successful." });
+      .json({ success: true, message: "Google login successful.", user: userValuesToBeReturned});
     console.log("the session id is", req.sessionID);
   } catch (error) {
     console.error("Google login failed:", error.message);
     res.status(401).json({
       success: false,
       message: "Failed to verify Google token or fetch user data.",
+      user:null
     });
   }
 });
 
 router.get("/checkSession", jsonParser, async (req, res) => {
+  console.log("the req.session is", req.session);
   if (req.session.user) {
-    res.status(200).json({ loggedIn: true, user: req.session.user });
+    const user = await getUserById(req.session.user.id);
+    console.log(user);
+    let {_id , username , profilePic , emailId} = user;
+  
+    // Respond with success
+    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
+    console.log("checking the session and user is", user);
+    res.status(200).json({ loggedIn: true, user:userValuesToBeReturned});
   } else {
     res.status(200).json({ loggedIn: false });
   }
@@ -225,6 +241,10 @@ router.post("/", jsonParser, async (req, res) => {
   }
   const storedHashPassword = currentUser.password;
   const userId = currentUser._id;
+  const {_id , username , profilePic , emailId} = currentUser;
+    // Respond with success
+    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
+    console.log(userValuesToBeReturned);
 
   bcrypt.compare(password, storedHashPassword, (err, result) => {
     if (err) {
@@ -233,14 +253,14 @@ router.post("/", jsonParser, async (req, res) => {
     }
      else if (result) {
       console.log("Password is valid!");
-      req.session.user = {id:userId};
+      req.session.user = {id:userId.toString()};
       if (rememberMe) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
       } 
-      res.status(200).json("Valid user");
+      res.status(200).json({message: "Valid user", user:userValuesToBeReturned});
     } else {
       console.log("Invalid password.");
-      res.status(400).json("Invalid Password");
+      res.status(400).json({message: "Invalid Password", user:null});
     }
   });
 });
