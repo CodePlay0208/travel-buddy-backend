@@ -47,14 +47,17 @@ router.post('/createUserProfile', async (req, res) => {
 });
 
 router.get('/getUserProfile', async (req, res) => {
-  const { emailId } = req.query;
-
-  if (!isValidEmail(emailId)) {
+  const userId = req.session && req.session.user ? req.session.user.id : null;
+  
+  if (!userId ) {
     return res.status(400).json({ message: 'Email Id not valid' });
   }
 
   try {
-    const user = await getUserByEmailId(emailId);
+    const user = await getUserByUserId(userId);
+    console.log(user);
+    console.log("user");
+  
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -64,18 +67,20 @@ router.get('/getUserProfile', async (req, res) => {
   }
 });
 
-
-async function getUserByEmailId(emailId) {
-    try {
-      await client.connect();
-      const database = client.db(databaseName);
-      const collection = database.collection(collectionForUserProfiles);
-      const result = await collection.findOne({ emailId: emailId });
-      return result;
-    } finally {
-      await client.close();
-    }
+async function getUserByUserId(userId) {
+  try {
+    await client.connect();
+    const database = client.db(databaseName);
+    const collection = database.collection(collectionForUserProfiles);
+    const result = await collection.findOne(
+      { _id: userId },
+      { projection: { password: 0 } }
+    );
+    return result;
+  } finally {
+    await client.close();
   }
+}
   
   async function createUser(user) {
     try {
