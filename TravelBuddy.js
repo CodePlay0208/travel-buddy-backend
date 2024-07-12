@@ -8,14 +8,13 @@ const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const crypto = require('crypto');
 const cors = require('cors');
-
+const fetch = require("node-fetch");
 const loginController = require('./Controller/LoginController');
 const userController = require('./Controller/UserController');
 const tripsController = require('./Controller/TripsDataController');
 
 const secretKeyForSession = crypto.randomBytes(64).toString('hex');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
 const corsOptions = {
   origin: 'http://localhost:3000',
   credentials: true, // This allows the session cookie to be sent and received

@@ -13,9 +13,9 @@ const Recipient = require("mailersend").Recipient;
 const EmailParams = require("mailersend").EmailParams;
 const MailerSend = require("mailersend");
 const UserProfile = require("../models/UserProfile");
-
 // const {createUser} = require("./UserController")
 
+const fetch = require("node-fetch");
 async function addUserToDataBase(user, collectionName) {
   try {
     await client.connect();
