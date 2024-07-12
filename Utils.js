@@ -8,17 +8,20 @@ const client = new MongoClient(urlForMongoDB);
 
 
 async function getUserById(userId) {
-    console.log(userId);
+  userId = new ObjectId(userId);
   try {
-    userId = new ObjectId(userId);
     await client.connect();
     const database = client.db(databaseName);
     const collection = database.collection(collectionForUserProfiles);
-    const result = await collection.findOne({ _id: userId });
+    const result = await collection.findOne(
+      { _id: userId },
+      { projection: { password: 0 } }
+    );
     return result;
   } finally {
     await client.close();
   }
+
 }
 
 async function createUser(user) {
