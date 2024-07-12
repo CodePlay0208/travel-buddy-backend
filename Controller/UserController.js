@@ -13,6 +13,8 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const { getUserById, isValidEmail, createUser } = require("../Utils");
 
+const fetch = require("node-fetch");
+
 console.log(urlForMongoDB, databaseName, collectionForUserProfiles);
 
 router.use(bodyParser.json());
@@ -46,16 +48,14 @@ router.post("/createUserProfile", async (req, res) => {
 
 router.get('/getUserProfile', async (req, res) => {
   const userId = req.session && req.session.user ? req.session.user.id : null;
-  
+  console.log('the user id is, ' ,userId);
+  console.log('the session  is, ' ,req.session);
   if (!userId ) {
     return res.status(400).json({ message: 'Email Id not valid' });
   }
 
   try {
-    const user = await getUserByUserId(userId);
-    console.log(user);
-    console.log("user");
-  
+    const user = await getUserById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -65,31 +65,4 @@ router.get('/getUserProfile', async (req, res) => {
   }
 });
 
-async function getUserByUserId(userId) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionForUserProfiles);
-    const result = await collection.findOne(
-      { _id: userId },
-      { projection: { password: 0 } }
-    );
-    return result;
-  } finally {
-    await client.close();
-  }
-}
-  
-  async function createUser(user) {
-    try {
-      await client.connect();
-      const database = client.db(databaseName);
-      const collection = database.collection(collectionForUserProfiles);
-      
-      const userCreated = await collection.insertOne(user);
-      return userCreated;
-    } finally {
-      await client.close();
-    }
-  }
 module.exports = router;
