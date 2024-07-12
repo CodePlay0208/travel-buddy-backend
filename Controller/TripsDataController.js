@@ -17,9 +17,9 @@ router.use(bodyParser.json());
 // Add a new trip
 router.post('/trips', async (req, res) => {
   const {
-    key, destination, startDate, endDate, details,
+    destination, startDate, endDate, details,
     startLocation, endLocation, totalMembers, age, sex,
-    description, profileImg, destinationImages
+    description, destinationImages
   } = req.body;
 
   const user = req.session? req.session.user ? req.session.user.id : null : null;
@@ -30,15 +30,15 @@ router.post('/trips', async (req, res) => {
 
   try {
     // Ensure the user exists
-    const userExists = await getUserByUserId(user);
-    if (!userExists) {
+    
+    if (!user) {
       return res.status(400).json({ message: 'User not found' });
     }
 
     const newTrip = new TripData({
-      key, destination, startDate, endDate, details,
+      destination, startDate, endDate,
       startLocation, endLocation, totalMembers, age, sex,
-      description, profileImg, destinationImages, user
+      description, destinationImages, user
     });
 
     await createTrip(newTrip);
@@ -134,11 +134,17 @@ async function findTripById(id) {
 
 // Fetch trips by user ID
 router.get('/tripsByUser', async (req, res) => {
-  const { userId } = req.query;
+  
+  const user = req.session? req.session.user ? req.session.user.id : null : null;
+
+  console.log(req.session);
+  console.log(req.session.user);
+  console.log(user);
+
 
   try {
     await client.connect();
-    const trips = await findTripsByUserId(userId);
+    const trips = await findTripsByUserId(user);
     if (!trips || trips.length === 0) {
       return res.status(404).json({ message: 'No trips found for this user' });
     }
