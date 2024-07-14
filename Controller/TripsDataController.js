@@ -145,9 +145,9 @@ router.get('/tripsByUser', async (req, res) => {
   try {
     await client.connect();
     const trips = await findTripsByUserId(user);
-    if (!trips || trips.length === 0) {
-      return res.status(404).json({ message: 'No trips found for this user' });
-    }
+    // if (!trips || trips.length === 0) {
+    //   return res.status(404).json({ message: 'No trips found for this user' });
+    // }
     res.json(trips);
   } catch (error) {
     console.error(error);
