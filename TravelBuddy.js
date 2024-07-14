@@ -16,6 +16,7 @@ const userController = require("./Controller/UserController");
 const tripsController = require("./Controller/TripsDataController");
 const chatController = require("./Controller/ChatController");
 const messageController = require("./Controller/MessageController");
+const deleteController = require("./Controller/DeleteUserController");
 
 
 
@@ -62,6 +63,7 @@ app.use("/login", loginController);
 app.use("/user", userController);
 app.use("/api", tripsController);
 app.use("/chat", chatController);
+app.use("/delete", deleteController);
 app.use("/message", messageController);
 
 // MongoDB connection
