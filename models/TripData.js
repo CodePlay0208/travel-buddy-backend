@@ -8,6 +8,7 @@ const tripDataSchema = new mongoose.Schema({
   startLocation: { type: String, required: true },
   endLocation: { type: String, required: true },
   totalMembers: { type: Number, required: true },
+  budget: { type: String },
   age: { type: Number, required: true },
   sex: { type: String, required: true },
   description: { type: String, required: true },
