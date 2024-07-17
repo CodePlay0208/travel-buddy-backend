@@ -18,7 +18,7 @@ router.use(bodyParser.json());
 router.post('/trips', async (req, res) => {
   const {
     destination, startDate, endDate, details,
-    startLocation, endLocation, totalMembers, age, sex,
+    startLocation, endLocation, totalMembers,budget, age, sex,
     description, destinationImages
   } = req.body;
 
@@ -37,7 +37,7 @@ router.post('/trips', async (req, res) => {
 
     const newTrip = new TripData({
       destination, startDate, endDate,
-      startLocation, endLocation, totalMembers, age, sex,
+      startLocation, endLocation, totalMembers,budget, age, sex,
       description, destinationImages, user
     });
 
@@ -177,7 +177,7 @@ router.put('/edit_trip/:tripId', async (req, res) => {
   const { tripId } = req.params;
   const {
     destination, startDate, endDate,
-    startLocation, endLocation, totalMembers, age, sex,
+    startLocation, endLocation, totalMembers, budget,age, sex,
     description, destinationImages
   } = req.body;
 
@@ -206,7 +206,7 @@ router.put('/edit_trip/:tripId', async (req, res) => {
 
     const newTrip = {
       destination, startDate, endDate,
-      startLocation, endLocation, totalMembers, age, sex,
+      startLocation, endLocation, totalMembers,budget, age, sex,
       description, destinationImages, user
     };
 
