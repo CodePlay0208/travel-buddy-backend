@@ -13,6 +13,8 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const { getUserById, isValidEmail, createUser } = require("../Utils");
 
+const fetch = require("node-fetch");
+
 console.log(urlForMongoDB, databaseName, collectionForUserProfiles);
 
 router.use(bodyParser.json());
@@ -44,8 +46,13 @@ router.post("/createUserProfile", async (req, res) => {
   }
 });
 
-router.get("/getUserProfile", async (req, res) => {
-  const { userId } = req.session.user.id;
+router.get('/getUserProfile', async (req, res) => {
+  const userId = req.session && req.session.user ? req.session.user.id : null;
+  console.log('the user id is, ' ,userId);
+  console.log('the session  is, ' ,req.session);
+  if (!userId ) {
+    return res.status(400).json({ message: 'Email Id not valid' });
+  }
 
   try {
     const user = await getUserById(userId);
