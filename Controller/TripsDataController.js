@@ -196,20 +196,25 @@ router.put('/edit_trip/:tripId', async (req, res) => {
     // Find the trip by ID to check user access
     const createdBy = await findTripById(tripId);
 
+    console.log(createdBy);
     if (!createdBy) {
       return res.status(404).json({ error: 'Trip not found' });
     }
-
-    if (createdBy.user !== user) {
+    console.log(user);
+    const userId = new ObjectId(user);
+    if (!createdBy.user.equals(userId)) {
+      // The user is different
       return res.status(403).json({ error: "You don't have access to edit this trip" });
     }
+    const ageNumber = Number(age);
+    const totalMembersNumber = Number(totalMembers);
 
     const newTrip = {
       destination, startDate, endDate,
-      startLocation, endLocation, totalMembers,budget, age, sex,
-      description, destinationImages, user
+      startLocation, endLocation, totalMembers: totalMembersNumber,budget, age: ageNumber, sex,
+      description, destinationImages
     };
-
+    console.log(newTrip);
     const result = await updateTrip(newTrip, tripId);
 
     if (!result.value) {
