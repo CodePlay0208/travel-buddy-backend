@@ -206,22 +206,31 @@ router.put('/edit_trip/:tripId', async (req, res) => {
       // The user is different
       return res.status(403).json({ error: "You don't have access to edit this trip" });
     }
+    // Parse dates
+    const parseDate = (dateString) => {
+      const [day, month, year] = dateString.split('-');
+      return new Date(`${year}-${month}-${day}`);
+    };
+
     const ageNumber = Number(age);
     const totalMembersNumber = Number(totalMembers);
+    const startDateDate = parseDate(startDate);
+    const endDateDate = parseDate(endDate);
 
     const newTrip = {
-      destination, startDate, endDate,
-      startLocation, endLocation, totalMembers: totalMembersNumber,budget, age: ageNumber, sex,
+      destination, startDate: startDateDate, endDate: endDateDate,
+      startLocation, endLocation, totalMembers: totalMembersNumber, budget, age: ageNumber, sex,
       description, destinationImages
     };
     console.log(newTrip);
     const result = await updateTrip(newTrip, tripId);
+    console.log(result);
 
-    if (!result.value) {
+    if (!result) {
       return res.status(404).json({ error: 'Trip not found' });
     }
 
-    res.json({ message: 'Trip updated successfully', trip: result.value });
+    res.json({ message: 'Trip updated successfully', trip: result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
