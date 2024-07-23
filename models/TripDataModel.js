@@ -13,7 +13,7 @@ const tripDataSchema = new mongoose.Schema({
   sex: { type: String, required: true },
   description: { type: String, required: true },
   destinationImages: [{ type: String}],
-  user: { type: Schema.Types.ObjectId, ref: 'UserProfile', required: true }
+  userId: { type: Schema.Types.ObjectId, ref: 'UserProfile', required: true }
 });
 
 module.exports = mongoose.model('TripData', tripDataSchema);

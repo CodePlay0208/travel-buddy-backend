@@ -1,91 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const jsonParser = require("body-parser").json();
-const urlForMongoDB = process.env.URL_FOR_MONGODB;
-const databaseName = process.env.DATABASE_NAME;
-const collectionForUserProfiles = process.env.COLLECTION_FOR_USER_PROFILES;
-const { MongoClient } = require("mongodb");
-const client = new MongoClient(urlForMongoDB);
 const bcrypt = require("bcrypt");
-const passport = require("passport");
-const nodemailer = require("nodemailer");
-const Recipient = require("mailersend").Recipient;
-const EmailParams = require("mailersend").EmailParams;
-const MailerSend = require("mailersend");
-const UserProfile = require("../models/UserProfile");
+const UserProfile = require("../models/UserProfileModel");
+const asyncHandler = require("express-async-handler");
+const generateToken = require("../config/GenerateToken");
+const OtpSchema = require("../models/OtpModel");
+const OtpModel = require("../models/OtpModel");
 
-const {getUserById} = require("../Utils");
-// const {createUser} = require("./UserController")
-
-const fetch = require("node-fetch");
-async function addUserToDataBase(user, collectionName) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionName);
-    const userAdded = await collection.insertOne(user);
-    return userAdded;
-  } finally {
-    await client.close();
-  }
-}
-
-async function getUserProfileByEmailId(emailId, collectionName) {
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection(collectionName);
-    const result = await collection.findOne({ emailId: emailId });
-    return result;
-  } finally {
-    await client.close();
-  }
-}
-
-async function updateUserPassword(
-  userEmail,
-  hashedPassword,
-  collectionName
-) {
-  try{
-    await client.connect();
-    console.log(collectionName);
-    const database = client.db(databaseName);
-    database.collection(collectionName).updateOne(
-      { "emailId": userEmail}, // Filter: Match document with this _id
-      { $set: { password: hashedPassword } }, // Update: Set the username to a new value
-      (err, result) => {
-        if (err) {
-          console.error("Error updating user:", err);
-          return;
-        }
-        console.log("User update");
-        client.close(); // Close the connection after update
-      }
-    );
-  }
-
-  catch(error){
-    console.log(error);
-  }
-}
-
-// async function createUserProfile(user) {
-//   try {
-//     await client.connect();
-//     const database = client.db(databaseName);
-//     const collection = database.collection("users");
-//     const userCreated = await collection.insertOne(user);
-//     return userCreated;
-//   } finally {
-//     await client.close();
-//   }
-// }
 
 async function getUserDataFromGoogle(accessToken) {
   try {
-    const url =
-      "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,photos";
+    const url = process.env.GOOGLE_API_FOR_FETCHING_USER_DATA;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -98,7 +21,6 @@ async function getUserDataFromGoogle(accessToken) {
     if (data.error) {
       throw new Error(data.error.message || "Failed to fetch user data.");
     }
-
     return data;
   } catch (error) {
     console.error("Failed to fetch user data:", error.message);
@@ -106,280 +28,200 @@ async function getUserDataFromGoogle(accessToken) {
   }
 }
 
-router.post("/googleLogin", jsonParser, async (req, res) => {
-  const { token } = req.body;
-  console.log("hello");
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000); 
+}
 
+async function sendOTP(useremail, otp) {
   try {
-    // Fetch user data from Google
-    const userData = await getUserDataFromGoogle(token);
+    const url = process.env.URL_FOR_SENDING_MAILS;
+    const data = {
+      from: {
+        email: process.env.EMAILID_FOR_SENDING_MAILS
+      },
+      to: [
+        {
+          email: useremail
+        }
+      ],
+      subject: 'Password Reset OTP',
+      text: `Your OTP is ${otp}`,
+    };
 
-    console.log("the code came here");
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Authorization': 'Bearer ' + process.env.TOKEN_FOR_SENDING_MAILS
+    };
 
-    // Extract user information
-    const { emailAddresses, names, photos } = userData;
-    const userEmail = emailAddresses[0].value;
-    const userName = names[0].displayName;
-    const profileImageUrl = photos && photos.length > 0 ? photos[0].url : null;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(data)
+    });
 
-   
-
-
-    var currentUser = await getUserProfileByEmailId(
-      userEmail, "userProfiles"
-    );
-
-    if (!currentUser) {
-      await addUserToDataBase(new UserProfile({
-        username: "",
-        password: "",
-        emailId: userEmail
-      }), "userProfiles");
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
     }
 
-    currentUser = await getUserProfileByEmailId(
-      userEmail, "userProfiles"
-    );
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
+}
 
-    console.log("now the user is" , currentUser);
+const googleLoginHandler = asyncHandler(async (req, res) => {
+  try {
+    const { token } = req.body;
+    // Fetch user data from Google
+    const userData = await getUserDataFromGoogle(token);
+    // Extract user information
+    const { emailAddresses, names } = userData;
+    const userEmail = emailAddresses[0].value;
+    const userName = names[0].displayName;
+    var userInDatabase = await UserProfile.findOne({ emailId: userEmail });
+    if (!userInDatabase) {
+      const newUserProfile = new UserProfile({
+        username: userName,
+        password: "",
+        emailId: userEmail
+      });
 
-    const currentUserId = currentUser._id;
-    // Example processing of userData and profile image URL
-    req.session.user = { id:currentUserId.toString() };
-    console.log("the session value is", req.session);
-
-    let {_id , username , profilePic , emailId} = currentUser;
-  
-    // Respond with success
-    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
-    console.log(userValuesToBeReturned);
+      userInDatabase = await newUserProfile.save();
+    }
+    const currentUserId = userInDatabase._id;
     res
       .status(200)
-      .json({ success: true, message: "Google login successful.", user: userValuesToBeReturned});
-    console.log("the session id is", req.sessionID);
+      .json({ success: true, message: "Google login successful.", token: generateToken(currentUserId) });
   } catch (error) {
     console.error("Google login failed:", error.message);
     res.status(401).json({
       success: false,
       message: "Failed to verify Google token or fetch user data.",
-      user:null
+      user: null
     });
   }
 });
 
-router.get("/checkSession", jsonParser, async (req, res) => {
-  console.log("the req.session is", req.session);
-  if (req.session.user) {
-    const user = await getUserById(req.session.user.id);
-    console.log(user);
-    let {_id , username , profilePic , emailId} = user;
-  
-    // Respond with success
-    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
-    console.log("checking the session and user is", user);
-    res.status(200).json({ loggedIn: true, user:userValuesToBeReturned});
-  } else {
-    res.status(200).json({ loggedIn: false });
+const isUserLoggedInHandler = asyncHandler(async (req, res) => {
+  try {
+    res.status(200).json({
+      loggedIn: true, userDetails: {
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+      }
+    });
+  }
+  catch (error) {
+    console.log(error);
+    res.status(500).json("Internal Server Error");
   }
 });
 
-router.post("/logout", (req, res) => {
-  // Destroy the session
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error destroying session:", err);
-      res.status(500).json({ success: false, message: "Error logging out" });
-    } else {
-      res.clearCookie("connect.sid"); // Clear the session cookie
-      res
-        .status(200)
-        .json({ success: true, message: "Logged out successfully" });
-    }
-  });
-});
-
-
-
-router.post("/signUp", jsonParser, async (req, res) => {
-  try{
-    const { userEmail, password } = req.body;
-    const currentUser = await getUserProfileByEmailId(
-      userEmail,
-      "userProfiles"
-    );
+const signUpHandler = asyncHandler(async (req, res) => {
+  try {
+    const { userEmail, password, userName, phoneNumber } = req.body;
+    const userInDatabase = await UserProfile.findOne({
+      emailId: userEmail
+    });
     const hashedPassword = await bcrypt.hash(password, 10);
-    if (currentUser) {
-      res.status(400).json({success: false, message: "email aready exist"});
+    if (userInDatabase) {
+      res.status(400).json({ success: false, message: "email aready exist" });
       return;
     }
-    await addUserToDataBase(new UserProfile(
-      { 
-        username: "",
-        isGoogleSignUp: false,
-        emailId: userEmail, 
-        password: hashedPassword,
-        }
-  ));
-    res.status(201).json({success: true, message: "Account Created"});
+
+    const newUser = new UserProfile({
+      username: userName,
+      password: hashedPassword,
+      phoneNumber: phoneNumber,
+      emailId: userEmail
+    })
+    const createdUser = await newUser.save();
+    res.status(201).json({ success: true, message: "Account Created", token: generateToken(createdUser._id) });
   }
 
-  catch(error){
-    res.status(500).json({success: false, message: "Internal Server Error"});
+  catch (error) {
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-  
 });
 
-router.post("/", jsonParser, async (req, res) => {
-  const { userEmail, password , rememberMe} = req.body;
-  const currentUser = await getUserProfileByEmailId(
-     userEmail,
-    "userProfiles"
-  );
-  if (!currentUser) {
-    res.status(400).json("user doesn't exist");
-    return;
-  }
-  const storedHashPassword = currentUser.password;
-  const userId = currentUser._id;
-  const {_id , username , profilePic , emailId} = currentUser;
-    // Respond with success
-    const userValuesToBeReturned = {_id , username,  profilePic, emailId }
-    console.log(userValuesToBeReturned);
-
-  bcrypt.compare(password, storedHashPassword, (err, result) => {
-    if (err) {
-      console.error("Error comparing password:", err);
-      res.status(500).json("Internal Server Error");
+const loginHandler = asyncHandler(async (req, res) => {
+  try {
+    const { userEmail, password, rememberMe } = req.body;
+    const userInDatabase = await UserProfile.findOne({
+      emailId: userEmail,
+    });
+    if (!userInDatabase) {
+      res.status(400).json("user doesn't exist");
+      return;
     }
-     else if (result) {
-      console.log("Password is valid!");
-      req.session.user = {id:userId.toString()};
-      if (rememberMe) {
-        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-      } 
-      res.status(200).json({message: "Valid user", user:userValuesToBeReturned});
-    } else {
-      console.log("Invalid password.");
-      res.status(400).json({message: "Invalid Password", user:null});
-    }
-  });
-});
-
-
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000); // Generates a 6-digit OTP
-}
-
-async function sendOTP(email, otp){
-    const url = 'https://api.mailersend.com/v1/email';
-    const data = {
-      from: {
-        email: 'MS_mTBZtC@trial-0r83ql3y7evgzw1j.mlsender.net'
-      },
-      to: [
-        {
-          email: email
-        }
-      ],
-      subject: 'Password Reset OTP',
-      text: `Your OTP is ${otp}`,
-      // html: 'Greetings from the team, you got this message through MailerSend.'
-    };
-  
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      'Authorization': 'Bearer mlsn.8fb8850bd92c2b2951f4b6cb6ce4f9d558aa6ac97ee3e849f4a5d80c81f5a860'
-    };
-  
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(data)
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
+    const storedHashPassword = userInDatabase.password;
+    const userId = userInDatabase._id;
+    bcrypt.compare(password, storedHashPassword, (err, result) => {
+      if (err) {
+        console.error("Error comparing password:", err);
+        throw new Error("Internal Server Error");
       }
-  
-    } catch (error) {
-      console.error('Error sending email:', error);
-    }
-
-
+      else if (result) {
+        console.log("Password is valid!");
+        let token = null;
+        if (rememberMe) {
+          token = generateToken(userId, "30d");
+        }
+        else {
+          token = generateToken(userId);
+        }
+        res.status(200).json({ message: "Valid user", token: token });
+      }
+      else {
+        throw new Error("Internal Server Error");
+      }
+    });
   }
-
-
-router.post("/forgotPassword", jsonParser, async (req, res) => {
-  const { userEmail } = req.body;
-  const currentUser = await getUserProfileByEmailId(
-    userEmail,
-    "userProfiles"
-  );
-  console.log("the request came here", userEmail);
-  if (!currentUser) {
-    res.status(400).json("user doesn't exist");
-    return;
-  }
-  console.log("hello");
-  const otp = generateOTP();
-  console.log("the otp is" , otp)
-  sendOTP(userEmail, otp);
-
-  try {
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection("OTP");
-    const existingUser = await collection.findOne({userEmail: userEmail});
-    if(existingUser){
-      await collection.deleteOne(existingUser);
-    }
-    const currentUserOtp = {userEmail: userEmail,  OTP: otp}
-    await collection.insertOne(currentUserOtp);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).json("Can't send OTP");
-    return;
-  } finally {
-    await client.close();
-    res.status(200).json("OTP sent");
+  catch (error) {
+    res.status(500).json("Internal Server Error")
   }
 });
 
-router.post("/verify-reset-password", async (req, res) => {
-  const { userEmail, otp, newPassword } = req.body;
-
+const forgotPasswordHandler = asyncHandler(async (req, res) => {
   try {
-    // Retrieve the stored OTP from your database based on the user's email
-    await client.connect();
-    const database = client.db(databaseName);
-    const collection = database.collection("OTP");
-    const currentOTP = await collection.findOne({ userEmail: userEmail });
-
-    console.log(currentOTP);
-
-    if (!currentOTP) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+    const { userEmail } = req.body;
+    const userInDatabase = await UserProfile.findOne({ emailId: userEmail });
+    if (!userInDatabase) {
+      res.status(400).json("user doesn't exist");
+      return;
     }
+    const otp = generateOTP();
+    sendOTP(userEmail, otp);
+    const newOTP = new OtpSchema({
+      userId: userInDatabase._id,
+      otp: otp,
+    })
+    await newOTP.save();
+  }
+  catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
 
-    // Compare the OTP from the request with the stored OTP
-    if (currentOTP.OTP != otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP." });
+const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
+  try {
+    const { otp, newPassword } = req.body;
+    const latestOtpInDatabase = OtpModel.findOne({ _id: req.user._id }).sort({ createdAt: -1 });;
+
+    if (!latestOtpInDatabase) {
+      throw new Error("OTP not valid");
     }
-
+    if (latestOtpInDatabase.otp != otp) {
+      throw new Error("OTP not valid");
+    }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await updateUserPassword(userEmail, hashedPassword, "userProfiles");
-
-    // If OTP matches, proceed with the next action (e.g., allow password reset)
-    // You can clear the OTP after successful verification if it's for one-time use
-
-    // Example: Clear the OTP after successful verification
-    await collection.deleteOne(currentOTP);
+    await UserProfile.findOneAndUpdate(
+      { _id: latestOtpInDatabase._id },
+      { $set: { password: newPassword } },
+      { new: true }
+    );
 
     res
       .status(200)
@@ -387,10 +229,11 @@ router.post("/verify-reset-password", async (req, res) => {
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
-  } finally {
-    await client.close();
   }
 });
 
 
-module.exports = router;
+module.exports = {
+  googleLoginHandler, isUserLoggedInHandler, signUpHandler,
+  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler
+};
