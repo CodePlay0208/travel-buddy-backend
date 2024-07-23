@@ -15,9 +15,21 @@ const handleSocketIO = require("./config/Socket");
 const connectDB = require("./config/Database");
 const fs = require('fs');
 const path = require('path');
-const jwtSecretKey = crypto.randomBytes(64).toString('hex');
 const envPath = path.join(__dirname, '.env');
-fs.appendFileSync(envPath, `JWT_SECRET_KEY=${jwtSecretKey}\n`);
+
+const isJwtSecretKeyPresent = () => {
+  try {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    return envContent.includes('JWT_SECRET_KEY');
+  } catch (err) {
+    return false;
+  }
+};
+
+if (!isJwtSecretKeyPresent()) {
+  const jwtSecretKey = crypto.randomBytes(64).toString('hex');
+  fs.appendFileSync(envPath, `JWT_SECRET_KEY=${jwtSecretKey}\n`);
+}
 
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
@@ -27,7 +39,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-connectDB();
+// connectDB();
 
 app.use("/login", loginRoute);
 app.use("/user", userProfileRoute);
