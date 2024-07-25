@@ -12,7 +12,7 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
 
       req.user = await UserProfile.findById(decoded.id).select("-password");
 

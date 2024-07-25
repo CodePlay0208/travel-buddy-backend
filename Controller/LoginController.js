@@ -1,9 +1,10 @@
 const bcrypt = require("bcrypt");
 const UserProfile = require("../models/UserProfileModel");
+const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
-const OtpModel = require("../models/OtpModel");
+const TempUserOtpSchema = require("../models/TempUserSignUpOtpModel");
 
 
 async function getUserDataFromGoogle(accessToken) {
@@ -29,7 +30,7 @@ async function getUserDataFromGoogle(accessToken) {
 }
 
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000); 
+  return Math.floor(100000 + Math.random() * 900000);
 }
 
 async function sendOTP(useremail, otp) {
@@ -91,7 +92,10 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     const currentUserId = userInDatabase._id;
     res
       .status(200)
-      .json({ success: true, message: "Google login successful.", token: generateToken(currentUserId) });
+      .json({
+        success: true, message: "Google login successful.",
+        token: generateToken(currentUserId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+      });
   } catch (error) {
     console.error("Google login failed:", error.message);
     res.status(401).json({
@@ -130,19 +134,52 @@ const signUpHandler = asyncHandler(async (req, res) => {
       return;
     }
 
-    const newUser = new UserProfile({
+    const newTempSignedUser = new TempUserSignUp({
       username: userName,
       password: hashedPassword,
       phoneNumber: phoneNumber,
       emailId: userEmail
-    })
-    const createdUser = await newUser.save();
-    res.status(201).json({ success: true, message: "Account Created", token: generateToken(createdUser._id) });
-  }
+    });
 
+    const createdUser = await newTempSignedUser.save();
+
+    const otp = generateOTP();
+    sendOTP(userEmail, otp);
+    const newOTP = new TempUserOtpSchema({
+      userId: createdUser._id,
+      otp: otp,
+    });
+    await newOTP.save();
+
+    res.status(201).json({
+      success: true, message: "Account Created",
+      token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_SIGNUP)
+    });
+  }
   catch (error) {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
+});
+
+const otpVerificationHandler = asyncHandler(async (req, res) => {
+
+  try {
+    const userId = req.user._id;
+    const { userOtp } = req.body;
+    const originalOtp = TempUserOtpSchema.findOne({ userId: userId });
+    if (originalOtp.otp == userOtp) {
+      res.status(200).json("Email verified");
+    }
+    else {
+      res.status(400).json("Otp not valid");
+    }
+  }
+  catch (error) {
+    console.log("Error while verifying Otp", error);
+    res.status(500).json(error);
+  }
+
+
 });
 
 const loginHandler = asyncHandler(async (req, res) => {
@@ -166,10 +203,10 @@ const loginHandler = asyncHandler(async (req, res) => {
         console.log("Password is valid!");
         let token = null;
         if (rememberMe) {
-          token = generateToken(userId, "30d");
+          token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN, "30d");
         }
         else {
-          token = generateToken(userId);
+          token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
         }
         res.status(200).json({ message: "Valid user", token: token });
       }
@@ -233,7 +270,8 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
 });
 
 
+
 module.exports = {
   googleLoginHandler, isUserLoggedInHandler, signUpHandler,
-  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler
+  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler, otpVerificationHandler
 };
