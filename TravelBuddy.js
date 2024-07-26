@@ -26,7 +26,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// connectDB();
+connectDB();
 
 app.use("/login", loginRoute);
 app.use("/user", userProfileRoute);
