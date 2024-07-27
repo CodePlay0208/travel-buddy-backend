@@ -168,7 +168,9 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
     const { userOtp } = req.body;
     const originalOtp = TempUserOtpSchema.findOne({ userId: userId });
     if (originalOtp.otp == userOtp) {
-      res.status(200).json("Email verified");
+      const saveUserInPermanentDatabase = new UserProfile(req.user);
+      await saveUserInPermanentDatabase.save();
+      res.status(200).json("Email verified and Account Created");
     }
     else {
       res.status(400).json("Otp not valid");

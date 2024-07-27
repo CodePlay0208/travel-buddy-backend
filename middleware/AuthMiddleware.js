@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const UserProfile = require("../models/UserProfileModel");
+const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 
 const protect = asyncHandler(async (req, res, next) => {
@@ -12,9 +13,18 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
+      const { isSignUp } = req.body;
 
-      req.user = await UserProfile.findById(decoded.id).select("-password");
+      if (isSignUp) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_SIGNUP);
+        req.user = await TempUserSignUp.findById(decoded.id);
+      }
+
+      else {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
+
+        req.user = await UserProfile.findById(decoded.id).select("-password");
+      }
 
       next();
     } catch (error) {
