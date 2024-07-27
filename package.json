@@ -1,4 +1,11 @@
-{
+
+  {
+    "name": "your-app",
+    "version": "1.0.0",
+    "main": "TravelBuddy.js",
+    "scripts": {
+      "start": "node TravelBuddy.js"
+    },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
@@ -22,3 +29,4 @@
     "socket.io": "^4.7.5"
   }
 }
+
