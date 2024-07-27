@@ -22,7 +22,6 @@ const protect = asyncHandler(async (req, res, next) => {
 
       else {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
-
         req.user = await UserProfile.findById(decoded.id).select("-password");
       }
 

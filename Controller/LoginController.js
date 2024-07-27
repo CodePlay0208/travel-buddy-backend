@@ -162,11 +162,10 @@ const signUpHandler = asyncHandler(async (req, res) => {
 });
 
 const otpVerificationHandler = asyncHandler(async (req, res) => {
-
   try {
     const userId = req.user._id;
     const { userOtp } = req.body;
-    const originalOtp = TempUserOtpSchema.findOne({ userId: userId });
+    const originalOtp = TempUserOtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });
     if (originalOtp.otp == userOtp) {
       const saveUserInPermanentDatabase = new UserProfile(req.user);
       await saveUserInPermanentDatabase.save();
@@ -271,9 +270,26 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const resendOtpHandler = asyncHandler(async (req, res) => {
+
+  try {
+    const otp = generateOTP();
+    const userInTempDatabase = TempUserSignUp.findOne({ _id: req.user._id });
+    sendOTP(userInTempDatabase.emailId, otp);
+    const newOTP = new TempUserOtpSchema({
+      userId: req.user._id,
+      otp: otp,
+    });
+    await newOTP.save();
+    res.status(200).json("Otp Sent");
+  }
+  catch (error) {
+    res.status(500).json("Failed to send Otp");
+  }
+});
 
 
 module.exports = {
   googleLoginHandler, isUserLoggedInHandler, signUpHandler,
-  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler, otpVerificationHandler
+  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler, otpVerificationHandler, resendOtpHandler
 };
