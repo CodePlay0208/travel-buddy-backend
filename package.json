@@ -1,10 +1,10 @@
 
   {
-    "name": "your-app",
+    "name": "travmigoz",
     "version": "1.0.0",
-    "main": "TravelBuddy.js",
+    "main": "app.js",
     "scripts": {
-      "start": "node TravelBuddy.js"
+      "start": "node app.js"
     },
   "dependencies": {
     "bcrypt": "^5.1.1",

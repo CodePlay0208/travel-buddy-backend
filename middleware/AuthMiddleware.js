@@ -13,9 +13,9 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
-      const { isSignUp } = req.body;
+      const { isSignUpRequest } = req.body;
 
-      if (isSignUp) {
+      if (isSignUpRequest) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY_FOR_USER_SIGNUP);
         req.user = await TempUserSignUp.findById(decoded.id);
       }

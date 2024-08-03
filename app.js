@@ -13,10 +13,7 @@ const {notFound} = require("./middleware/ErrorMiddleware");
 const {errorHandler} = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const connectDB = require("./config/Database");
-const {generateSecretKeys} = require("./Utils");
 
-
-generateSecretKeys();
 
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
