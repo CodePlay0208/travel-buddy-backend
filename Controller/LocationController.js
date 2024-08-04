@@ -42,7 +42,8 @@ const getLocationByNameHandler = asyncHandler(async (req, res) => {
         const { inputLocation } = req.params;
         console.log(inputLocation);
         const prefixMatchingLocations = await getLocationsFromGooglePlaces(inputLocation);
-        const transformedLocations = getLocationsAsCityAndState(prefixMatchingLocations.predictions);
+        const limitedNumberOfLocations = prefixMatchingLocations.slice(0 , process.env.LIMIT_FOR_LOCATIONS_BY_GOOGLE_PLACES_API)
+        const transformedLocations = getLocationsAsCityAndState(limitedNumberOfLocations.predictions);
         res.status(200).json(transformedLocations);
     }
     catch (error) {
