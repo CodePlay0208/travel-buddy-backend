@@ -72,9 +72,9 @@ async function sendOTP(useremail, otp) {
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
   try {
-    const { token } = req.body;
+    const { accessToken } = req.body;
     // Fetch user data from Google
-    const userData = await getUserDataFromGoogle(token);
+    const userData = await getUserDataFromGoogle(accessToken);
     // Extract user information
     const { emailAddresses, names } = userData;
     const userEmail = emailAddresses[0].value;
@@ -93,15 +93,13 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     res
       .status(200)
       .json({
-        success: true, message: "Google login successful.",
+        success: true,
         token: generateToken(currentUserId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
       });
   } catch (error) {
     console.error("Google login failed:", error.message);
     res.status(401).json({
       success: false,
-      message: "Failed to verify Google token or fetch user data.",
-      user: null
     });
   }
 });
