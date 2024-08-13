@@ -4,7 +4,7 @@ const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
-const TempUserOtpSchema = require("../models/TempUserSignUpOtpModel");
+const nodemailer = require('nodemailer');
 
 
 async function getUserDataFromGoogle(accessToken) {
@@ -17,6 +17,7 @@ async function getUserDataFromGoogle(accessToken) {
         "Content-Type": "application/json",
       },
     });
+
     const data = await response.json();
 
     if (data.error) {
@@ -25,7 +26,6 @@ async function getUserDataFromGoogle(accessToken) {
     return data;
   } catch (error) {
     console.error("Failed to fetch user data:", error.message);
-    throw error;
   }
 }
 
@@ -34,59 +34,62 @@ function generateOTP() {
 }
 
 async function sendOTP(useremail, otp) {
+
   try {
-    const url = process.env.URL_FOR_SENDING_MAILS;
-    const data = {
-      from: {
-        email: process.env.EMAILID_FOR_SENDING_MAILS
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST_FOR_SENDING_MAILS,
+      port: process.env.SMTP_PORT_FOR_SENDING_MAILS,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER_FOR_SENDING_MAILS,
+        pass: process.env.SMTP_PASSWORD_FOR_SENDING_MAILS,
       },
-      to: [
-        {
-          email: useremail
-        }
-      ],
-      subject: 'Password Reset OTP',
-      text: `Your OTP is ${otp}`,
-    };
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      'Authorization': 'Bearer ' + process.env.TOKEN_FOR_SENDING_MAILS
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(data)
     });
 
-    if (!response.ok) {
-      throw new Error(`Error: ${response.statusText}`);
-    }
+    const to = "tusharmoudgil22@gmail.com", subject = "Hello world";
+    const htmlContent =
+      "<html><head></head><body><p>Hello,</p>This is my first transactional email sent from Brevo.</p></body></html>"
 
-  } catch (error) {
-    console.error('Error sending email:', error);
+    const mailOptions = {
+      from: process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS,
+      to,
+      subject,
+      htmlContent,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      }
+      else{
+        console.log('Email sent:', info);
+      }
+    });
   }
+  catch (error) {
+    console.log("error while sending otp", error);
+    throw new Error(error);
+  }
+
+
 }
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
   try {
-    const { accessToken } = req.body;
-    // Fetch user data from Google
-    const userData = await getUserDataFromGoogle(accessToken);
-    // Extract user information
-    const { emailAddresses, names } = userData;
+
+    const { googleToken } = req.body;
+    const userData = await getUserDataFromGoogle(googleToken);
+    const { emailAddresses, names, photos, birthdays } = userData;
+
     const userEmail = emailAddresses[0].value;
     const userName = names[0].displayName;
     var userInDatabase = await UserProfile.findOne({ emailId: userEmail });
+
     if (!userInDatabase) {
       const newUserProfile = new UserProfile({
         username: userName,
-        password: "",
         emailId: userEmail
       });
-
       userInDatabase = await newUserProfile.save();
     }
     const currentUserId = userInDatabase._id;
@@ -100,6 +103,7 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     console.error("Google login failed:", error.message);
     res.status(401).json({
       success: false,
+      token: null
     });
   }
 });
@@ -107,16 +111,20 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
 const isUserLoggedInHandler = asyncHandler(async (req, res) => {
   try {
     res.status(200).json({
-      loggedIn: true, userDetails: {
+      loggedIn: true,
+      userDetails: {
         _id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
+        name: req.user.username,
+        email: req.user.emailId,
       }
     });
   }
   catch (error) {
     console.log(error);
-    res.status(500).json("Internal Server Error");
+    res.status(500).json({
+      loggedIn: false,
+      userDetails: null
+    });
   }
 });
 
@@ -126,12 +134,12 @@ const signUpHandler = asyncHandler(async (req, res) => {
     const userInDatabase = await UserProfile.findOne({
       emailId: userEmail
     });
-    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("the user in database is", userInDatabase, userEmail, password, userName);
     if (userInDatabase) {
       res.status(400).json({ success: false, message: "email aready exist" });
       return;
     }
-
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newTempSignedUser = new TempUserSignUp({
       username: userName,
       password: hashedPassword,
@@ -139,33 +147,46 @@ const signUpHandler = asyncHandler(async (req, res) => {
       emailId: userEmail
     });
 
+    await TempUserSignUp.findOneAndDelete({ emailId: userEmail });
+
+    console.log(newTempSignedUser);
+
     const createdUser = await newTempSignedUser.save();
+
+    console.log("the created user is", createdUser);
 
     const otp = generateOTP();
     sendOTP(userEmail, otp);
-    const newOTP = new TempUserOtpSchema({
+    const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
     });
+
+    console.log("the otp is", otp);
     await newOTP.save();
 
     res.status(201).json({
-      success: true, message: "Account Created",
+      success: true,
       token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_SIGNUP)
     });
   }
   catch (error) {
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    res.status(500).json({ success: false });
   }
 });
 
 const otpVerificationHandler = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
+    console.log(userId);
     const { userOtp } = req.body;
-    const originalOtp = TempUserOtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });
-    if (originalOtp.otp == userOtp) {
-      const saveUserInPermanentDatabase = new UserProfile(req.user);
+    const originalOtp = await OtpSchema.findOne({ userId: userId });
+    console.log(originalOtp);
+    if (originalOtp && originalOtp.otp == userOtp) {
+      const newUser = { ...req.user._doc }
+      delete newUser._id;
+      console.log("the new user is", newUser);
+      const saveUserInPermanentDatabase = new UserProfile(newUser);
       await saveUserInPermanentDatabase.save();
       res.status(200).json("Email verified and Account Created");
     }
@@ -177,8 +198,6 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
     console.log("Error while verifying Otp", error);
     res.status(500).json(error);
   }
-
-
 });
 
 const loginHandler = asyncHandler(async (req, res) => {
@@ -187,35 +206,34 @@ const loginHandler = asyncHandler(async (req, res) => {
     const userInDatabase = await UserProfile.findOne({
       emailId: userEmail,
     });
+
     if (!userInDatabase) {
       res.status(400).json("user doesn't exist");
       return;
     }
     const storedHashPassword = userInDatabase.password;
     const userId = userInDatabase._id;
-    bcrypt.compare(password, storedHashPassword, (err, result) => {
-      if (err) {
-        console.error("Error comparing password:", err);
-        throw new Error("Internal Server Error");
-      }
-      else if (result) {
-        console.log("Password is valid!");
-        let token = null;
-        if (rememberMe) {
-          token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN, "30d");
-        }
-        else {
-          token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
-        }
-        res.status(200).json({ message: "Valid user", token: token });
+    const resultOfComparison = await bcrypt.compare(password, storedHashPassword);
+
+    if (resultOfComparison) {
+      console.log("Password is valid!");
+      let token = null;
+      if (rememberMe) {
+        token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN, "30d");
       }
       else {
-        throw new Error("Internal Server Error");
+        token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
       }
-    });
+      res.status(200).json({ message: "Valid user", token: token });
+    }
+    else {
+      throw new Error("Password Not valid");
+    }
   }
+
   catch (error) {
-    res.status(500).json("Internal Server Error")
+    console.log("the error is", error);
+    res.status(500).json("Password not valid")
   }
 });
 
@@ -229,11 +247,16 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
     }
     const otp = generateOTP();
     sendOTP(userEmail, otp);
+    console.log("the otp is", otp);
     const newOTP = new OtpSchema({
       userId: userInDatabase._id,
       otp: otp,
     })
     await newOTP.save();
+    res.status(200).json({
+      success: true,
+      token: generateToken(userInDatabase._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+    });
   }
   catch (error) {
     res.status(500).json("Internal Server Error");
@@ -243,10 +266,15 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
 const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
   try {
     const { otp, newPassword } = req.body;
-    const latestOtpInDatabase = OtpModel.findOne({ _id: req.user._id }).sort({ createdAt: -1 });;
+    const userId = req.user._id;
+    const latestOtpInDatabase = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });;
+
+
+    console.log(userId);
+    console.log(latestOtpInDatabase);
 
     if (!latestOtpInDatabase) {
-      throw new Error("OTP not valid");
+      throw new Error("OTP doesn't exist for this userId");
     }
     if (latestOtpInDatabase.otp != otp) {
       throw new Error("OTP not valid");
@@ -255,7 +283,7 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
 
     await UserProfile.findOneAndUpdate(
       { _id: latestOtpInDatabase._id },
-      { $set: { password: newPassword } },
+      { $set: { password: hashedPassword } },
       { new: true }
     );
 
@@ -272,9 +300,8 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
 
   try {
     const otp = generateOTP();
-    const userInTempDatabase = TempUserSignUp.findOne({ _id: req.user._id });
-    sendOTP(userInTempDatabase.emailId, otp);
-    const newOTP = new TempUserOtpSchema({
+    sendOTP(req.user.emailId, otp);
+    const newOTP = new OtpSchema({
       userId: req.user._id,
       otp: otp,
     });

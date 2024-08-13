@@ -15,30 +15,37 @@ const {errorHandler} = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const connectDB = require("./config/Database");
 
-
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
   credentials: true,
 };
 
-app.use(cors(corsOptions));
-app.use(express.json());
+try{
+ 
+  app.use(cors(corsOptions));
+  app.use(express.json());
+  
+  connectDB();
+  
+  app.use("/login", loginRoute);
+  app.use("/user", userProfileRoute);
+  app.use("/trips", tripsDataRoute);
+  app.use("/chat", chatRoute);
+  app.use("/message", messageRoute);
+  app.use("/location", locationRoute);
+  app.use("/misc", miscRoute);
+  app.use(notFound);
+  app.use(errorHandler);
+  
+  
+  const server = app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+  
+  handleSocketIO(server);
+}
 
-connectDB();
-
-app.use("/login", loginRoute);
-app.use("/user", userProfileRoute);
-app.use("/trips", tripsDataRoute);
-app.use("/chat", chatRoute);
-app.use("/message", messageRoute);
-app.use("/location", locationRoute);
-app.use("/misc", miscRoute);
-app.use(notFound);
-app.use(errorHandler);
-
-
-const server = app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-
-handleSocketIO(server);
+catch(error){
+  console.log(error);
+  console.log("error while running app");
+}

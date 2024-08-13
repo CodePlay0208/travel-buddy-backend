@@ -14,7 +14,7 @@ router.route("/forgotPassword").post(forgotPasswordHandler);
 router.route("/verifyResetPassword").post(protect, verifyResetPasswordHandler);
 router.route("/resendOtp").post(protect, resendOtpHandler);
 
-
+ 
 // logout -> just remove the token from local storage
 
 module.exports = router;
