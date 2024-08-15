@@ -3,19 +3,23 @@ const NewsletterSubscriptionUser = require("../models/NewsletterSubscriptionUser
 
 const NewsletterSubscriptionHandler = asyncHandler(async (req, res) => {
     try {
-        console.log("hey");
         const { emailId } = req.body;
+        console.log(`Request received for subscribing user with emailId: ${emailId} to newsletter`);
         if (!emailId) {
-            return res.status(400).json({ error: "Email ID is required" });
+            console.log("Error while subscribing user to newsletter: ", "emailId can't be empty or null");
+            return res.status(400).json();
         }
+
+        await NewsletterSubscriptionUser.findOneAndDelete({emailId: emailId});
         const newsletterSubscriptionUser = new NewsletterSubscriptionUser({
             emailId: emailId
         });
         await newsletterSubscriptionUser.save();
-        res.status(200).json("User Subscribed");
+        res.status(200).json();
     }
     catch (error) {
-        res.status(500).json(error);
+        console.log("Error while subscribing user to newsletter: ", error);
+        res.status(500).json();
     }
 });
 

@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 
 async function getLocationsFromGooglePlaces(inputLocation) {
     try {
+        console.log("request came");
         const params = {
             input: inputLocation,
             key: process.env.API_KEY_FOR_GOOGLE_PLACES_API,
@@ -42,12 +43,13 @@ const getLocationByNameHandler = asyncHandler(async (req, res) => {
         const { inputLocation } = req.params;
         console.log(inputLocation);
         const prefixMatchingLocations = await getLocationsFromGooglePlaces(inputLocation);
-        const limitedNumberOfLocations = prefixMatchingLocations.slice(0 , process.env.LIMIT_FOR_LOCATIONS_BY_GOOGLE_PLACES_API)
-        const transformedLocations = getLocationsAsCityAndState(limitedNumberOfLocations.predictions);
+        const limitedNumberOfLocations = prefixMatchingLocations.predictions.slice(0 , process.env.LIMIT_FOR_LOCATIONS_BY_GOOGLE_PLACES_API);
+        console.log(limitedNumberOfLocations);
+        const transformedLocations = getLocationsAsCityAndState(limitedNumberOfLocations);
         res.status(200).json(transformedLocations);
     }
     catch (error) {
-        res.status(500).json(error);
+        res.status(500).json();
     }
 });
 
