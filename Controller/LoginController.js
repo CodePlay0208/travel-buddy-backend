@@ -46,7 +46,7 @@ async function sendOTP(useremail, otp) {
       },
     });
 
-    const to = "tusharmoudgil22@gmail.com", subject = "Hello world";
+    const to = useremail, subject = "Hello world";
     const htmlContent =
       `<html><head></head><body><p>Hello,</p>This is my first transactional email sent from Brevo ${otp}.</p></body></html>`;
       const text =  `Your OTP is ${otp}`;
