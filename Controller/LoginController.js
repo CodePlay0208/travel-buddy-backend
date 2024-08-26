@@ -46,7 +46,7 @@ async function sendOTP(useremail, otp) {
       },
     });
 
-    const to = useremail, subject = "Hello world";
+    const to = "tusharmoudgil22@gmail.com", subject = "Hello world";
     const htmlContent =
       `<html><head></head><body><p>Hello,</p>This is my first transactional email sent from Brevo ${otp}.</p></body></html>`;
       const text =  `Your OTP is ${otp}`;
@@ -240,12 +240,12 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await UserProfile.findOneAndUpdate(
+    const newUser = await UserProfile.findOneAndUpdate(
       { _id: userId },
       { $set: { password: hashedPassword } },
       { new: true }
     );
-
+    console.log(newUser);
     res
       .status(200)
       .json();
