@@ -152,13 +152,16 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     console.log(userId);
     const { userOtp } = req.body;
-    const originalOtp = await OtpSchema.findOne({ userId: userId });
+    const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });
     console.log(originalOtp);
+    const { isSignUpRequest } = req.body; 
     if (originalOtp && originalOtp.otp == userOtp) {
-      const newUser = { ...req.user._doc }
-      delete newUser._id;
-      const saveUserInPermanentDatabase = new UserProfile(newUser);
-      await saveUserInPermanentDatabase.save();
+      if(isSignUpRequest){
+        const newUser = { ...req.user._doc }
+        delete newUser._id;
+        const saveUserInPermanentDatabase = new UserProfile(newUser);
+        await saveUserInPermanentDatabase.save();
+      }
       res.status(200).json();
     }
     else {
@@ -233,20 +236,12 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
 
 const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
   try {
-    const { otp, newPassword } = req.body;
+    const {newPassword } = req.body;
     const userId = req.user._id;
-    const latestOtpInDatabase = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });;
-
-    if (!latestOtpInDatabase) {
-      res.status(400).json();
-    }
-    if (latestOtpInDatabase.otp != otp) {
-      res.status(400).json();
-    }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await UserProfile.findOneAndUpdate(
-      { _id: latestOtpInDatabase._id },
+      { _id: userId },
       { $set: { password: hashedPassword } },
       { new: true }
     );
