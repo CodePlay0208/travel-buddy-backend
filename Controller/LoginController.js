@@ -4,7 +4,7 @@ const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
-const nodemailer = require('nodemailer');
+
 
 
 async function getUserDataFromGoogle(accessToken) {
@@ -30,50 +30,47 @@ async function getUserDataFromGoogle(accessToken) {
 }
 
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000);
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 async function sendOTP(useremail, otp) {
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST_FOR_SENDING_MAILS,
-      port: process.env.SMTP_PORT_FOR_SENDING_MAILS,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER_FOR_SENDING_MAILS,
-        pass: process.env.SMTP_PASSWORD_FOR_SENDING_MAILS,
+   
+    const htmlContent = `The otp is ${otp}`;
+    const to = "tusharmoudgil22@gmail.com", 
+    subject = "Otp Verification";
+    
+
+    const mailingData = {  
+      "sender":{  
+         "name" : "travmigoz",
+         "email":process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS
       },
-    });
+      "to":[  
+         {  
+            "email":"tusharmoudgil22@gmail.com",
+            "name":"Tushar Moudgil"
+         }
+      ],
+      "subject":"Hello world",
+      "htmlContent": htmlContent
+   }
 
-    const to = "tusharmoudgil22@gmail.com", subject = "Hello world";
-    const htmlContent =
-      `<html><head></head><body><p>Hello,</p>This is my first transactional email sent from Brevo ${otp}.</p></body></html>`;
-      const text =  `Your OTP is ${otp}`;
-
-    const mailOptions = {
-      from: process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS,
-      to,
-      subject,
-      text,
-      htmlContent,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Error sending email:', error);
-      }
-      else{
-        console.log('Email sent:', info);
-      }
+    const url = process.env.API_FOR_SENDING_MAILS;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "api-key": process.env.API_KEY_FOR_SENDING_MAILS,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(mailingData)
     });
   }
   catch (error) {
     console.log("error while sending otp", error);
     throw new Error(error);
   }
-
-
 }
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
@@ -109,9 +106,9 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
 
 const signUpHandler = asyncHandler(async (req, res) => {
   try {
-    const { userEmail, password, username, phoneNumber } = req.body;
+    const { useremail, password, username, phoneNumber } = req.body;
     const userInDatabase = await UserProfile.findOne({
-      emailId: userEmail
+      emailId: useremail
     });
 
     if (userInDatabase) {
@@ -123,15 +120,15 @@ const signUpHandler = asyncHandler(async (req, res) => {
       username: username,
       password: hashedPassword,
       phoneNumber: phoneNumber,
-      emailId: userEmail
+      emailId: useremail
     });
 
-    await TempUserSignUp.findOneAndDelete({ emailId: userEmail });
+    await TempUserSignUp.findOneAndDelete({ emailId: useremail });
 
     const createdUser = await newTempSignedUser.save();
 
     const otp = generateOTP();
-    sendOTP(userEmail, otp);
+    sendOTP(useremail, otp);
     const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
@@ -200,7 +197,7 @@ const loginHandler = asyncHandler(async (req, res) => {
       res.status(200).json({token: token });
     }
     else {
-      res.status(200).json();
+      res.status(400).json();
     }
   }
 
