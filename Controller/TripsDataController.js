@@ -44,8 +44,8 @@ const createTripHandler = asyncHandler(async (req, res) => {
     });
 
     const { files } = req;
-    await newTrip.save();
-    res.status(201).json({ allFilesUploaded: allObjectsUploaded });
+    const newtripInDatabase = await newTrip.save();
+    res.status(201).json({ trip: newtripInDatabase, allFilesUploaded: allObjectsUploaded });
   } catch (error) {
     console.error("Error while creating trip", error);
     res.status(500).json();
@@ -172,7 +172,7 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
 
     await deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
     await tripInDatabase.deleteOne();
-    res.status(200).json();
+    res.status(200).json({tripId});
   } catch (error) {
     console.log(error);
     res.status(500).json();
