@@ -35,11 +35,10 @@ const uploadObjectToS3Bucket = asyncHandler(async (object) => {
 const uploadObjectsToS3Bucket = asyncHandler(async (objects) => {
   var uploadedObjectNames = [];
   var allObjectsUploaded = true;
-
   try {
     await Promise.all(
       objects.map(async (object) => {
-        const uploadedObjectName = uploadObjectToS3Bucket(object);
+        const uploadedObjectName = await uploadObjectToS3Bucket(object);
         if (uploadedObjectName == null) {
           allObjectsUploaded = false;
         }
@@ -55,6 +54,10 @@ const uploadObjectsToS3Bucket = asyncHandler(async (objects) => {
 
 const getObjectFromS3Bucket = asyncHandler(async (uploadedObjectName) => {
   try {
+    const s3 = new S3Client({
+      region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
+    });
+
     const getObjectParams = {
       Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
       Key: uploadedObjectName,
@@ -74,7 +77,7 @@ const getObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames) => {
   try {
     await Promise.all(
       uploadedObjectNames.map(async (object) => {
-        const uploadedFile = getObjectFromS3Bucket(object);
+        const uploadedFile = await getObjectFromS3Bucket(object);
         if (uploadedFile != null) {
           uploadedObjectUrls.push(uploadedFile);
         }
@@ -113,7 +116,7 @@ const deleteObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames) => {
   try {
     await Promise.all(
       uploadedObjectNames.map(async (object) => {
-        const isObjectDeleted = deleteObjectFromS3Bucket(object);
+        const isObjectDeleted = await deleteObjectFromS3Bucket(object);
         if (!isObjectDeleted) {
           allObjectsDeleted = false;
         }

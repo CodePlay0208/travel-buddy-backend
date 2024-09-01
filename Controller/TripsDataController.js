@@ -5,6 +5,7 @@ const {
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
 } = require("../config/awsConfigs/S3");
+const {dateFromDateString} = require("../Utils");
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -22,16 +23,19 @@ const createTripHandler = asyncHandler(async (req, res) => {
     } = req.body;
 
     const userId = req.user._id;
-
+    const { files } = req;
+    console.log("The files are", files);
     const { uploadedObjectNames, allObjectsUploaded } =
       await uploadObjectsToS3Bucket(files);
 
     const destinationImages = uploadedObjectNames;
-
+    const queryStartDate = dateFromDateString(startDate);
+    const queryEndDate = dateFromDateString(endDate);
+    
     const newTrip = new TripData({
       destination,
-      startDate,
-      endDate,
+      startDate: queryStartDate,
+      endDate: queryEndDate,
       startLocation,
       endLocation,
       totalMembers,
@@ -43,7 +47,6 @@ const createTripHandler = asyncHandler(async (req, res) => {
       userId,
     });
 
-    const { files } = req;
     const newtripInDatabase = await newTrip.save();
     res
       .status(201)
@@ -61,8 +64,7 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     if (!trip) {
       return res.status(404).json();
     }
-
-    trip.destinationImages = getObjectsFromS3Bucket(trip.destinationImages);
+    trip.destinationImages = await getObjectsFromS3Bucket(trip.destinationImages);
     res.status(200).json(trip);
   } catch (error) {
     console.error(error);
@@ -91,15 +93,30 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
 
 const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
   try {
+    console.log("The request came here");
     const { destination, date } = req.query;
-    const userId = req.user._id;
-    const queryDate = new Date(date);
-    let query = {
-      destination: destination,
-      startDate: { $lte: queryDate },
-      endDate: { $gte: queryDate },
-      ...(userId && { userId: { $ne: new ObjectId(userId) } }),
-    };
+    const userId = req?.user?._id;
+
+    let query = {};
+
+    if (destination) {
+      query.destination = destination;
+    }
+
+    if (date) {
+      const queryDate = new Date(date);
+      if (!isNaN(queryDate)) { 
+        query.startDate = { $lte: queryDate };
+        query.endDate = { $gte: queryDate };
+      } else {
+          res.status(400).json({ message: "Invalid date format" });
+      }
+    }
+    console.log("hery");
+    if (userId) {
+      query.userId = { $ne: userId};
+    }
+
     var trips = await TripData.find(query);
 
     trips = await Promise.all(
@@ -110,16 +127,19 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
         return trip;
       })
     );
+
     res.status(200).json(trips);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal Server Error", error });
+    res.status(500).json();
   }
 });
+
 
 const editTripHandler = asyncHandler(async (req, res) => {
   try {
     const { tripId } = req.params;
+    console.log(tripId);
     const {
       destination,
       startDate,
@@ -131,26 +151,25 @@ const editTripHandler = asyncHandler(async (req, res) => {
       age,
       gender,
       description,
-      destinationImages,
     } = req.body;
+
+
 
     const userId = req.user._id;
     const tripInDatabase = await TripData.findById(tripId);
 
-    console.log(tripInDatabase.userId);
     if (!tripInDatabase) {
       return res.status(404).json();
     }
-
-    console.log(userId);
     if (!tripInDatabase.userId.equals(userId)) {
       return res.status(403).json();
     }
-
+    const queryStartDate = dateFromDateString(startDate);
+    const queryEndDate = dateFromDateString(endDate);
     const fieldsToUpdate = {
       destination,
-      startDate,
-      endDate,
+      startDate: queryStartDate ,
+      endDate: queryEndDate,
       startLocation,
       endLocation,
       totalMembers,
@@ -166,20 +185,20 @@ const editTripHandler = asyncHandler(async (req, res) => {
       }
     });
     var allFilesUploaded = true;
+    const newDestinationImages = req.files;
     if (
-      destinationImages !== null &&
-      destinationImages !== undefined &&
-      destinationImages.length > 0
+      newDestinationImages !== null &&
+      newDestinationImages !== undefined &&
+      newDestinationImages.length > 0
     ) {
       await deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(destinationImages);
+      const { uploadedObjectNames, allObjectsUploaded } = await uploadObjectsToS3Bucket(newDestinationImages);
       tripInDatabase.destinationImages = uploadedObjectNames;
       allFilesUploaded = allObjectsUploaded;
     }
 
     const updatedTrip = await tripInDatabase.save();
-    res.status(200).json({ updatedTrip, allFilesUploaded });
+    res.status(200).json({ trip: updatedTrip, allFilesUploaded });
   } catch (err) {
     console.error(err);
     res.status(500).json();

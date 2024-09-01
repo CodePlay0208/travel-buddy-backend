@@ -69,12 +69,12 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
       );
 
       req.user = await UserProfile.findById(decoded.id);
-
-      next();
     } catch (error) {
       console.log("error while decoding token", error);
     }
   }
+
+   next();
 });
 
 module.exports = { protect, googleTokenProtect, jwtTokenDecoder };
