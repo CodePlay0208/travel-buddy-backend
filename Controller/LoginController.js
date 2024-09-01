@@ -106,9 +106,9 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
 
 const signUpHandler = asyncHandler(async (req, res) => {
   try {
-    const { useremail, password, username, phoneNumber } = req.body;
+    const { userEmail, password, userName, phoneNumber } = req.body;
     const userInDatabase = await UserProfile.findOne({
-      emailId: useremail
+      emailId: userEmail
     });
 
     if (userInDatabase) {
@@ -117,18 +117,18 @@ const signUpHandler = asyncHandler(async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newTempSignedUser = new TempUserSignUp({
-      username: username,
+      username: userName,
       password: hashedPassword,
       phoneNumber: phoneNumber,
-      emailId: useremail
+      emailId: userEmail
     });
 
-    await TempUserSignUp.findOneAndDelete({ emailId: useremail });
+    await TempUserSignUp.findOneAndDelete({ emailId: userEmail });
 
     const createdUser = await newTempSignedUser.save();
 
     const otp = generateOTP();
-    sendOTP(useremail, otp);
+    sendOTP(userEmail, otp);
     const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
