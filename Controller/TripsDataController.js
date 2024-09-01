@@ -45,7 +45,9 @@ const createTripHandler = asyncHandler(async (req, res) => {
 
     const { files } = req;
     const newtripInDatabase = await newTrip.save();
-    res.status(201).json({ trip: newtripInDatabase, allFilesUploaded: allObjectsUploaded });
+    res
+      .status(201)
+      .json({ trip: newtripInDatabase, allFilesUploaded: allObjectsUploaded });
   } catch (error) {
     console.error("Error while creating trip", error);
     res.status(500).json();
@@ -84,6 +86,34 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json();
+  }
+});
+
+const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
+  try {
+    const { destination, date } = req.query;
+    const userId = req.user._id;
+    const queryDate = new Date(date);
+    let query = {
+      destination: destination,
+      startDate: { $lte: queryDate },
+      endDate: { $gte: queryDate },
+      ...(userId && { userId: { $ne: new ObjectId(userId) } }),
+    };
+    var trips = await TripData.find(query);
+
+    trips = await Promise.all(
+      trips.map(async (trip) => {
+        trip.destinationImages = await getObjectsFromS3Bucket(
+          trip.destinationImages
+        );
+        return trip;
+      })
+    );
+    res.status(200).json(trips);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", error });
   }
 });
 
@@ -172,7 +202,7 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
 
     await deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
     await tripInDatabase.deleteOne();
-    res.status(200).json({tripId});
+    res.status(200).json({ tripId });
   } catch (error) {
     console.log(error);
     res.status(500).json();
@@ -185,4 +215,5 @@ module.exports = {
   getTripsByUserHandler,
   editTripHandler,
   deleteTripHandler,
+  getTripsWithFilterHandler
 };
