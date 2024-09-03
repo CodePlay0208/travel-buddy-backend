@@ -4,8 +4,13 @@ const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
+<<<<<<< Updated upstream
 const nodemailer = require('nodemailer');
 
+=======
+// Your main file, e.g., sendEmail.js
+const generateOtpEmail = require('../mailTemplates/otpMail/generateOtpEmail');
+>>>>>>> Stashed changes
 
 async function getUserDataFromGoogle(accessToken) {
   try {
@@ -33,9 +38,10 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-async function sendOTP(useremail, otp) {
 
+async function sendOTP(name, useremail, otp) {
   try {
+<<<<<<< Updated upstream
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST_FOR_SENDING_MAILS,
       port: process.env.SMTP_PORT_FOR_SENDING_MAILS,
@@ -43,6 +49,35 @@ async function sendOTP(useremail, otp) {
       auth: {
         user: process.env.SMTP_USER_FOR_SENDING_MAILS,
         pass: process.env.SMTP_PASSWORD_FOR_SENDING_MAILS,
+=======
+    console.log(otp);
+    console.log(`${otp}`);
+
+    const otpString=`${otp}`;
+    const htmlContent = generateOtpEmail(name, useremail,otpString );
+
+    const mailingData = {
+      "sender":{  
+         "name" : "travmigoz",
+         "email":process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS
+      },
+      "to":[  
+        {
+            "email":"akshat170902@gmail.com",
+            "name":"akshat"
+         }
+      ],
+      "subject":"Hello world",
+      "htmlContent": htmlContent
+   }
+
+    const url = process.env.API_FOR_SENDING_MAILS;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "api-key": process.env.API_KEY_FOR_SENDING_MAILS,
+        "Content-Type": "application/json",
+>>>>>>> Stashed changes
       },
     });
 
@@ -67,8 +102,9 @@ async function sendOTP(useremail, otp) {
         console.log('Email sent:', info);
       }
     });
-  }
-  catch (error) {
+
+    console.log(response);
+  } catch (error) {
     console.log("error while sending otp", error);
     throw new Error(error);
   }
@@ -78,10 +114,9 @@ async function sendOTP(useremail, otp) {
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
   try {
-
     const { googleToken } = req.googleToken;
     const userData = await getUserDataFromGoogle(googleToken);
-    const { emailAddresses, names} = userData;
+    const { emailAddresses, names } = userData;
 
     const userEmail = emailAddresses[0].value;
     const username = names[0].displayName;
@@ -90,20 +125,20 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     if (!userInDatabase) {
       const newUserProfile = new UserProfile({
         username: username,
-        emailId: userEmail
+        emailId: userEmail,
       });
       userInDatabase = await newUserProfile.save();
     }
     const currentUserId = userInDatabase._id;
-    res
-      .status(200)
-      .json({
-        token: generateToken(currentUserId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
-      });
+    res.status(200).json({
+      token: generateToken(
+        currentUserId,
+        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+      ),
+    });
   } catch (error) {
     console.error("Google login failed:", error.message);
-    res.status(500).json({
-    });
+    res.status(500).json({});
   }
 });
 
@@ -111,7 +146,11 @@ const signUpHandler = asyncHandler(async (req, res) => {
   try {
     const { userEmail, password, username, phoneNumber } = req.body;
     const userInDatabase = await UserProfile.findOne({
+<<<<<<< Updated upstream
       emailId: userEmail
+=======
+      emailId: useremail,
+>>>>>>> Stashed changes
     });
 
     if (userInDatabase) {
@@ -123,15 +162,25 @@ const signUpHandler = asyncHandler(async (req, res) => {
       username: username,
       password: hashedPassword,
       phoneNumber: phoneNumber,
+<<<<<<< Updated upstream
       emailId: userEmail
+=======
+      emailId: useremail,
+>>>>>>> Stashed changes
     });
 
     await TempUserSignUp.findOneAndDelete({ emailId: userEmail });
 
     const createdUser = await newTempSignedUser.save();
 
+<<<<<<< Updated upstream
     const otp = generateOTP();
     sendOTP(userEmail, otp);
+=======
+    const otp =await generateOTP();
+    console.log(otp);
+    await sendOTP("akshat",useremail, otp);
+>>>>>>> Stashed changes
     const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
@@ -139,10 +188,13 @@ const signUpHandler = asyncHandler(async (req, res) => {
     await newOTP.save();
 
     res.status(201).json({
-      token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+      token: generateToken(
+        createdUser._id,
+        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+      ),
     });
-  }
-  catch (error) {
+  } catch (error) {
+    console.log(error);
     res.status(500).json();
   }
 });
@@ -152,6 +204,7 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     console.log(userId);
     const { userOtp } = req.body;
+<<<<<<< Updated upstream
     const originalOtp = await OtpSchema.findOne({ userId: userId });
     console.log(originalOtp);
     if (originalOtp && originalOtp.otp == userOtp) {
@@ -159,13 +212,25 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
       delete newUser._id;
       const saveUserInPermanentDatabase = new UserProfile(newUser);
       await saveUserInPermanentDatabase.save();
+=======
+    const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({
+      createdAt: -1,
+    });
+    console.log(originalOtp);
+    const { isSignUpRequest } = req.body;
+    if (originalOtp && originalOtp.otp == userOtp) {
+      if (isSignUpRequest) {
+        const newUser = { ...req.user._doc };
+        delete newUser._id;
+        const saveUserInPermanentDatabase = new UserProfile(newUser);
+        await saveUserInPermanentDatabase.save();
+      }
+>>>>>>> Stashed changes
       res.status(200).json();
-    }
-    else {
+    } else {
       res.status(400).json();
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.log("Error while verifying Otp", error);
     res.status(500).json();
   }
@@ -184,13 +249,26 @@ const loginHandler = asyncHandler(async (req, res) => {
     }
     const storedHashPassword = userInDatabase.password;
     const userId = userInDatabase._id;
-    const resultOfComparison = await bcrypt.compare(password, storedHashPassword);
+    const resultOfComparison = await bcrypt.compare(
+      password,
+      storedHashPassword
+    );
 
     if (resultOfComparison) {
       let token = null;
       if (rememberMe) {
-        token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN, "30d");
+        token = generateToken(
+          userId,
+          process.env.JWT_SECRET_KEY_FOR_USER_LOGIN,
+          "30d"
+        );
+      } else {
+        token = generateToken(
+          userId,
+          process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+        );
       }
+<<<<<<< Updated upstream
       else {
         token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
       }
@@ -198,12 +276,15 @@ const loginHandler = asyncHandler(async (req, res) => {
     }
     else {
       res.status(200).json();
+=======
+      res.status(200).json({ token: token });
+    } else {
+      res.status(400).json();
+>>>>>>> Stashed changes
     }
-  }
-
-  catch (error) {
+  } catch (error) {
     console.log("the error is", error);
-    res.status(500).json()
+    res.status(500).json();
   }
 });
 
@@ -216,24 +297,30 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
       return;
     }
     const otp = generateOTP();
-    sendOTP(userEmail, otp);
+    await sendOTP(userEmail, otp);
     const newOTP = new OtpSchema({
       userId: userInDatabase._id,
       otp: otp,
-    })
+    });
     await newOTP.save();
     res.status(200).json({
-      token: generateToken(userInDatabase._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+      token: generateToken(
+        userInDatabase._id,
+        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+      ),
     });
-  }
-  catch (error) {
+  } catch (error) {
     res.status(500).json();
   }
 });
 
 const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
   try {
+<<<<<<< Updated upstream
     const { otp, newPassword } = req.body;
+=======
+    const { newPassword } = req.body;
+>>>>>>> Stashed changes
     const userId = req.user._id;
     const latestOtpInDatabase = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });;
 
@@ -250,10 +337,15 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
       { $set: { password: hashedPassword } },
       { new: true }
     );
+<<<<<<< Updated upstream
 
     res
       .status(200)
       .json();
+=======
+    console.log(newUser);
+    res.status(200).json();
+>>>>>>> Stashed changes
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json();
@@ -261,7 +353,6 @@ const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
 });
 
 const resendOtpHandler = asyncHandler(async (req, res) => {
-
   try {
     const otp = generateOTP();
     sendOTP(req.user.emailId, otp);
@@ -271,14 +362,17 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
     });
     await newOTP.save();
     res.status(200).json();
-  }
-  catch (error) {
+  } catch (error) {
     res.status(500).json();
   }
 });
 
-
 module.exports = {
-  googleLoginHandler, signUpHandler,
-  loginHandler, forgotPasswordHandler, verifyResetPasswordHandler, signUpOtpVerificationHandler, resendOtpHandler
+  googleLoginHandler,
+  signUpHandler,
+  loginHandler,
+  forgotPasswordHandler,
+  verifyResetPasswordHandler,
+  signUpOtpVerificationHandler,
+  resendOtpHandler,
 };
