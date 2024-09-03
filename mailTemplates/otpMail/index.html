@@ -1,110 +1,29 @@
- <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Styled Page</title>
-        <style>
-          .container {
-            position: relative;
-            padding: 4%;
-            margin: 30px auto;
-            border-radius: 10px;
-            box-shadow: 1px 1px 15px;
-          }
-          .header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-          }
-          .title {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            background-image: url(" https://travmigoz-assethosting.s3.ap-south-1.amazonaws.com/otpEmailAssets/image.png ");
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: white;
-          }
-          .heading {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-          }
-          .appre {
-            font-size: 3rem;
-          }
-          .content {
-            padding: 15px 30px;
-            margin: 5px;
-          }
-          .hName {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-          }
-          .otp {
-            font-size: 2rem;
-            margin-bottom: 15px;
-          }
-          .otpBlocks {
-            display: flex;
-            margin-bottom: 15px;
-          }
-          .border {
-            padding: 15px;
-            border: 2px solid #8dd3bb;
-            border-radius: 10px;
-            margin: 0 8px;
-            font-size: 1.5rem;
-            width: 40px;
-            text-align: center;
-          }
-          .desc {
-            font-size: 1.8rem;
-            margin: 15px 0;
-            line-height: 1.5;
-          }
-          .button {
-            background-color: #8dd3bb;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            font-size: 2rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-          }
-          .button:hover {
-            background-color: #68fdc9;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header"><img src="https://travmigoz-assethosting.s3.ap-south-1.amazonaws.com/otpEmailAssets/logo.png " alt="Logo" /></div>
-          <div class="title">
-            <div class="heading">THANKS FOR SIGNING UP!</div>
-            <div class="appre">Verify Your E-Mail Address</div>
-          </div>
-          <div class="content">
-            <div class="hName">Hello ${name}</div>
-            <div class="otp">Please use the following One Time Password (OTP)</div>
-            <div class="otpBlocks">
-              
-            </div>
-            <div class="desc">
-              This passcode will only be valid for the next 15 minutes. If the
-              passcode does not work, you can use this login Verification link:
-            </div>
-            <button class="button">Verify Email</button>
-          </div>
+module.exports = generateEmailTemplate = (name, otp) => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Styled Page</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="logo.png" alt="Logo" /></div>
+      <div class="title">
+        <div class="heading">THANKS FOR SIGNING UP!</div>
+        <div class="appre">Verify Your E-Mail Address</div>
+      </div>
+      <div class="content">
+        <div class="hName">Hello ${name}</div>
+        <div class="otp">Please use the following One Time Password (OTP)</div>
+        <div class="otpBlocks">
         </div>
-      </body>
-    </html>
+        <div class="desc">This passcode is only valid for 5 minutes. Don't share this code with anyone.</div>
+        <button class="button">Verify Email</button>
+      </div>
+    </div>
+  </body>
+</html>
+`;

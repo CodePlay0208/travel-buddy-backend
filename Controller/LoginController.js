@@ -153,9 +153,7 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     console.log(userId);
     const { userOtp } = req.body;
-    const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({
-      createdAt: -1,
-    });
+    const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1});
     console.log(originalOtp);
     const { isSignUpRequest } = req.body;
     if (originalOtp && originalOtp.otp == userOtp) {
