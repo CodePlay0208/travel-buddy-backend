@@ -4,13 +4,8 @@ const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
-<<<<<<< Updated upstream
-const nodemailer = require('nodemailer');
-
-=======
 // Your main file, e.g., sendEmail.js
 const generateOtpEmail = require('../mailTemplates/otpMail/generateOtpEmail');
->>>>>>> Stashed changes
 
 async function getUserDataFromGoogle(accessToken) {
   try {
@@ -41,15 +36,6 @@ function generateOTP() {
 
 async function sendOTP(name, useremail, otp) {
   try {
-<<<<<<< Updated upstream
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST_FOR_SENDING_MAILS,
-      port: process.env.SMTP_PORT_FOR_SENDING_MAILS,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER_FOR_SENDING_MAILS,
-        pass: process.env.SMTP_PASSWORD_FOR_SENDING_MAILS,
-=======
     console.log(otp);
     console.log(`${otp}`);
 
@@ -77,30 +63,8 @@ async function sendOTP(name, useremail, otp) {
       headers: {
         "api-key": process.env.API_KEY_FOR_SENDING_MAILS,
         "Content-Type": "application/json",
->>>>>>> Stashed changes
       },
-    });
-
-    const to = useremail, subject = "Hello world";
-    const htmlContent =
-      `<html><head></head><body><p>Hello,</p>This is my first transactional email sent from Brevo ${otp}.</p></body></html>`;
-      const text =  `Your OTP is ${otp}`;
-
-    const mailOptions = {
-      from: process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS,
-      to,
-      subject,
-      text,
-      htmlContent,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Error sending email:', error);
-      }
-      else{
-        console.log('Email sent:', info);
-      }
+      body: JSON.stringify(mailingData)
     });
 
     console.log(response);
@@ -108,8 +72,6 @@ async function sendOTP(name, useremail, otp) {
     console.log("error while sending otp", error);
     throw new Error(error);
   }
-
-
 }
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
@@ -144,13 +106,9 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
 
 const signUpHandler = asyncHandler(async (req, res) => {
   try {
-    const { userEmail, password, username, phoneNumber } = req.body;
+    const { useremail, password, username, phoneNumber } = req.body;
     const userInDatabase = await UserProfile.findOne({
-<<<<<<< Updated upstream
-      emailId: userEmail
-=======
       emailId: useremail,
->>>>>>> Stashed changes
     });
 
     if (userInDatabase) {
@@ -162,25 +120,16 @@ const signUpHandler = asyncHandler(async (req, res) => {
       username: username,
       password: hashedPassword,
       phoneNumber: phoneNumber,
-<<<<<<< Updated upstream
-      emailId: userEmail
-=======
       emailId: useremail,
->>>>>>> Stashed changes
     });
 
-    await TempUserSignUp.findOneAndDelete({ emailId: userEmail });
+    await TempUserSignUp.findOneAndDelete({ emailId: useremail });
 
     const createdUser = await newTempSignedUser.save();
 
-<<<<<<< Updated upstream
-    const otp = generateOTP();
-    sendOTP(userEmail, otp);
-=======
     const otp =await generateOTP();
     console.log(otp);
-    await sendOTP("akshat",useremail, otp);
->>>>>>> Stashed changes
+    await sendOTP('akshat',useremail, otp);
     const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
@@ -204,15 +153,6 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     console.log(userId);
     const { userOtp } = req.body;
-<<<<<<< Updated upstream
-    const originalOtp = await OtpSchema.findOne({ userId: userId });
-    console.log(originalOtp);
-    if (originalOtp && originalOtp.otp == userOtp) {
-      const newUser = { ...req.user._doc }
-      delete newUser._id;
-      const saveUserInPermanentDatabase = new UserProfile(newUser);
-      await saveUserInPermanentDatabase.save();
-=======
     const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({
       createdAt: -1,
     });
@@ -225,7 +165,6 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
         const saveUserInPermanentDatabase = new UserProfile(newUser);
         await saveUserInPermanentDatabase.save();
       }
->>>>>>> Stashed changes
       res.status(200).json();
     } else {
       res.status(400).json();
@@ -268,19 +207,9 @@ const loginHandler = asyncHandler(async (req, res) => {
           process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
         );
       }
-<<<<<<< Updated upstream
-      else {
-        token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
-      }
-      res.status(200).json({token: token });
-    }
-    else {
-      res.status(200).json();
-=======
       res.status(200).json({ token: token });
     } else {
       res.status(400).json();
->>>>>>> Stashed changes
     }
   } catch (error) {
     console.log("the error is", error);
@@ -297,7 +226,7 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
       return;
     }
     const otp = generateOTP();
-    await sendOTP(userEmail, otp);
+    await sendOTP('akshat',userEmail, otp);
     const newOTP = new OtpSchema({
       userId: userInDatabase._id,
       otp: otp,
@@ -316,36 +245,17 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
 
 const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
   try {
-<<<<<<< Updated upstream
-    const { otp, newPassword } = req.body;
-=======
     const { newPassword } = req.body;
->>>>>>> Stashed changes
     const userId = req.user._id;
-    const latestOtpInDatabase = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });;
-
-    if (!latestOtpInDatabase) {
-      res.status(400).json();
-    }
-    if (latestOtpInDatabase.otp != otp) {
-      res.status(400).json();
-    }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await UserProfile.findOneAndUpdate(
-      { _id: latestOtpInDatabase._id },
+    const newUser = await UserProfile.findOneAndUpdate(
+      { _id: userId },
       { $set: { password: hashedPassword } },
       { new: true }
     );
-<<<<<<< Updated upstream
-
-    res
-      .status(200)
-      .json();
-=======
     console.log(newUser);
     res.status(200).json();
->>>>>>> Stashed changes
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json();
