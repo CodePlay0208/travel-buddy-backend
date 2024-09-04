@@ -39,12 +39,12 @@ function generateOTP() {
   return otp;
 }
 
-async function sendOTP(name, useremail, otp) {
+async function sendOTP(name, useremail, otp,status) {
   logger.info('sendOTP function started', { name, useremail, otp });
 
   try {
     const otpString = `${otp}`;
-    const htmlContent = generateOtpEmail(name, useremail, otpString);
+    const htmlContent = generateOtpEmail(name, useremail, otpString,status);
 
     const mailingData = {
       "sender": {  
@@ -133,7 +133,7 @@ const signUpHandler = asyncHandler(async (req, res) => {
     const createdUser = await newTempSignedUser.save();
 
     const otp = generateOTP();
-    await sendOTP('akshat', useremail, otp);
+    await sendOTP('akshat', useremail, otp,true);
     const newOTP = new OtpSchema({
       userId: createdUser._id,
       otp: otp,
@@ -225,7 +225,7 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
       return;
     }
     const otp = generateOTP();
-    await sendOTP('akshat', userEmail, otp);
+    await sendOTP('akshat', userEmail, otp,false);
     const newOTP = new OtpSchema({
       userId: userInDatabase._id,
       otp: otp,
@@ -267,7 +267,7 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
 
   try {
     const otp = generateOTP();
-    await sendOTP(req.user.emailId, otp);
+    await sendOTP('akshat',req.user.emailId, otp,false);
     const newOTP = new OtpSchema({
       userId: req.user._id,
       otp: otp,

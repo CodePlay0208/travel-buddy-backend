@@ -1,4 +1,10 @@
-function generateEmailTemplate(name, email, otp) {
+function generateEmailTemplate(name, email, otp, status) {
+  const signUpHeader = status
+    ? `<div class="header">
+         <h1>THANKS FOR SIGNING UP!</h1>
+       </div>`
+    : '';
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -33,8 +39,9 @@ function generateEmailTemplate(name, email, otp) {
           }
 
           .header img {
-            width: 100%;
+            width: 50%;
             height: auto;
+            margin-bottom: 20px;
           }
 
           /* Title Section */
@@ -169,9 +176,7 @@ function generateEmailTemplate(name, email, otp) {
           <div class="header">
             <img src="https://travmigoz-assethosting.s3.ap-south-1.amazonaws.com/otpEmailAssets/logo.png" alt="Logo" />
           </div>
-          <div class="header">
-            <h1>THANKS FOR SIGNING UP!</h1>
-          </div>
+          ${signUpHeader}
           <div class="title">
             <p>Verify Your E-Mail Address</p>
           </div>
@@ -181,11 +186,10 @@ function generateEmailTemplate(name, email, otp) {
             <div class="otp-blocks">
               ${otp.split("").map(digit => `<div class="otp-block">${digit}</div>`).join("")}
             </div>
-            <p>This passcode will only be valid for the next 15 minutes.</p>
-            <a href="#" class="button">Verify Email</a>
+            <p>This passcode will only be valid for the next 5 minutes.</p>
           </div>
           <div class="footer">
-            &copy; 2024 Your Company. All rights reserved.
+            &copy; 2024 Travmigoz. All rights reserved.
           </div>
         </div>
       </body>
