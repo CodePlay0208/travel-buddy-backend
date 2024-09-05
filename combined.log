@@ -126,3 +126,15 @@
 2024-09-05 20:48:56 [info]: sendOTP function started
 2024-09-05 20:48:56 [info]: OTP sent successfully
 2024-09-05 20:48:56 [info]: User signed up successfully
+2024-09-05 20:59:47 [info]: Server initialization started
+2024-09-05 20:59:47 [info]: Server is running on http://localhost:4000
+2024-09-05 21:07:27 [info]: Server initialization started
+2024-09-05 21:07:28 [info]: Server is running on http://localhost:4000
+2024-09-05 22:18:13 [info]: Server initialization started
+2024-09-05 22:18:14 [info]: Server is running on http://localhost:4000
+2024-09-05 22:18:17 [info]: Server initialization started
+2024-09-05 22:18:18 [info]: Server is running on http://localhost:4000
+2024-09-05 22:20:03 [info]: Server initialization started
+2024-09-05 22:20:04 [info]: Server is running on http://localhost:4000
+2024-09-05 22:20:22 [info]: Server initialization started
+2024-09-05 22:20:23 [info]: Server is running on http://localhost:4000
