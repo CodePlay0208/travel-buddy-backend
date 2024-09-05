@@ -53,7 +53,7 @@ async function sendOTP(name, useremail, otp,status) {
       },
       "to": [  
         {
-          "email": "akshat170902@gmail.com",
+          "email": "tusharmoudgil22@gmail.com",
           "name": name
         }
       ],

@@ -81,3 +81,48 @@
 2024-09-04 19:21:29 [info]: sendOTP function started
 2024-09-04 19:21:30 [info]: OTP sent successfully
 2024-09-04 19:21:30 [info]: User signed up successfully
+2024-09-04 19:29:55 [info]: Server initialization started
+2024-09-04 19:29:55 [info]: Server is running on http://localhost:4000
+2024-09-04 19:40:14 [info]: Server initialization started
+2024-09-04 19:40:16 [info]: Server is running on http://localhost:4000
+2024-09-04 19:41:09 [info]: Server initialization started
+2024-09-04 19:41:09 [info]: Server is running on http://localhost:4000
+2024-09-04 19:41:15 [info]: Server initialization started
+2024-09-04 19:41:15 [info]: Server is running on http://localhost:4000
+2024-09-04 19:41:25 [info]: Server initialization started
+2024-09-04 19:41:25 [info]: Server is running on http://localhost:4000
+2024-09-04 19:42:24 [info]: Server initialization started
+2024-09-04 19:42:24 [info]: Server is running on http://localhost:4000
+2024-09-04 19:42:30 [info]: Server initialization started
+2024-09-04 19:42:30 [info]: Server is running on http://localhost:4000
+2024-09-05 07:38:06 [info]: Server initialization started
+2024-09-05 07:38:08 [info]: Server is running on http://localhost:4000
+2024-09-05 07:51:09 [info]: Server initialization started
+2024-09-05 07:51:10 [info]: Server is running on http://localhost:4000
+2024-09-05 07:51:21 [info]: Server initialization started
+2024-09-05 07:51:22 [info]: Server is running on http://localhost:4000
+2024-09-05 09:07:35 [warn]: Not Found - /login
+2024-09-05 09:07:35 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:07:35 [warn]: Not Found - /login
+2024-09-05 09:07:35 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:08:00 [warn]: Not Found - /login
+2024-09-05 09:08:00 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:08:00 [warn]: Not Found - /login
+2024-09-05 09:08:00 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:08:38 [warn]: Not Found - /login
+2024-09-05 09:08:38 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:08:38 [warn]: Not Found - /login
+2024-09-05 09:08:38 [error]: Unhandled Error Not Found - /login
+2024-09-05 09:11:15 [warn]: No token found in request headers
+2024-09-05 09:11:15 [warn]: No token found in request headers
+2024-09-05 09:11:29 [warn]: No token found in request headers
+2024-09-05 09:11:29 [warn]: No token found in request headers
+2024-09-05 20:30:03 [info]: Server initialization started
+2024-09-05 20:30:05 [info]: Server is running on http://localhost:4000
+2024-09-05 20:48:35 [info]: Server initialization started
+2024-09-05 20:48:37 [info]: Server is running on http://localhost:4000
+2024-09-05 20:48:55 [info]: signUpHandler function started
+2024-09-05 20:48:56 [info]: Generated OTP
+2024-09-05 20:48:56 [info]: sendOTP function started
+2024-09-05 20:48:56 [info]: OTP sent successfully
+2024-09-05 20:48:56 [info]: User signed up successfully
