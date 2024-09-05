@@ -5,7 +5,7 @@ const {
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
 } = require("../config/awsConfigs/S3");
-const {dateFromDateString} = require("../Utils");
+const { dateFromDateString } = require("../Utils");
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -31,7 +31,7 @@ const createTripHandler = asyncHandler(async (req, res) => {
     const destinationImages = uploadedObjectNames;
     const queryStartDate = dateFromDateString(startDate);
     const queryEndDate = dateFromDateString(endDate);
-    
+
     const newTrip = new TripData({
       destination,
       startDate: queryStartDate,
@@ -64,7 +64,9 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     if (!trip) {
       return res.status(404).json();
     }
-    trip.destinationImages = await getObjectsFromS3Bucket(trip.destinationImages);
+    trip.destinationImages = await getObjectsFromS3Bucket(
+      trip.destinationImages
+    );
     res.status(200).json(trip);
   } catch (error) {
     console.error(error);
@@ -75,7 +77,21 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
 const getTripsByUserHandler = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
-    var trips = await TripData.find({ userId });
+    const {
+      offset = 0,
+      limit = process.env.LIMIT_FOR_SENDING_TRIPS,
+    } = req.query;
+    const parsedOffset = parseInt(offset, 10);
+    const parsedLimit = parseInt(limit, 10);
+    const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
+    const limitNumber = isNaN(parsedLimit) || parsedLimit < 0 ? process.env.LIMIT_FOR_SENDING_TRIPS : parsedLimit;
+    var trips = await TripData.find({userId: userId}).skip(skip).limit(limitNumber);
+
+    if (trips.length === 0) {
+      return res.status(404).json();
+    }
+
+    const newOffset = skip + parsedLimit;
     trips = await Promise.all(
       trips.map(async (trip) => {
         trip.destinationImages = await getObjectsFromS3Bucket(
@@ -84,7 +100,7 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
         return trip;
       })
     );
-    res.status(200).json(trips);
+    res.status(200).json({trips, offset: newOffset});
   } catch (error) {
     console.error(error);
     res.status(500).json();
@@ -93,8 +109,12 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
 
 const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
   try {
-    console.log("The request came here");
-    const { destination, date } = req.query;
+    const {
+      destination,
+      date,
+      offset = 0,
+      limit = process.env.LIMIT_FOR_SENDING_TRIPS,
+    } = req.query;
     const userId = req?.user?._id;
 
     let query = {};
@@ -105,20 +125,31 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
 
     if (date) {
       const queryDate = new Date(date);
-      if (!isNaN(queryDate)) { 
+      if (!isNaN(queryDate)) {
         query.startDate = { $lte: queryDate };
         query.endDate = { $gte: queryDate };
       } else {
-          res.status(400).json({ message: "Invalid date format" });
+        return res.status(400).json();
       }
     }
-    console.log("hery");
+
+    console.log("hey")
     if (userId) {
-      query.userId = { $ne: userId};
+      query.userId = { $ne: userId };
     }
 
-    var trips = await TripData.find(query);
+    const parsedOffset = parseInt(offset, 10);
+    const parsedLimit = parseInt(limit, 10);
+    const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
+    const limitNumber = isNaN(parsedLimit) || parsedLimit < 0 ? process.env.LIMIT_FOR_SENDING_TRIPS : parsedLimit;
 
+    var trips = await TripData.find(query).skip(skip).limit(limitNumber);
+
+    if (trips.length === 0) {
+      return res.status(404).json();
+    }
+
+    const newOffset = skip + parsedLimit;
     trips = await Promise.all(
       trips.map(async (trip) => {
         trip.destinationImages = await getObjectsFromS3Bucket(
@@ -128,13 +159,12 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
       })
     );
 
-    res.status(200).json(trips);
+    res.status(200).json({ trips, offset: newOffset });
   } catch (error) {
     console.error(error);
     res.status(500).json();
   }
 });
-
 
 const editTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -153,8 +183,6 @@ const editTripHandler = asyncHandler(async (req, res) => {
       description,
     } = req.body;
 
-
-
     const userId = req.user._id;
     const tripInDatabase = await TripData.findById(tripId);
 
@@ -168,7 +196,7 @@ const editTripHandler = asyncHandler(async (req, res) => {
     const queryEndDate = dateFromDateString(endDate);
     const fieldsToUpdate = {
       destination,
-      startDate: queryStartDate ,
+      startDate: queryStartDate,
       endDate: queryEndDate,
       startLocation,
       endLocation,
@@ -192,7 +220,8 @@ const editTripHandler = asyncHandler(async (req, res) => {
       newDestinationImages.length > 0
     ) {
       await deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
-      const { uploadedObjectNames, allObjectsUploaded } = await uploadObjectsToS3Bucket(newDestinationImages);
+      const { uploadedObjectNames, allObjectsUploaded } =
+        await uploadObjectsToS3Bucket(newDestinationImages);
       tripInDatabase.destinationImages = uploadedObjectNames;
       allFilesUploaded = allObjectsUploaded;
     }
@@ -234,5 +263,5 @@ module.exports = {
   getTripsByUserHandler,
   editTripHandler,
   deleteTripHandler,
-  getTripsWithFilterHandler
+  getTripsWithFilterHandler,
 };

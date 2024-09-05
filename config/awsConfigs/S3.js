@@ -8,10 +8,16 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { randomFileName } = require("../../Utils");
 
+
+
 const uploadObjectToS3Bucket = asyncHandler(async (object) => {
   try {
     const s3 = new S3Client({
       region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
+      credentials:{
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
     });
 
     const uploadedObjectName = randomFileName(object.originalname);
@@ -56,6 +62,10 @@ const getObjectFromS3Bucket = asyncHandler(async (uploadedObjectName) => {
   try {
     const s3 = new S3Client({
       region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
+      credentials:{
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
     });
 
     const getObjectParams = {
@@ -94,8 +104,11 @@ const deleteObjectFromS3Bucket = asyncHandler(async (uploadedObjectName) => {
   try {
     const s3 = new S3Client({
       region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
+      credentials:{
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
     });
-
     const getObjectParams = {
       Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
       Key: uploadedObjectName,
