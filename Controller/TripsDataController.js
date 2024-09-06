@@ -6,7 +6,7 @@ const {
   deleteObjectsFromS3Bucket,
 } = require("../config/awsConfigs/S3");
 const { dateFromDateString } = require("../Utils");
-const logger = require("../logger"); // Import Winston logger
+const logger = require("../logger"); 
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {

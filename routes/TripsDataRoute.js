@@ -1,5 +1,5 @@
 const express = require("express");
-const { protect, jwtTokenDecoder } = require("../middleware/AuthMiddleware");
+const { tokenProtect, jwtTokenDecoder } = require("../middleware/AuthMiddleware");
 const {
   createTripHandler,
   getTripByIdHandler,
@@ -16,16 +16,16 @@ const uploadMiddleware = multer({ storage: multerStorage });
 router
   .route("/createTrip")
   .post(
-    protect,
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     uploadMiddleware.array("destinationImages"),
     createTripHandler
   );
 router.route("/getTripById/:tripId").get(getTripByIdHandler);
-router.route("/getTripsByUser").get(protect, getTripsByUserHandler);
+router.route("/getTripsByUser").get(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), getTripsByUserHandler);
 router.route("/getTrips").get(jwtTokenDecoder, getTripsWithFilterHandler);
 router
   .route("/editTrip/:tripId")
-  .put(protect, uploadMiddleware.array("destinationImages"), editTripHandler);
-router.route("/deleteTrip/:tripId").delete(protect, deleteTripHandler);
+  .put(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), uploadMiddleware.array("destinationImages"), editTripHandler);
+router.route("/deleteTrip/:tripId").delete(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), deleteTripHandler);
 
 module.exports = router;

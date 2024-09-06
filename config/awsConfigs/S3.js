@@ -1,25 +1,16 @@
 const asyncHandler = require("express-async-handler");
 const {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
 } = require("@aws-sdk/client-s3");
+const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { randomFileName } = require("../../Utils");
 
 
-
 const uploadObjectToS3Bucket = asyncHandler(async (object) => {
   try {
-    const s3 = new S3Client({
-      region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
-      credentials:{
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      }
-    });
-
     const uploadedObjectName = randomFileName(object.originalname);
     const params = {
       Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
@@ -29,7 +20,7 @@ const uploadObjectToS3Bucket = asyncHandler(async (object) => {
     };
 
     const command = new PutObjectCommand(params);
-    await s3.send(command);
+    await s3Client.send(command);
     return uploadedObjectName;
   } catch (error) {
     console.log("Failed uploading to s3 bucket with error", error);
@@ -60,20 +51,12 @@ const uploadObjectsToS3Bucket = asyncHandler(async (objects) => {
 
 const getObjectFromS3Bucket = asyncHandler(async (uploadedObjectName) => {
   try {
-    const s3 = new S3Client({
-      region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
-      credentials:{
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      }
-    });
-
     const getObjectParams = {
       Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
       Key: uploadedObjectName,
     };
     const command = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, command, { expiresIn: 36000 });
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 36000 });
     return url;
   } catch (error) {
     console.log("Error getting object", uploadedObjectName, error);
@@ -102,20 +85,13 @@ const getObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames) => {
 
 const deleteObjectFromS3Bucket = asyncHandler(async (uploadedObjectName) => {
   try {
-    const s3 = new S3Client({
-      region: process.env.S3_BUCKET_REGION_FOR_UPLOADING_DESTINATION_IMAGES,
-      credentials:{
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      }
-    });
     const getObjectParams = {
       Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
       Key: uploadedObjectName,
     };
 
     const command = new DeleteObjectCommand(getObjectParams);
-    await s3.send(command);
+    await s3Client.send(command);
     return true;
   } catch (error) {
     console.log("Error getting objects");

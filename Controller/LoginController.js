@@ -141,7 +141,7 @@ const signUpHandler = asyncHandler(async (req, res) => {
     await newOTP.save();
 
     res.status(201).json({
-      token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+      token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     });
     logger.info('User signed up successfully', { useremail });
   } catch (error) {
@@ -150,7 +150,7 @@ const signUpHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
+const otpVerificationHandler = asyncHandler(async (req, res) => {
   logger.info('signUpOtpVerificationHandler function started', { userId: req.user._id });
 
   try {
@@ -166,7 +166,9 @@ const signUpOtpVerificationHandler = asyncHandler(async (req, res) => {
         const saveUserInPermanentDatabase = new UserProfile(newUser);
         await saveUserInPermanentDatabase.save();
       }
-      res.status(200).json();
+      res.status(200).json({
+        token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+      });
       logger.info('OTP verification successful', { userId });
     } else {
       logger.warn('OTP verification failed', { userId, userOtp });
@@ -232,7 +234,7 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
     });
     await newOTP.save();
     res.status(200).json({
-      token: generateToken(userInDatabase._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+      token: generateToken(userInDatabase._id, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     });
     logger.info('Forgot password OTP sent successfully', { userEmail });
   } catch (error) {
@@ -287,6 +289,6 @@ module.exports = {
   loginHandler,
   forgotPasswordHandler,
   verifyResetPasswordHandler,
-  signUpOtpVerificationHandler,
+  otpVerificationHandler,
   resendOtpHandler,
 };

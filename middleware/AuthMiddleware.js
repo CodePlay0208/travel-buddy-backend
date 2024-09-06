@@ -2,57 +2,94 @@ const jwt = require("jsonwebtoken");
 const UserProfile = require("../models/UserProfileModel");
 const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
-const logger = require('../logger'); // Import the logger
+const logger = require("../logger"); // Import the logger
 
-const protect = asyncHandler(async (req, res, next) => {
-  let token;
+const tokenProtect = (jwtSecretKey) => {
+  return asyncHandler(async (req, res, next) => {
+    let token;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
-      logger.info('protect middleware started');
-      token = req.headers.authorization.split(" ")[1];
-      const { isSignUpRequest } = req.body;
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
-      );
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      try {
+        logger.info("tokenProtect middleware started");
+        token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, jwtSecretKey);
 
-      if (isSignUpRequest) {
-        req.user = await TempUserSignUp.findById(decoded.id);
-      } else {
         req.user = await UserProfile.findById(decoded.id);
-      }
 
-      logger.info('User authenticated', { userId: decoded.id });
-      next();
-    } catch (error) {
-      logger.error('Error in protect middleware', { error: error.message, stack: error.stack });
-      res.status(401).json({ message: 'Unauthorized' });
+        logger.info("Middleware passed", { userId: decoded.id });
+        next();
+      } catch (error) {
+        logger.error("Error in tokenProtect middleware", {
+          error: error.message,
+          stack: error.stack,
+        });
+        res.status(401).json({ message: "Unauthorized" });
+      }
+    } else {
+      logger.warn("No token found in request headers");
+      res.status(401).json({ message: "Unauthorized" });
     }
-  } else {
-    logger.warn('No token found in request headers');
-    res.status(401).json({ message: 'Unauthorized' });
-  }
-});
+  });
+};
+
+const tokenProtectForTempFlows = (jwtSecretKey) => {
+  return asyncHandler(async (req, res, next) => {
+    let token;
+
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      try {
+        logger.info("tokenProtect middleware started");
+        token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, jwtSecretKey);
+
+        const { isSignUpRequest } = req.body;
+
+        if (isSignUpRequest) {
+          req.user = await TempUserSignUp.findById(decoded.id);
+        } else {
+          req.user = await UserProfile.findById(decoded.id);
+        }
+
+        logger.info("Middleware passed", { userId: decoded.id });
+        next();
+      } catch (error) {
+        logger.error("Error in tokenProtect middleware", {
+          error: error.message,
+          stack: error.stack,
+        });
+        res.status(401).json({ message: "Unauthorized" });
+      }
+    } else {
+      logger.warn("No token found in request headers");
+      res.status(401).json({ message: "Unauthorized" });
+    }
+  });
+};
 
 const googleTokenProtect = asyncHandler(async (req, res, next) => {
   let token;
 
   if (req.headers.googleToken && req.headers.googleToken.startsWith("Bearer")) {
     try {
-      logger.info('googleTokenProtect middleware started');
+      logger.info("googleTokenProtect middleware started");
       req.googleToken = req.headers.googleToken.split(" ")[1];
       next();
     } catch (error) {
-      logger.error('Error in googleTokenProtect middleware', { error: error.message, stack: error.stack });
-      res.status(401).json({ message: 'Unauthorized' });
+      logger.error("Error in googleTokenProtect middleware", {
+        error: error.message,
+        stack: error.stack,
+      });
+      res.status(401).json({ message: "Unauthorized" });
     }
   } else {
-    logger.warn('No Google token found in request headers');
-    res.status(401).json({ message: 'Unauthorized' });
+    logger.warn("No Google token found in request headers");
+    res.status(401).json({ message: "Unauthorized" });
   }
 });
 
@@ -64,7 +101,7 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      logger.info('jwtTokenDecoder middleware started');
+      logger.info("jwtTokenDecoder middleware started");
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(
         token,
@@ -72,13 +109,21 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
       );
 
       req.user = await UserProfile.findById(decoded.id);
-      logger.info('Token decoded successfully', { userId: decoded.id });
+      logger.info("Token decoded successfully", { userId: decoded.id });
     } catch (error) {
-      logger.error('Error while decoding token', { error: error.message, stack: error.stack });
+      logger.error("Error while decoding token", {
+        error: error.message,
+        stack: error.stack,
+      });
     }
   }
 
   next();
 });
 
-module.exports = { protect, googleTokenProtect, jwtTokenDecoder };
+module.exports = {
+  tokenProtect,
+  googleTokenProtect,
+  jwtTokenDecoder,
+  tokenProtectForTempFlows,
+};

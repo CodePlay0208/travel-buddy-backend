@@ -1,10 +1,10 @@
 const express = require("express");
-const {protect} = require("../middleware/AuthMiddleware");
+const {tokenProtect} = require("../middleware/AuthMiddleware");
 const { getUserProfileHandler , editUserHandler, deleteUserHandler } = require("../controller/UserProfileController");
 const router = express.Router();
 
-router.route("/getUserProfile").get(protect, getUserProfileHandler);
-router.route("/editUserProfile").put(protect, editUserHandler);
-router.route("/deleteUserProfile").delete(protect, deleteUserHandler);
+router.route("/getUserProfile").get(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), getUserProfileHandler);
+router.route("/editUserProfile").put(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), editUserHandler);
+router.route("/deleteUserProfile").delete(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), deleteUserHandler);
 
 module.exports = router;
