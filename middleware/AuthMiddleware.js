@@ -50,6 +50,10 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
 
         const { isSignUpRequest } = req.body;
 
+        if(isSignUpRequest == null){
+          return res.status(400);
+        }
+
         if (isSignUpRequest) {
           req.user = await TempUserSignUp.findById(decoded.id);
         } else {
