@@ -10,7 +10,7 @@ const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     if (!recievedUserId) {
-      logger.warn("ReceiverUserId param not sent with request");
+      logger.error("ReceiverUserId param not sent with request");
       return res.status(400).json("recieverUserId param not sent with request");
     }
 

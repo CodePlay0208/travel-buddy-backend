@@ -3,7 +3,7 @@ function generateEmailTemplate(name, email, otp, status) {
     ? `<div class="header">
          <h1>THANKS FOR SIGNING UP!</h1>
        </div>`
-    : '';
+    : "";
 
   return `
     <!DOCTYPE html>
@@ -184,7 +184,10 @@ function generateEmailTemplate(name, email, otp, status) {
             <h2>Hello, ${name}!</h2>
             <p>Please use the following One Time Password (OTP) to verify your email address:</p>
             <div class="otp-blocks">
-              ${otp.split("").map(digit => `<div class="otp-block">${digit}</div>`).join("")}
+              ${otp
+                .split("")
+                .map((digit) => `<div class="otp-block">${digit}</div>`)
+                .join("")}
             </div>
             <p>This passcode will only be valid for the next 5 minutes.</p>
           </div>

@@ -14,10 +14,7 @@ const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const connectDB = require("./config/Database");
-const logger = require('./logger');
-
-// Example usage of logger
-logger.info('Server initialization started');
+const logger = require("./logger");
 
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
@@ -46,5 +43,7 @@ try {
 
   handleSocketIO(server);
 } catch (error) {
-  logger.error(`Error while running the app: ${error.message}`, { stack: error.stack });
+  logger.error(`Error while running the app: ${error.message}`, {
+    stack: error.stack,
+  });
 }
