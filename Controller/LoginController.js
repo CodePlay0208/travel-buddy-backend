@@ -158,7 +158,6 @@ const signUpHandler = asyncHandler(async (req, res) => {
 });
 
 const otpVerificationHandler = asyncHandler(async (req, res) => {
-  logger.info('signUpOtpVerificationHandler function started', { userId: req.user._id });
 
   try {
     const userId = req.user._id;

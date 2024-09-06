@@ -13,7 +13,6 @@ const tokenProtect = (jwtSecretKey) => {
       req.headers.authorization.startsWith("Bearer")
     ) {
       try {
-        logger.info("tokenProtect middleware started");
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
@@ -44,7 +43,6 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
       req.headers.authorization.startsWith("Bearer")
     ) {
       try {
-        logger.info("tokenProtect middleware started");
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
@@ -81,7 +79,6 @@ const googleTokenProtect = asyncHandler(async (req, res, next) => {
 
   if (req.headers.googleToken && req.headers.googleToken.startsWith("Bearer")) {
     try {
-      logger.info("googleTokenProtect middleware started");
       req.googleToken = req.headers.googleToken.split(" ")[1];
       next();
     } catch (error) {
@@ -105,7 +102,6 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      logger.info("jwtTokenDecoder middleware started");
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(
         token,
