@@ -6,7 +6,7 @@ const {
   deleteObjectsFromS3Bucket,
 } = require("../config/awsConfigs/S3");
 const { dateFromDateString } = require("../Utils");
-const logger = require("../logger"); // Import Winston logger
+const logger = require("../logger"); 
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -53,7 +53,7 @@ const createTripHandler = asyncHandler(async (req, res) => {
     logger.info(`Trip created successfully for user ${userId}`);
     res
       .status(201)
-      .json({ trip: newtripInDatabase, allFilesUploaded: allObjectsUploaded });
+      .json({allFilesUploaded: allObjectsUploaded});
   } catch (error) {
     logger.error(`Error while creating trip: ${error.message}`);
     res.status(500).json();
@@ -249,7 +249,7 @@ const editTripHandler = asyncHandler(async (req, res) => {
 
     const updatedTrip = await tripInDatabase.save();
     logger.info(`Trip with ID: ${tripId} updated successfully`);
-    res.status(200).json({ trip: updatedTrip, allFilesUploaded });
+    res.status(200).json({  allFilesUploaded });
   } catch (err) {
     logger.error(`Error editing trip: ${err.message}`);
     res.status(500).json();
@@ -274,7 +274,7 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
     await deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
     await tripInDatabase.deleteOne();
     logger.info(`Trip with ID: ${tripId} deleted successfully`);
-    res.status(200).json({ tripId });
+    res.status(200).json();
   } catch (error) {
     logger.error(`Error deleting trip: ${error.message}`);
     res.status(500).json();

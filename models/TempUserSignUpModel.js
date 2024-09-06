@@ -5,7 +5,7 @@ const tempUserSignUpSchema = new mongoose.Schema({
   password: { type: String, required: true },
   phoneNumber: { type: String },
   emailId: { type: String, required: true, unique: true },
-  createdAt: { type: Date, default: Date.now, expires: "5h" },
+  createdAt: { type: Date, default: Date.now, expires: "2h"},
 });
 
 module.exports = mongoose.model(
