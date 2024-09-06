@@ -2,20 +2,27 @@ const Message = require("../models/MessageModel");
 const User = require("../models/UserProfileModel");
 const Chat = require("../models/ChatModel");
 const asyncHandler = require("express-async-handler");
-
+const logger = require('../logger'); // Import the Winston logger
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
+
     if (!userId) {
-      res.status(400).json("User Not Authenticated");
-      return;
+      logger.warn("User not authenticated for fetching messages");
+      return res.status(400).json("User Not Authenticated");
     }
+
+    logger.info(`Fetching messages for chat: ${req.params.chatId}`);
     const messages = await Message.find({ chat: req.params.chatId })
       .populate("sender", "username profilePic emailId")
       .populate("chat");
+
+    logger.info(`Successfully fetched ${messages.length} messages for chat: ${req.params.chatId}`);
     res.json(messages);
+
   } catch (error) {
+    logger.error(`Error fetching messages for chat: ${req.params.chatId} - ${error.message}`);
     res.status(400).json(error);
   }
 });
@@ -26,35 +33,40 @@ const createNewMessageHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     if (!userId) {
-      res.status(400).json("User Not Authenticated");
-      return;
+      logger.warn("User not authenticated for creating a message");
+      return res.status(400).json("User Not Authenticated");
     }
 
     if (!content || !chatId) {
-      console.log("Invalid data passed into request");
+      logger.warn("Invalid data passed for creating a new message");
       return res.status(400).json("Invalid data passed");
     }
 
-    var newMessage = {
+    logger.info(`Creating a new message for chat: ${chatId}`);
+
+    const newMessage = {
       sender: userId,
       content: content,
       chat: chatId,
     };
 
-    var message = await Message.create(newMessage);
-    message = await message.populate("sender", "name ProfilePic")
-    message = await message.populate("chat")
+    let message = await Message.create(newMessage);
+    message = await message.populate("sender", "username profilePic");
+    message = await message.populate("chat");
     message = await User.populate(message, {
       path: "chat.users",
       select: "username profilePic emailId",
     });
 
-    await Chat.findByIdAndUpdate(req.body.chatId, { latestMessage: message });
+    await Chat.findByIdAndUpdate(chatId, { latestMessage: message });
 
+    logger.info(`New message created and updated in chat: ${chatId}`);
     res.status(200).json(message);
+
   } catch (error) {
-    res.status(500).json(error)
+    logger.error(`Error creating new message for chat: ${chatId} - ${error.message}`);
+    res.status(500).json(error);
   }
 });
 
-module.exports = {getAllMessagesForAChatHandler , createNewMessageHandler};
+module.exports = { getAllMessagesForAChatHandler, createNewMessageHandler };

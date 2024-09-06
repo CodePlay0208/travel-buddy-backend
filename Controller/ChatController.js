@@ -2,66 +2,73 @@ const Chat = require("../models/ChatModel");
 const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
 
+const logger = require("../logger"); // import your logger
 
 const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
   try {
-  const { recievedUserId } = req.body;
-  const userId = req.user._id;
+    const { recievedUserId } = req.body;
+    const userId = req.user._id;
 
-  if (!recievedUserId) {
-    return res.status(400).json("recieverUserId param not sent with request");
-  }
+    if (!recievedUserId) {
+      logger.warn("ReceiverUserId param not sent with request");
+      return res.status(400).json("recieverUserId param not sent with request");
+    }
 
-  if (!userId) {
-    console.log("UserId param not sent with request");
-    return res.status(400).json("User Not authenticated");
-  }
+    if (!userId) {
+      logger.error("UserId param not sent with request");
+      return res.status(400).json("User Not authenticated");
+    }
 
-  var isChat = await Chat.find({
-    $and: [
-      { users: { $elemMatch: { $eq: userId } } },
-      { users: { $elemMatch: { $eq: recievedUserId } } },
-    ],
-  })
-    .populate("users", "-password")
-    .populate("latestMessage");
+    let isChat = await Chat.find({
+      $and: [
+        { users: { $elemMatch: { $eq: userId } } },
+        { users: { $elemMatch: { $eq: recievedUserId } } },
+      ],
+    })
+      .populate("users", "-password")
+      .populate("latestMessage");
 
-  isChat = await UserProfile.populate(isChat, {
-    path: "latestMessage.sender",
-    select: "username profilePic emailId",
-  });
+    isChat = await UserProfile.populate(isChat, {
+      path: "latestMessage.sender",
+      select: "username profilePic emailId",
+    });
 
-  console.log("the chat is", isChat);
+    logger.info(`Chat fetched for user ${userId}`);
 
-  if (isChat.length > 0) {
-    res.send(isChat[0]);
-  } else {
-    var chatData = {
+    if (isChat.length > 0) {
+      return res.send(isChat[0]);
+    }
+
+    let chatData = {
       chatName: "sender",
       users: [userId, recievedUserId],
     };
 
-    console.log("the chatData is", chatData);
-      const createdChat = await Chat.create(chatData);
-      const FullChat = await Chat.findOne({ _id: createdChat._id }).populate(
-        "users",
-        "-password"
-      );
+    logger.info(`Creating new chat for user ${userId}`);
 
-      res.status(200).json(FullChat);
-    } 
-  }
-  catch (error) {
-    res.status(400).json(error);
+    const createdChat = await Chat.create(chatData);
+    const fullChat = await Chat.findOne({ _id: createdChat._id }).populate(
+      "users",
+      "-password"
+    );
+
+    logger.info(`New chat created for user ${userId}`);
+
+    return res.status(200).json(fullChat);
+  } catch (error) {
+    logger.error(`Error fetching or creating chat: ${error.message}`);
+    return res.status(400).json(error);
   }
 });
 
 const getChatsHandler = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
-    if(!userId){
-      res.status(400).json("User ot Authenticated")
+    if (!userId) {
+      logger.error("User not authenticated");
+      return res.status(400).json("User not authenticated");
     }
+
     Chat.find({ users: { $elemMatch: { $eq: userId } } })
       .populate("users", "-password")
       .populate("latestMessage")
@@ -71,11 +78,13 @@ const getChatsHandler = asyncHandler(async (req, res) => {
           path: "latestMessage.sender",
           select: "username profilePic emailId",
         });
-        res.status(200).send(results);
+        logger.info(`Fetched chat list for user ${userId}`);
+        return res.status(200).send(results);
       });
   } catch (error) {
-    res.status(400).json(error);
+    logger.error(`Error fetching chats: ${error.message}`);
+    return res.status(400).json(error);
   }
 });
 
-module.exports = {fetchOrCreateChatsHandler, getChatsHandler}
+module.exports = { fetchOrCreateChatsHandler, getChatsHandler };
