@@ -151,20 +151,20 @@ const signUpHandler = asyncHandler(async (req, res) => {
 });
 
 const otpVerificationHandler = asyncHandler(async (req, res) => {
-  logger.info('signUpOtpVerificationHandler function started', { userId: req.user._id });
+  logger.info('otpVerificationHandler function started', { userId: req.user._id });
 
   try {
     const userId = req.user._id;
     const { userOtp } = req.body;
     const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });
-
+    let createdUser = req.user;
     if (originalOtp && originalOtp.otp == userOtp) {
       const { isSignUpRequest } = req.body;
       if (isSignUpRequest) {
         const newUser = { ...req.user._doc };
         delete newUser._id;
         const saveUserInPermanentDatabase = new UserProfile(newUser);
-        await saveUserInPermanentDatabase.save();
+        createdUser = await saveUserInPermanentDatabase.save();
       }
       res.status(200).json({
         token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
@@ -175,7 +175,7 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
       res.status(400).json();
     }
   } catch (error) {
-    logger.error('Error while verifying OTP', { error: error.message, stack: error.stack });
+    logger.error('Error while verifying OTP', error);
     res.status(500).json();
   }
 });
