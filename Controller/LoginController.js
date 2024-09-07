@@ -243,7 +243,7 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const verifyResetPasswordHandler = asyncHandler(async (req, res) => {
+const resetPasswordHandler = asyncHandler(async (req, res) => {
   logger.info('verifyResetPasswordHandler function started', { userId: req.user._id });
 
   try {
@@ -288,7 +288,7 @@ module.exports = {
   signUpHandler,
   loginHandler,
   forgotPasswordHandler,
-  verifyResetPasswordHandler,
+  resetPasswordHandler,
   otpVerificationHandler,
   resendOtpHandler,
 };
