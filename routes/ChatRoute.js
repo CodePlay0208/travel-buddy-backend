@@ -8,4 +8,3 @@ router.route("/getChats").get(tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_L
 
 
 module.exports = router;
-

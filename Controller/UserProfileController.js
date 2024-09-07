@@ -1,7 +1,7 @@
 const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
-const DeletedUser = require('../models/DeletedUserModel');
-const TripData = require('../models/TripDataModel');
+const DeletedUser = require("../models/DeletedUserModel");
+const TripData = require("../models/TripDataModel");
 const logger = require("../logger"); // Import Winston logger
 
 const getUserProfileHandler = asyncHandler(async (req, res) => {
@@ -23,9 +23,10 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
 
 const editUserHandler = asyncHandler(async (req, res) => {
   try {
-    const { username, dateOfBirth, persona, phoneNumber, profilePic } = req.body;
+    const { username, dateOfBirth, persona, phoneNumber, profilePic } =
+      req.body;
     const userId = req.user._id;
-    
+
     logger.info(`Editing user profile for user ID: ${userId}`);
 
     const updateData = {};
@@ -42,7 +43,7 @@ const editUserHandler = asyncHandler(async (req, res) => {
     ).select("-_id -password --createdAt -__v");
 
     if (!updatedUserProfile) {
-      logger.warn(`User with ID: ${userId} not found for update`);
+      logger.error(`User with ID: ${userId} not found for update`);
       return res.status(404).json();
     }
 
@@ -69,7 +70,9 @@ const deleteUserHandler = asyncHandler(async (req, res) => {
     await UserProfile.findByIdAndDelete(userId);
     await TripData.deleteMany({ userId: userId });
 
-    logger.info(`User profile and related trips deleted for user ID: ${userId}`);
+    logger.info(
+      `User profile and related trips deleted for user ID: ${userId}`
+    );
     res.status(200).json();
   } catch (error) {
     logger.error(`Error deleting user profile: ${error.message}`);

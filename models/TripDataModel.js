@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const tripDataSchema = new mongoose.Schema({
@@ -11,8 +11,8 @@ const tripDataSchema = new mongoose.Schema({
   age: { type: Number, required: true },
   gender: { type: String, required: true },
   description: { type: String, required: true },
-  destinationImages: [{ type: String}],
-  userId: { type: Schema.Types.ObjectId, ref: 'UserProfile', required: true }
+  destinationImages: [{ type: String }],
+  userId: { type: Schema.Types.ObjectId, ref: "UserProfile", required: true },
 });
 
-module.exports = mongoose.model('TripData', tripDataSchema);
+module.exports = mongoose.model("TripData", tripDataSchema);

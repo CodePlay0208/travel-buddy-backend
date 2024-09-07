@@ -67,10 +67,12 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
 
     const trip = await TripData.findOne({ _id: tripId });
     if (!trip) {
-      logger.warn(`Trip not found for ID: ${tripId}`);
+      logger.error(`Trip not found for ID: ${tripId}`);
       return res.status(404).json();
     }
-    trip.destinationImages = await getObjectsFromS3Bucket(trip.destinationImages);
+    trip.destinationImages = await getObjectsFromS3Bucket(
+      trip.destinationImages
+    );
     res.status(200).json(trip);
   } catch (error) {
     logger.error(`Error fetching trip by ID: ${error.message}`);
@@ -83,27 +85,30 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     logger.info(`Fetching trips for user ${userId}`);
 
-    const {
-      offset = 0,
-      limit = process.env.LIMIT_FOR_SENDING_TRIPS,
-    } = req.query;
+    const { offset = 0, limit = process.env.LIMIT_FOR_SENDING_TRIPS } =
+      req.query;
 
     const parsedOffset = parseInt(offset, 10);
     const parsedLimit = parseInt(limit, 10);
     const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
-    const limitNumber = isNaN(parsedLimit) || parsedLimit < 0 ? process.env.LIMIT_FOR_SENDING_TRIPS : parsedLimit;
-    
+    const limitNumber =
+      isNaN(parsedLimit) || parsedLimit < 0
+        ? process.env.LIMIT_FOR_SENDING_TRIPS
+        : parsedLimit;
+
     var trips = await TripData.find({ userId }).skip(skip).limit(limitNumber);
 
     if (trips.length === 0) {
-      logger.warn(`No trips found for user ${userId}`);
+      logger.error(`No trips found for user ${userId}`);
       return res.status(404).json();
     }
 
     const newOffset = skip + parsedLimit;
     trips = await Promise.all(
       trips.map(async (trip) => {
-        trip.destinationImages = await getObjectsFromS3Bucket(trip.destinationImages);
+        trip.destinationImages = await getObjectsFromS3Bucket(
+          trip.destinationImages
+        );
         return trip;
       })
     );
@@ -137,7 +142,7 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
         query.startDate = { $lte: queryDate };
         query.endDate = { $gte: queryDate };
       } else {
-        logger.warn("Invalid date passed in query");
+        logger.error("Invalid date passed in query");
         return res.status(400).json();
       }
     }
@@ -149,19 +154,24 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
     const parsedOffset = parseInt(offset, 10);
     const parsedLimit = parseInt(limit, 10);
     const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
-    const limitNumber = isNaN(parsedLimit) || parsedLimit < 0 ? process.env.LIMIT_FOR_SENDING_TRIPS : parsedLimit;
+    const limitNumber =
+      isNaN(parsedLimit) || parsedLimit < 0
+        ? process.env.LIMIT_FOR_SENDING_TRIPS
+        : parsedLimit;
 
     var trips = await TripData.find(query).skip(skip).limit(limitNumber);
 
     if (trips.length === 0) {
-      logger.warn("No trips found with the given filter");
+      logger.error("No trips found with the given filter");
       return res.status(404).json();
     }
 
     const newOffset = skip + parsedLimit;
     trips = await Promise.all(
       trips.map(async (trip) => {
-        trip.destinationImages = await getObjectsFromS3Bucket(trip.destinationImages);
+        trip.destinationImages = await getObjectsFromS3Bucket(
+          trip.destinationImages
+        );
         return trip;
       })
     );
@@ -196,11 +206,13 @@ const editTripHandler = asyncHandler(async (req, res) => {
     const tripInDatabase = await TripData.findById(tripId);
 
     if (!tripInDatabase) {
-      logger.warn(`Trip with ID: ${tripId} not found`);
+      logger.error(`Trip with ID: ${tripId} not found`);
       return res.status(404).json();
     }
     if (!tripInDatabase.userId.equals(userId)) {
-      logger.warn(`User ${userId} not authorized to edit trip with ID: ${tripId}`);
+      logger.error(
+        `User ${userId} not authorized to edit trip with ID: ${tripId}`
+      );
       return res.status(403).json();
     }
 
@@ -255,7 +267,7 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
     });
 
     if (!tripInDatabase) {
-      logger.warn(`Trip with ID: ${tripId} not found`);
+      logger.error(`Trip with ID: ${tripId} not found`);
       return res.status(404).json();
     }
 

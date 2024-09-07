@@ -2,14 +2,14 @@ const Message = require("../models/MessageModel");
 const User = require("../models/UserProfileModel");
 const Chat = require("../models/ChatModel");
 const asyncHandler = require("express-async-handler");
-const logger = require('../logger'); // Import the Winston logger
+const logger = require("../logger"); // Import the Winston logger
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
 
     if (!userId) {
-      logger.warn("User not authenticated for fetching messages");
+      logger.error("User not authenticated for fetching messages");
       return res.status(400).json("User Not Authenticated");
     }
 
@@ -18,11 +18,14 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
       .populate("sender", "username profilePic emailId")
       .populate("chat");
 
-    logger.info(`Successfully fetched ${messages.length} messages for chat: ${req.params.chatId}`);
+    logger.info(
+      `Successfully fetched ${messages.length} messages for chat: ${req.params.chatId}`
+    );
     res.json(messages);
-
   } catch (error) {
-    logger.error(`Error fetching messages for chat: ${req.params.chatId} - ${error.message}`);
+    logger.error(
+      `Error fetching messages for chat: ${req.params.chatId} - ${error.message}`
+    );
     res.status(400).json(error);
   }
 });
@@ -33,12 +36,12 @@ const createNewMessageHandler = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     if (!userId) {
-      logger.warn("User not authenticated for creating a message");
+      logger.error("User not authenticated for creating a message");
       return res.status(400).json("User Not Authenticated");
     }
 
     if (!content || !chatId) {
-      logger.warn("Invalid data passed for creating a new message");
+      logger.error("Invalid data passed for creating a new message");
       return res.status(400).json("Invalid data passed");
     }
 
@@ -62,9 +65,10 @@ const createNewMessageHandler = asyncHandler(async (req, res) => {
 
     logger.info(`New message created and updated in chat: ${chatId}`);
     res.status(200).json(message);
-
   } catch (error) {
-    logger.error(`Error creating new message for chat: ${chatId} - ${error.message}`);
+    logger.error(
+      `Error creating new message for chat: ${chatId} - ${error.message}`
+    );
     res.status(500).json(error);
   }
 });
