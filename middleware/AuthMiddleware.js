@@ -21,10 +21,7 @@ const tokenProtect = (jwtSecretKey) => {
         logger.info("Middleware passed", { userId: decoded.id });
         next();
       } catch (error) {
-        logger.error("Error in tokenProtect middleware", {
-          error: error.message,
-          stack: error.stack,
-        });
+        logger.error("Error in tokenProtect middleware", error);
         res.status(401).json({ message: "Unauthorized" });
       }
     } else {
@@ -48,23 +45,27 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
 
         const { isSignUpRequest } = req.body;
 
-        if(isSignUpRequest == null){
-          return res.status(400);
+        if (isSignUpRequest == null) {
+          return res.status(400).json();
         }
+
+        let user = null;
 
         if (isSignUpRequest) {
-          req.user = await TempUserSignUp.findById(decoded.id);
+          user = await TempUserSignUp.findById(decoded.id);
         } else {
-          req.user = await UserProfile.findById(decoded.id);
+          user = await UserProfile.findById(decoded.id);
+        }
+       
+        if (user == null || user == undefined) {
+          return res.status(400).json();
         }
 
+        req.user = user;
         logger.info("Middleware passed", { userId: decoded.id });
         next();
       } catch (error) {
-        logger.error("Error in tokenProtect middleware", {
-          error: error.message,
-          stack: error.stack,
-        });
+        logger.error("Error in tokenProtect middleware", error);
         res.status(401).json({ message: "Unauthorized" });
       }
     } else {

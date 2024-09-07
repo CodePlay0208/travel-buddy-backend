@@ -9,7 +9,7 @@ const {
   signUpHandler,
   loginHandler,
   forgotPasswordHandler,
-  verifyResetPasswordHandler,
+  resetPasswordHandler,
   otpVerificationHandler,
   resendOtpHandler,
 } = require("../controller/LoginController");
@@ -26,10 +26,10 @@ router
 router.route("/login").post(loginHandler);
 router.route("/forgotPassword").post(forgotPasswordHandler);
 router
-  .route("/verifyResetPassword")
+  .route("/resetPassword")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    verifyResetPasswordHandler
+    resetPasswordHandler
   );
 router
   .route("/resendOtp")
