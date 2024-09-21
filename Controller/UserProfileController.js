@@ -6,10 +6,9 @@ const logger = require("../logger"); // Import Winston logger
 
 const getUserProfileHandler = asyncHandler(async (req, res) => {
   try {
-    logger.info(`Fetching user profile for user ID: ${req.user._id}`);
+    logger.info(`Fetching user profile for user ID: ${req.user.userId}`);
 
     res.status(200).json({
-      _id: req.user._id,
       name: req.user.username,
       emailId: req.user.emailId,
       phoneNumber: req.user.phoneNumber,
@@ -25,7 +24,7 @@ const editUserHandler = asyncHandler(async (req, res) => {
   try {
     const { username, dateOfBirth, persona, phoneNumber, profilePic } =
       req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     logger.info(`Editing user profile for user ID: ${userId}`);
 
@@ -57,13 +56,13 @@ const editUserHandler = asyncHandler(async (req, res) => {
 
 const deleteUserHandler = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     logger.info(`Deleting user profile for user ID: ${userId}`);
 
     const deletedUser = new DeletedUser({
-      userId: req.user._id,
+      userId: req.user.userId,
       username: req.user.username,
-      email: req.user.emailId,
+      emailId: req.user.emailId,
     });
 
     await deletedUser.save();

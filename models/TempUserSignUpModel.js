@@ -6,6 +6,7 @@ const tempUserSignUpSchema = new mongoose.Schema({
   phoneNumber: { type: String },
   emailId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now, expires: "2h"},
+  userId: { type: String, required: true, unique: true },
 });
 
 module.exports = mongoose.model(

@@ -5,7 +5,8 @@ const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
 const generateOtpEmail = require("../mailTemplates/otpMail/generateOtpEmail");
-const logger = require("../logger"); // Import the logger
+const logger = require("../logger"); 
+const { v4: uuidv4 } = require('uuid');
 
 async function getUserDataFromGoogle(accessToken) {
   try {
@@ -92,13 +93,15 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     let userInDatabase = await UserProfile.findOne({ emailId: userEmail });
 
     if (!userInDatabase) {
+      const userId = uuidv4();
       const newUserProfile = new UserProfile({
         username: username,
         emailId: userEmail,
+        userId
       });
       userInDatabase = await newUserProfile.save();
     }
-    const currentUserId = userInDatabase._id;
+    const currentUserId = userInDatabase.userId;
     res.status(200).json({
       token: generateToken(
         currentUserId,
@@ -126,11 +129,13 @@ const signUpHandler = asyncHandler(async (req, res) => {
       return;
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+    const tempUserId = uuidv4();
     const newTempSignedUser = new TempUserSignUp({
       username: username,
       password: hashedPassword,
       phoneNumber: phoneNumber,
       emailId: useremail,
+      userId: tempUserId
     });
 
     await TempUserSignUp.findOneAndDelete({ emailId: useremail });
@@ -139,13 +144,13 @@ const signUpHandler = asyncHandler(async (req, res) => {
     const otp = generateOTP();
     await sendOTP("akshat", useremail, otp, true);
     const newOTP = new OtpSchema({
-      userId: createdUser._id,
+      userId: createdUser.userId,
       otp: otp,
     });
     await newOTP.save();
 
     res.status(201).json({
-      token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+      token: generateToken(createdUser.userId, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     });
     logger.info("User signed up successfully", { useremail });
   } catch (error) {
@@ -163,10 +168,10 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
 
 
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { userOtp } = req.body;
 
-    const originalOtp = await OtpSchema.findOne({ userId: userId }).sort({ createdAt: -1 });
+    const originalOtp = await OtpSchema.findOne({userId}).sort({ createdAt: -1 });
     let createdUser = req.user;
 
     if (originalOtp && originalOtp.otp == userOtp) {
@@ -178,7 +183,7 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
         createdUser = await saveUserInPermanentDatabase.save();
       }
       res.status(200).json({
-        token: generateToken(createdUser._id, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
+        token: generateToken(createdUser.userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN)
       });
       logger.info('OTP verification successful', { userId });
     } else {
@@ -204,7 +209,7 @@ const loginHandler = asyncHandler(async (req, res) => {
       return;
     }
     const storedHashPassword = userInDatabase.password;
-    const userId = userInDatabase._id;
+    const userId = userInDatabase.userId;
     const resultOfComparison = await bcrypt.compare(
       password,
       storedHashPassword
@@ -248,12 +253,12 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
     const otp = generateOTP();
     await sendOTP("akshat", userEmail, otp, false);
     const newOTP = new OtpSchema({
-      userId: userInDatabase._id,
+      userId: userInDatabase.userId,
       otp: otp,
     });
     await newOTP.save();
     res.status(200).json({
-      token: generateToken(userInDatabase._id, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+      token: generateToken(userInDatabase.userId, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     });
     logger.info("Forgot password OTP sent successfully", { userEmail });
   } catch (error) {
@@ -271,11 +276,11 @@ const resetPasswordHandler = asyncHandler(async (req, res) => {
 
   try {
     const { newPassword } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     const newUser = await UserProfile.findOneAndUpdate(
-      { _id: userId },
+      { userId },
       { $set: { password: hashedPassword } },
       { new: true }
     );
@@ -295,12 +300,12 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
     const otp = generateOTP();
     await sendOTP("akshat", req.user.emailId, otp, false);
     const newOTP = new OtpSchema({
-      userId: req.user._id,
+      userId: req.user.userId,
       otp: otp,
     });
     await newOTP.save();
     res.status(200).json();
-    logger.info("OTP resent successfully", { userId: req.user._id });
+    logger.info("OTP resent successfully", { userId: req.user.userId });
   } catch (error) {
     logger.error("Error while resending OTP", {
       error: error.message,

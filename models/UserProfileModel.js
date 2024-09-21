@@ -14,6 +14,7 @@ const userProfileSchema = new mongoose.Schema({
     default:
       "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
   },
+  userId: { type: String, required: true, unique: true },
 });
 
 module.exports = mongoose.model(

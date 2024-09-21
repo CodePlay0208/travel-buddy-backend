@@ -16,7 +16,7 @@ const tokenProtect = (jwtSecretKey) => {
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
-        req.user = await UserProfile.findById(decoded.id);
+        req.user = await UserProfile.findOne({userId: decoded.id});
 
         logger.info("Middleware passed", { userId: decoded.id });
         next();
@@ -52,9 +52,9 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
         let user = null;
 
         if (isSignUpRequest) {
-          user = await TempUserSignUp.findById(decoded.id);
+          user = await TempUserSignUp.findOne({userId: decoded.id});
         } else {
-          user = await UserProfile.findById(decoded.id);
+          user = await UserProfile.findOne({userId: decoded.id});
         }
        
         if (user == null || user == undefined) {
@@ -109,7 +109,7 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
         process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
       );
 
-      req.user = await UserProfile.findById(decoded.id);
+      req.user = await UserProfile.findOne({userId: decoded.id});
       logger.info("Token decoded successfully", { userId: decoded.id });
     } catch (error) {
       logger.error("Error while decoding token", {

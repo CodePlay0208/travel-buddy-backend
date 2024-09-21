@@ -7,6 +7,7 @@ const {
 } = require("../config/awsConfigs/S3");
 const { dateFromDateString } = require("../Utils");
 const logger = require("../logger"); 
+const { v4: uuidv4 } = require('uuid');
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -23,7 +24,7 @@ const createTripHandler = asyncHandler(async (req, res) => {
       description,
     } = req.body;
 
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { files } = req;
     logger.info(`Creating a new trip for user ${userId}`);
 
@@ -33,6 +34,7 @@ const createTripHandler = asyncHandler(async (req, res) => {
     const destinationImages = uploadedObjectNames;
     const queryStartDate = dateFromDateString(startDate);
     const queryEndDate = dateFromDateString(endDate);
+    const tripId = uuidv4();
 
     const newTrip = new TripData({
       destination,
@@ -47,9 +49,10 @@ const createTripHandler = asyncHandler(async (req, res) => {
       description,
       destinationImages,
       userId,
+      tripId
     });
 
-    const newtripInDatabase = await newTrip.save();
+    await newTrip.save();
     logger.info(`Trip created successfully for user ${userId}`);
     res
       .status(201)
@@ -65,7 +68,7 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     const { tripId } = req.params;
     logger.info(`Fetching trip with ID: ${tripId}`);
 
-    const trip = await TripData.findOne({ _id: tripId });
+    const trip = await TripData.findOne({tripId });
     if (!trip) {
       logger.error(`Trip not found for ID: ${tripId}`);
       return res.status(404).json();
@@ -82,7 +85,7 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
 
 const getTripsByUserHandler = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     logger.info(`Fetching trips for user ${userId}`);
 
     const { offset = 0, limit = process.env.LIMIT_FOR_SENDING_TRIPS } =
@@ -128,7 +131,7 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
       offset = 0,
       limit = process.env.LIMIT_FOR_SENDING_TRIPS,
     } = req.query;
-    const userId = req?.user?._id;
+    const userId = req?.user?.userId;
 
     let query = {};
 
@@ -202,8 +205,8 @@ const editTripHandler = asyncHandler(async (req, res) => {
       description,
     } = req.body;
 
-    const userId = req.user._id;
-    const tripInDatabase = await TripData.findById(tripId);
+    const userId = req.user.userId;
+    const tripInDatabase = await TripData.findOne({tripId});
 
     if (!tripInDatabase) {
       logger.error(`Trip with ID: ${tripId} not found`);
@@ -247,7 +250,7 @@ const editTripHandler = asyncHandler(async (req, res) => {
       allFilesUploaded = allObjectsUploaded;
     }
 
-    const updatedTrip = await tripInDatabase.save();
+    await tripInDatabase.save();
     logger.info(`Trip with ID: ${tripId} updated successfully`);
     res.status(200).json({  allFilesUploaded });
   } catch (err) {
@@ -259,10 +262,10 @@ const editTripHandler = asyncHandler(async (req, res) => {
 const deleteTripHandler = asyncHandler(async (req, res) => {
   try {
     const tripId = req.params.tripId;
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     const tripInDatabase = await TripData.findOne({
-      _id: tripId,
+      tripId,
       userId,
     });
 

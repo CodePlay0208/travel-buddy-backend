@@ -13,7 +13,7 @@ const locationRoute = require("./routes/LocationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
-const connectDB = require("./config/Database");
+const initializeDB = require("./config/databaseConfigs/Database");
 const logger = require("./logger");
 
 const corsOptions = {
@@ -25,7 +25,7 @@ try {
   app.use(cors(corsOptions));
   app.use(express.json());
 
-  connectDB();
+  initializeDB();
 
   app.use("/login", loginRoute);
   app.use("/user", userProfileRoute);
