@@ -1,7 +1,7 @@
 const logger = require("../Logger");
-const userProfileRepository = require("../database/UserProfileRepository");
-const tripRepository = require("../database/TripRepository");
-const deletedUserRepository = require("../database/DeletedUserRepository.js");
+const userProfileRepository = require("../repositories/UserProfileRepository.js");
+const tripRepository = require("../repositories/TripRepository.js");
+const deletedUserRepository = require("../repositories/DeletedUserRepository.js");
 
 async function updateUserProfile(userId, updateData) {
   try {

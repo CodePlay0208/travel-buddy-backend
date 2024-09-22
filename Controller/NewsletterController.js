@@ -7,7 +7,7 @@ const {
   API_SUCCESS,
   NEWSLETTER_SUBSCRIPTION,
 } = require("../constants/ApiConstants");
-const newsletterValidations = require("../validators/NewsletterValidator");
+const newsletterValidator = require("../validators/NewsletterValidator");
 const requestContext = require("../config/RequestContext");
 const {ValidationError} = require("../exceptions/ValidationError");
 
@@ -21,7 +21,7 @@ const NewsletterSubscriptionHandler = asyncHandler(async (req, res) => {
 
     const { emailId } = req.body;
 
-    newsletterValidations.validateEmail(emailId);
+    newsletterValidator.validateEmail(emailId);
 
     await newsletterService.subscribeUser(emailId);
 

@@ -1,7 +1,4 @@
-const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
-const DeletedUser = require("../models/DeletedUserModel");
-const TripData = require("../models/TripDataModel");
 const logger = require("../Logger");
 const userProfileService = require("../service/UserProfileService");
 const {

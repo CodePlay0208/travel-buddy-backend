@@ -1,4 +1,4 @@
-const newsletterRepository = require("../database/NewsletterRepository");
+const newsletterRepository = require("../repositories/NewsletterRepository");
 const { v4: uuidv4 } = require("uuid");
 const logger = require("../Logger");
 

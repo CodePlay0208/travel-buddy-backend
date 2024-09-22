@@ -13,7 +13,7 @@ const locationRoute = require("./routes/LocationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
-const initializeDB = require("./database/Config");
+const initializeDB = require("./repositories/Config");
 const logger = require("./Logger");
 const requestContextMiddleware = require("./middleware/RequestContextMiddleware");
 
