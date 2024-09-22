@@ -42,6 +42,7 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
 });
 
 const editUserHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
@@ -72,6 +73,7 @@ const editUserHandler = asyncHandler(async (req, res) => {
 });
 
 const deleteUserHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
