@@ -13,17 +13,20 @@ const locationRoute = require("./routes/LocationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
-const initializeDB = require("./config/databaseConfigs/Database");
-const logger = require("./logger");
+const initializeDB = require("./database/Config");
+const logger = require("./Logger");
+const requestContextMiddleware = require("./middleware/RequestContextMiddleware");
 
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
   credentials: true,
 };
 
+
 try {
   app.use(cors(corsOptions));
   app.use(express.json());
+  app.use(requestContextMiddleware);
 
   initializeDB();
 

@@ -2,7 +2,7 @@ const Message = require("../models/MessageModel");
 const User = require("../models/UserProfileModel");
 const Chat = require("../models/ChatModel");
 const asyncHandler = require("express-async-handler");
-const logger = require("../logger"); // Import the Winston logger
+const logger = require("../Logger"); // Import the Winston logger
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
   try {

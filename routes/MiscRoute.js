@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   NewsletterSubscriptionHandler,
-} = require("../controller/MiscController");
+} = require("../controller/NewsletterController");
 
 router.route("/subscribeToNewsletter").post(NewsletterSubscriptionHandler);
 

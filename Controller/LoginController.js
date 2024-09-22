@@ -4,12 +4,14 @@ const TempUserSignUp = require("../models/TempUserSignUpModel");
 const asyncHandler = require("express-async-handler");
 const generateToken = require("../config/GenerateToken");
 const OtpSchema = require("../models/OtpModel");
-const generateOtpEmail = require("../mailTemplates/otpMail/generateOtpEmail");
-const logger = require("../logger"); 
+const generateOtpEmail = require("../mailTemplates/otpMail/GenerateOtpEmail");
+const logger = require("../Logger"); 
 const { v4: uuidv4 } = require('uuid');
+const {GOOGLE_LOGIN, LOGIN, API_STARTED, API_FAILED, SIGN_UP} = require("../constants/ApiConstants");
 
 async function getUserDataFromGoogle(accessToken) {
   try {
+    logger.info(`Requesting user data from Google`);
     const url = process.env.GOOGLE_API_FOR_FETCHING_USER_DATA;
     const response = await fetch(url, {
       method: "GET",
@@ -24,13 +26,10 @@ async function getUserDataFromGoogle(accessToken) {
     if (data.error) {
       throw new Error(data.error.message || "Failed to fetch user data.");
     }
-    logger.info("Successfully fetched user data", { data });
+    logger.info(`Successfully fetched user data=${data} from google`);
     return data;
   } catch (error) {
-    logger.error("Failed to fetch user data", {
-      error: error.message,
-      stack: error.stack,
-    });
+    logger.error(`Failed to fetch user data from google with error=${error}`)
     throw error;
   }
 }
@@ -53,11 +52,11 @@ async function sendOTP(name, useremail, otp, status) {
       },
       to: [
         {
-          email: "tusharmoudgil22@gmail.com",
+          email: useremail,
           name: name,
         },
       ],
-      subject: "Hello world",
+      subject: "Verify OTP",
       htmlContent: htmlContent,
     };
 
@@ -84,6 +83,9 @@ async function sendOTP(name, useremail, otp, status) {
 
 const googleLoginHandler = asyncHandler(async (req, res) => {
   try {
+    const startTime = Date.now();
+    const REQUEST_TID = req.additionalHeaders.requestTid;
+    logger.info(`Request recieved for API_NAME=${GOOGLE_LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`);
     const { googleToken } = req.googleToken;
     const userData = await getUserDataFromGoogle(googleToken);
     const { emailAddresses, names } = userData;
@@ -108,18 +110,19 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
         process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
       ),
     });
-    logger.info("Google login successful", { userEmail, username });
+    const endTime = Date.now();
+    logger.info(`API_NAME=${GOOGLE_LOGIN}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${endTime - startTime}`);
   } catch (error) {
-    logger.error("Google login failed", {
-      error: error.message,
-      stack: error.stack,
-    });
+    logger.info(`API_NAME=${GOOGLE_LOGIN}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`);
     res.status(500).json({});
   }
 });
 
 const signUpHandler = asyncHandler(async (req, res) => {
   try {
+    const startTime = Date.now();
+    const REQUEST_TID = req.additionalHeaders.requestTid;
+    logger.info(`Request recieved for API_NAME=${SIGN_UP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`);
     const { useremail, password, username, phoneNumber } = req.body;
     const userInDatabase = await UserProfile.findOne({ emailId: useremail });
 
@@ -139,25 +142,24 @@ const signUpHandler = asyncHandler(async (req, res) => {
     });
 
     await TempUserSignUp.findOneAndDelete({ emailId: useremail });
-    const createdUser = await newTempSignedUser.save();
+    await newTempSignedUser.save();
 
     const otp = generateOTP();
-    await sendOTP("akshat", useremail, otp, true);
+    logger.info(`Generated OTP for user with userId=${tempUserId}, otp=${otp}`);
+    await sendOTP(username, useremail, otp, true);
     const newOTP = new OtpSchema({
-      userId: createdUser.userId,
+      userId: tempUserId,
       otp: otp,
     });
     await newOTP.save();
 
     res.status(201).json({
-      token: generateToken(createdUser.userId, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+      token: generateToken(tempUserId, process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     });
-    logger.info("User signed up successfully", { useremail });
+    const endTime = Date.now();
+    logger.info(`API_NAME=${SIGN_UP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${endTime - startTime}`);
   } catch (error) {
-    logger.error("Error during signup", {
-      error: error.message,
-      stack: error.stack,
-    });
+    logger.info(`API_NAME=${SIGN_UP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`);
     res.status(500).json();
   }
 });
@@ -199,6 +201,7 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
 });
 
 const loginHandler = asyncHandler(async (req, res) => {
+  console.log("hry")
   try {
     const { userEmail, password, rememberMe } = req.body;
     const userInDatabase = await UserProfile.findOne({ emailId: userEmail });

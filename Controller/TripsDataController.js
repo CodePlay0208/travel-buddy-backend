@@ -4,9 +4,9 @@ const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
-} = require("../config/awsConfigs/S3");
+} = require("../aws/S3");
 const { dateFromDateString } = require("../Utils");
-const logger = require("../logger"); 
+const logger = require("../Logger"); 
 const { v4: uuidv4 } = require('uuid');
 
 const createTripHandler = asyncHandler(async (req, res) => {

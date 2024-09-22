@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
-const UserProfile = require("../../models/UserProfileModel");
-const TripDataModel = require("../../models/TripDataModel");
-const TempUserSignUpModel = require("../../models/TempUserSignUpModel");
-const OtpModel = require("../../models/OtpModel");
-const NewsletterSubscriptionUserModel = require("../../models/NewsletterSubscriptionUserModel");
+const UserProfile = require("../models/UserProfileModel");
+const TripDataModel = require("../models/TripDataModel");
+const TempUserSignUpModel = require("../models/TempUserSignUpModel");
+const OtpModel = require("../models/OtpModel");
+const NewsletterSubscriptionUserModel = require("../models/NewsletterSubscriptionUserModel");
 
 const listAllIndexes = async () => {
   const db = mongoose.connection.db; // Get the database object

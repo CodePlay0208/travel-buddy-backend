@@ -2,7 +2,7 @@ const Chat = require("../models/ChatModel");
 const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
 
-const logger = require("../logger"); // import your logger
+const logger = require("../Logger"); // import your logger
 
 const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
   try {

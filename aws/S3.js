@@ -6,7 +6,7 @@ const {
 } = require("@aws-sdk/client-s3");
 const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { randomFileName } = require("../../Utils");
+const { randomFileName } = require("../Utils");
 
 
 const uploadObjectToS3Bucket = asyncHandler(async (object) => {

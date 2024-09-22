@@ -1,4 +1,4 @@
-const logger = require("../logger"); // Import the logger
+const logger = require("../Logger"); // Import the logger
 
 const notFound = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
