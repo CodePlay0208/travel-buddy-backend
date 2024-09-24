@@ -7,6 +7,7 @@ const {
   API_SUCCESS,
   LOCATIONS_FROM_GOOGLE,
 } = require("../constants/ApiConstants");
+const requestContext = require("../config/RequestContext");
 
 const getLocationByNameHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();

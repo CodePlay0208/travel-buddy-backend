@@ -1,0 +1,231 @@
+const bcrypt = require("bcrypt");
+const { ValidationError } = require("../exceptions/ValidationError");
+const logger = require("../Logger");
+const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
+const userProfileRepository = require("../repositories/UserProfileRepository");
+const otpRepository = require("../repositories/OtpRepository");
+const generateOtpEmail = require("../mailTemplates/otpMail/GenerateOtpEmail");
+const generateToken = require("../config/GenerateToken");
+
+function generateOTP() {
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  return otp;
+}
+
+async function sendOTP(name, useremail, otp, status) {
+  try {
+    logger.info(`Sending otp to user with emailId=${useremail}`);
+    const otpString = `${otp}`;
+    const htmlContent = generateOtpEmail(name, useremail, otpString, status);
+
+    const mailingData = {
+      sender: {
+        name: "travmigoz",
+        email: process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS,
+      },
+      to: [
+        {
+          email: useremail,
+          name: name,
+        },
+      ],
+      subject: "Verify OTP",
+      htmlContent: htmlContent,
+    };
+
+    const url = process.env.API_FOR_SENDING_MAILS;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "api-key": process.env.API_KEY_FOR_SENDING_MAILS,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(mailingData),
+    });
+
+    await response.json();
+    logger.info(`OTP sent successfully to user with emailId=${useremail}`);
+  } catch (error) {
+    logger.error(
+      `Error while sending OTP to user with emailId=${useremail}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function signUp(useremail, password, username, phoneNumber) {
+  try {
+    const tempUserId = uuidv4();
+    logger.info(
+      `Signing Up user with email=${useremail}, username=${username}, phoneNumber=${phoneNumber}, userId=${tempUserId}`
+    );
+    const userInDatabase = await userProfileRepository.findUserWithEmailId(
+      useremail
+    );
+
+    if (userInDatabase) {
+      logger.error("User already exists", { useremail });
+      throw new ValidationError("User Already Exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newTempSignedUser = {
+      username,
+      password: hashedPassword,
+      phoneNumber,
+      emailId: useremail,
+      userId: tempUserId,
+    };
+
+    await tempUserSignUpRepository.createUniqueUserWithEmailId(
+      newTempSignedUser
+    );
+    const otp = generateOTP();
+    await sendOTP(username, useremail, otp, true);
+    logger.info(
+      `Successfully sent otp=${otp} for user with userId=${tempUserId}, emailId=${useremail}`
+    );
+    await otpRepository.create(userId, otp);
+    const token = generateToken(
+      tempUserId,
+      process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
+    );
+    return token;
+  } catch (error) {
+    logger.error(`Failed to update user profile with error=${error}`);
+    throw error;
+  }
+}
+
+async function verifyOtp(userId, userOtp) {
+  try {
+    const originalOtp = await otpRepository.findOtpWithUserId(userId);
+    let createdUser = req.user;
+
+    if (!originalOtp || originalOtp.otp != userOtp) {
+      throw new ValidationError("Otp Verification Failed");
+    }
+
+    const { isSignUpRequest } = req.body;
+
+    if (!isSignUpRequest) {
+      return;
+    }
+
+    const newUser = { ...req.user._doc };
+    delete newUser._id;
+    await userProfileRepository.create(newUser);
+    logger.info(`Created user in permanent database, user=${createdUser}`);
+  } catch (error) {
+    logger.error(
+      `Failed to verify otp for user with userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function login(emailId, password, rememberMe) {
+  try {
+    const userInDatabase = await userProfileRepository.findUserWithEmailId(
+      emailId
+    );
+
+    if (!userInDatabase) {
+      throw new ValidationError(`User not found with emailId=${emailId}`);
+    }
+
+    const userId = userInDatabase.userId;
+    const storedHashPassword = userInDatabase.password;
+    const resultOfComparison = await bcrypt.compare(
+      password,
+      storedHashPassword
+    );
+
+    if (!resultOfComparison) {
+      throw new ValidationError(
+        `User entered the wrong password, userId=${userId}, emailId=${emailId}`
+      );
+    }
+
+    const expiresIn = rememberMe
+      ? process.env.JWT_TOKEN_REMEMBER_ME_EXPIRE_TIME
+      : process.env.JWT_TOKEN_DEFAULT_EXPIRE_TIME;
+
+    const token = generateToken(
+      userId,
+      process.env.JWT_SECRET_KEY_FOR_USER_LOGIN,
+      expiresIn
+    );
+    return token;
+  } catch (error) {
+    logger.error(
+      `Failed to verify otp for user with userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function forgotPassword(emailId) {
+  try {
+    const userInDatabase = await userProfileRepository.findUserWithEmailId(
+      useremail
+    );
+
+    if (!userInDatabase) {
+      throw new ValidationError("User Doesn't Exists");
+    }
+    const userId = userInDatabase.userId;
+    const otp = generateOTP();
+    logger.info(`Generated OTP for user with userId=${userId}, otp=${otp}`);
+    await sendOTP(username, useremail, otp, true);
+    await otpRepository.create(userId, otp);
+    const token = generateToken(
+      userId,
+      process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
+    );
+    return token;
+  } catch (error) {
+    logger.error(
+      `Error occured in forgot password flow for user with userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function resendOtp(username, useremail, userId) {
+  try {
+    const otp = generateOTP();
+    await sendOTP(username, useremail, otp, false);
+    logger.info(
+      `Successfully sent otp=${otp} for user with userId=${userId}, emailId=${useremail}`
+    );
+    await otpRepository.create(userId, otp);
+  } catch (error) {
+    logger.error(
+      `Failed to resend otp to user with userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function resetPassword(userId, newPassword) {
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updateData = { password: hashedPassword };
+    await userProfileRepository.updateUser(userId, updateData);
+  } catch (error) {
+    logger.error(
+      `Failed to update password of user with userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+module.exports = {
+  signUp,
+  verifyOtp,
+  resendOtp,
+  login,
+  forgotPassword,
+  resetPassword,
+};

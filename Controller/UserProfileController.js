@@ -9,6 +9,7 @@ const {
   EDIT_USER_PROFILE,
   DELETE_USER_PROFILE,
 } = require("../constants/ApiConstants");
+const requestContext = require("../config/RequestContext");
 
 const getUserProfileHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();

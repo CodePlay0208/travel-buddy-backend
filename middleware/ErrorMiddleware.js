@@ -1,6 +1,7 @@
-const logger = require("../Logger"); // Import the logger
+const logger = require("../Logger"); 
 
 const notFound = (req, res, next) => {
+  logger.info(`Not found - ${req.originalUrl}`);
   const error = new Error(`Not Found - ${req.originalUrl}`);
   logger.error(`Not Found - ${req.originalUrl}`);
   res.status(404);
@@ -10,7 +11,6 @@ const notFound = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
 
-  // Log the error details
   logger.error("Unhandled Error", {
     message: err.message,
     stack: err.stack,
@@ -22,7 +22,7 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode);
   res.json({
     message: err.message,
-    stack: process.env.NODE_ENV === "production" ? null : err.stack, // Hide stack trace in production
+    stack: process.env.NODE_ENV === "production" ? null : err.stack
   });
 };
 

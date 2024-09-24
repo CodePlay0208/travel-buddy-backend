@@ -8,6 +8,7 @@ const {
 const { dateFromDateString } = require("../Utils");
 const logger = require("../Logger"); 
 const { v4: uuidv4 } = require('uuid');
+const requestContext = require("../config/RequestContext");
 
 const createTripHandler = asyncHandler(async (req, res) => {
   try {
@@ -26,7 +27,6 @@ const createTripHandler = asyncHandler(async (req, res) => {
 
     const userId = req.user.userId;
     const { files } = req;
-    logger.info(`Creating a new trip for user ${userId}`);
 
     const { uploadedObjectNames, allObjectsUploaded } =
       await uploadObjectsToS3Bucket(files);
