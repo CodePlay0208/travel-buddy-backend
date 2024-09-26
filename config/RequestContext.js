@@ -1,7 +1,5 @@
 const { AsyncLocalStorage } = require("async_hooks");
 const logger = require("../Logger");
-const { Error } = require("mongoose");
-
 const asyncLocalStorage = new AsyncLocalStorage();
 
 const requestContext = {

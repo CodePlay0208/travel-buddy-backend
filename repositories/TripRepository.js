@@ -3,10 +3,102 @@ const TripData = require("../models/TripDataModel");
 async function deleteTripsByUserId(userId) {
   try {
     await TripData.deleteMany({ userId });
-  } catch (err) {
-    logger.error(`Error occurred while deleting trips for user with userId=${userId}`)
-    throw new Error(`Error deleting trips for user ${userId}: ${err.message}`);
+  } catch (error) {
+    logger.error(
+      `Error occurred while deleting trips for user with userId=${userId}`
+    );
+    throw new Error(`Error deleting trips for user ${userId}, error=${error}`);
   }
 }
 
-module.exports = { deleteTripsByUserId };
+async function deleteTripsByTripId(tripId) {
+  try {
+    await TripData.deleteOne({ tripId });
+  } catch (error) {
+    logger.error(`Error occurred while deleting trip with tripId=${tripId}`);
+    throw new Error(`Error deleting trip with ${tripId}, error=${error}`);
+  }
+}
+
+async function findTripWithTripIdAndUserId(tripId, userId) {
+  try {
+    const tripInDatabase = await TripData.findOne({
+      tripId,
+      userId,
+    });
+    return tripInDatabase;
+  } catch (error) {
+    logger.error(
+      `Error occurred while deleting trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while deleting trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
+    );
+  }
+}
+
+async function createTrip(newTrip) {
+  try {
+    const tripInDatabase = new TripData(newTrip);
+    const createdTrip = await tripInDatabase.save();
+    return createdTrip;
+  } catch (error) {
+    logger.error(
+      `Error occurred while creating trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while deleting trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
+    );
+  }
+}
+
+async function findTripWithTripId(tripId) {
+  try {
+    const trip = await TripData.findOne({ tripId });
+    return trip;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching trip with tripId=${newTrip.tripId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching trip with tripId=${newTrip.tripId}, error=${error}`
+    );
+  }
+}
+
+async function updateTrip(trip) {
+  try {
+    await trip.save();
+  } catch (error) {
+    logger.error(
+      `Error occurred while updating trip=${trip}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while updating trip=${trip}, error=${error}`
+    );
+  }
+}
+
+async function findTripsWithQuery(query, limit, offset) {
+  try {
+    const trips = TripData.find(query).skip(skip).limit(limit);
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+  }
+}
+
+module.exports = {
+  deleteTripsByUserId,
+  findTripWithTripIdAndUserId,
+  deleteTripsByTripId,
+  createTrip,
+  findTripWithTripId,
+  updateTrip,
+  findTripsWithQuery
+};

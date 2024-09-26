@@ -1,7 +1,8 @@
 class ValidationError extends Error {
-  constructor(message) {
+  constructor(message, errorCode = 400) {
     super(message);
     this.name = "ValidationError";
+    this.errorCode = errorCode; 
   }
 }
 
