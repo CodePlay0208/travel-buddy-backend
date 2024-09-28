@@ -82,11 +82,11 @@ async function updateTrip(trip) {
 
 async function findTripsWithQuery(query, limit, offset) {
   try {
-    const trips = TripData.find(query).skip(skip).limit(limit);
+    const trips = TripData.find(query).skip(offset).limit(limit);
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
     );
     throw new Error(
       `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`

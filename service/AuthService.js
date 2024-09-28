@@ -7,6 +7,7 @@ const otpRepository = require("../repositories/OtpRepository");
 const generateOtpEmail = require("../mailTemplates/otpMail/GenerateOtpEmail");
 const generateToken = require("../config/GenerateToken");
 const { v4: uuidv4 } = require("uuid");
+const authValidator = require("../validators/AuthValidator");
 
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -18,7 +19,7 @@ async function sendOTP(name, useremail, otp, status) {
     logger.info(`Sending otp to user with emailId=${useremail}`);
     const otpString = `${otp}`;
     const htmlContent = generateOtpEmail(name, useremail, otpString, status);
-    const subject = status? "THANKS FOR SIGNING UP" : "VERIFY OTP";
+    const subject = status ? "THANKS FOR SIGNING UP" : "VERIFY OTP";
     const mailingData = {
       sender: {
         name: "travmigoz",
@@ -54,12 +55,14 @@ async function sendOTP(name, useremail, otp, status) {
   }
 }
 
-async function signUp(useremail, password, username, phoneNumber) {
+async function signUp(payload) {
   try {
     const tempUserId = uuidv4();
+    const { useremail, password, username, phoneNumber } = payload;
     logger.info(
       `Signing Up user with email=${useremail}, username=${username}, phoneNumber=${phoneNumber}, userId=${tempUserId}`
     );
+    authValidator.validateSignUpRequest(payload);
     const userInDatabase = await userProfileRepository.findUserWithEmailId(
       useremail
     );
@@ -100,7 +103,7 @@ async function signUp(useremail, password, username, phoneNumber) {
 
 async function verifyOtp(newUser, userOtp, isSignUpRequest) {
   try {
-    const userId = newUser.userId; 
+    const userId = newUser.userId;
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
 
     if (!originalOtp || originalOtp.otp != userOtp) {
@@ -113,7 +116,7 @@ async function verifyOtp(newUser, userOtp, isSignUpRequest) {
 
     const newUserObj = newUser.toObject();
     delete newUserObj._id;
-    
+
     console.log(newUser, "the new");
     const createdUser = await userProfileRepository.create(newUserObj);
     logger.info(`Created user in permanent database, user=${createdUser}`);
@@ -125,14 +128,18 @@ async function verifyOtp(newUser, userOtp, isSignUpRequest) {
   }
 }
 
-async function login(emailId, password, rememberMe) {
+async function login(payload) {
   try {
+    const { useremail, password, rememberMe } = payload;
+
+    authValidator.validateLoginRequest(payload);
+
     const userInDatabase = await userProfileRepository.findUserWithEmailId(
-      emailId
+      useremail
     );
 
     if (!userInDatabase) {
-      throw new ValidationError(`User not found with emailId=${emailId}`);
+      throw new ValidationError(`User not found with emailId=${useremail}`);
     }
 
     const userId = userInDatabase.userId;
@@ -144,7 +151,7 @@ async function login(emailId, password, rememberMe) {
 
     if (!resultOfComparison) {
       throw new ValidationError(
-        `User entered the wrong password, userId=${userId}, emailId=${emailId}`
+        `User entered the wrong password, userId=${userId}, emailId=${useremail}`
       );
     }
 
@@ -166,8 +173,9 @@ async function login(emailId, password, rememberMe) {
   }
 }
 
-async function forgotPassword(emailId) {
+async function forgotPassword(useremail) {
   try {
+    authValidator.validateForgotPasswordRequest(useremail);
     const userInDatabase = await userProfileRepository.findUserWithEmailId(
       useremail
     );
@@ -178,7 +186,7 @@ async function forgotPassword(emailId) {
     const userId = userInDatabase.userId;
     const otp = generateOTP();
     logger.info(`Generated OTP for user with userId=${userId}, otp=${otp}`);
-    await sendOTP(username, useremail, otp, true);
+    await sendOTP(userInDatabase.username, useremail, otp, true);
     await otpRepository.create(userId, otp);
     const token = generateToken(
       userId,
@@ -187,7 +195,7 @@ async function forgotPassword(emailId) {
     return token;
   } catch (error) {
     logger.error(
-      `Error occured in forgot password flow for user with userId=${userId}, error=${error}`
+      `Error occured in forgot password flow for user with emailId=${useremail}, error=${error}`
     );
     throw error;
   }

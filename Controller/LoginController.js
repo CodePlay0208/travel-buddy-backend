@@ -98,13 +98,10 @@ const signUpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${SIGN_UP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { useremail, password, username, phoneNumber } = req.body;
+    
 
     const token = await authService.signUp(
-      useremail,
-      password,
-      username,
-      phoneNumber
+    req.body
     );
 
     res.status(201).json({
@@ -173,8 +170,7 @@ const loginHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { userEmail, password, rememberMe } = req.body;
-    const token = await authService.login(userEmail, password, rememberMe);
+    const token = await authService.login(req.body);
     res.status(200).json({ token });
     const endTime = Date.now();
     logger.info(
@@ -203,7 +199,8 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const { userEmail } = req.body;
-    await authService.forgotPassword(userEmail);
+    const token = await authService.forgotPassword(userEmail);
+    res.status(200).json({token});
     const endTime = Date.now();
     logger.info(
       `API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${

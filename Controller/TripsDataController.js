@@ -2,6 +2,9 @@ const asyncHandler = require("express-async-handler");
 const logger = require("../Logger");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const {
+  API_STARTED,
+  API_SUCCESS,
+  API_FAILED,
   DELETE_TRIP,
   CREATE_TRIP,
   GET_TRIP_BY_ID,
@@ -9,6 +12,7 @@ const {
   GET_TRIPS_WITH_FILTERS,
   GET_TRIPS_BY_USER
 } = require("../constants/ApiConstants");
+const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
 
 const createTripHandler = asyncHandler(async (req, res) => {
@@ -86,7 +90,7 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
     );
     const userId = req.user.userId;
     const filter = req.query;
-    const{ trips, newOffset} = await tripDataService.getTripsByFilter(filter, userId);
+    const{ trips, newOffset} = await tripDataService.getTripsByUser(filter, userId);
     res.status(200).json({ trips, offset: newOffset });
     const endTime = Date.now();
     logger.info(
@@ -117,7 +121,7 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
     const filter = req.query;
     const userId = req?.user?.userId;
 
-    const{ trips, newOffset} = await tripDataService.getTripsByFilter(filter, userId);
+    const{ trips, newOffset} = await tripDataService.getTripsWithFilter(filter, userId);
 
     res.status(200).json({ trips, offset: newOffset });
     const endTime = Date.now();
@@ -165,7 +169,7 @@ const editTripHandler = asyncHandler(async (req, res) => {
       }ms
 `
     );
-  } catch (err) {
+  } catch (error) {
     logger.error(
       `API_NAME=${EDIT_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );

@@ -11,10 +11,10 @@ const logger = require("../Logger");
 
 const uploadObjectToS3Bucket = asyncHandler(async (object, s3Bucket) => {
   try {
-    logger.info(`Uploading object=${object} to s3bucket=${s3Bucket}`);
+    logger.info(`Uploading object to s3bucket=${s3Bucket}`);
     const uploadedObjectName = randomFileName(object.originalname);
     const params = {
-      Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
+      Bucket: s3Bucket,
       Key: uploadedObjectName,
       Body: object.buffer,
       ContentType: object.mimetype,
@@ -25,7 +25,7 @@ const uploadObjectToS3Bucket = asyncHandler(async (object, s3Bucket) => {
     return uploadedObjectName;
   } catch (error) {
     logger.error(
-      `Error while uploading object=${object} to s3bucket=${s3Bucket}, error=${error}`
+      `Error while uploading object to s3bucket=${s3Bucket}, error=${error}`
     );
   }
   return null;
@@ -34,13 +34,12 @@ const uploadObjectToS3Bucket = asyncHandler(async (object, s3Bucket) => {
 const uploadObjectsToS3Bucket = asyncHandler(async (objects, s3Bucket) => {
   var uploadedObjectNames = [];
   var allObjectsUploaded = true;
-  logger.info(
-    `Uploading objects=${JSON.stringify(objects)} to s3bucket=${s3Bucket}`
-  );
+ 
   try {
+    logger.info(`Uploading objects to s3bucket=${s3Bucket}`);
     await Promise.all(
       objects.map(async (object) => {
-        const uploadedObjectName = await uploadObjectToS3Bucket(object);
+        const uploadedObjectName = await uploadObjectToS3Bucket(object, s3Bucket);
         if (uploadedObjectName == null) {
           allObjectsUploaded = false;
         }
@@ -49,7 +48,7 @@ const uploadObjectsToS3Bucket = asyncHandler(async (objects, s3Bucket) => {
     );
   } catch (error) {
     logger.error(
-      `Error while uploading objects=${objects} to s3bucket=${s3Bucket}, error=${error}`
+      `Error while uploading objects to s3bucket=${s3Bucket}, error=${error}`
     );
   }
 
@@ -60,10 +59,10 @@ const getObjectFromS3Bucket = asyncHandler(
   async (uploadedObjectName, s3Bucket) => {
     try {
       logger.info(
-        `Fetching object=${uploadedObjectName} from s3bucket=${s3Bucket}`
+        `Fetching object from s3bucket=${s3Bucket}`
       );
       const getObjectParams = {
-        Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
+        Bucket: s3Bucket,
         Key: uploadedObjectName,
       };
       const command = new GetObjectCommand(getObjectParams);
@@ -71,7 +70,7 @@ const getObjectFromS3Bucket = asyncHandler(
       return url;
     } catch (error) {
       logger.error(
-        `Error while fetching object=${uploadedObjectName} from s3bucket=${s3Bucket}, error=${error}`
+        `Error while fetching object from s3bucket=${s3Bucket}, error=${error}`
       );
     }
 
@@ -84,11 +83,11 @@ const getObjectsFromS3Bucket = asyncHandler(
     var uploadedObjectUrls = [];
     try {
       logger.info(
-        `Fetching objects=${uploadedObjectNames} from s3bucket=${s3Bucket}`
+        `Fetching objects from s3bucket=${s3Bucket}`
       );
       await Promise.all(
         uploadedObjectNames.map(async (object) => {
-          const uploadedFile = await getObjectFromS3Bucket(object);
+          const uploadedFile = await getObjectFromS3Bucket(object, s3Bucket);
           if (uploadedFile != null) {
             uploadedObjectUrls.push(uploadedFile);
           }
@@ -96,7 +95,7 @@ const getObjectsFromS3Bucket = asyncHandler(
       );
     } catch (error) {
       logger.error(
-        `Error while fetching objects=${uploadedObjectNames} from s3bucket=${s3Bucket}, error=${error}`
+        `Error while fetching objects from s3bucket=${s3Bucket}, error=${error}`
       );
     }
 
@@ -108,11 +107,11 @@ const deleteObjectFromS3Bucket = asyncHandler(
   async (uploadedObjectName, s3Bucket) => {
     try {
       logger.info(
-        `Deleting object=${uploadedObjectName} from s3bucket=${s3Bucket}`
+        `Deleting object from s3bucket=${s3Bucket}`
       );
 
       const getObjectParams = {
-        Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
+        Bucket: s3Bucket,
         Key: uploadedObjectName,
       };
 
@@ -121,7 +120,7 @@ const deleteObjectFromS3Bucket = asyncHandler(
       return true;
     } catch (error) {
       logger.error(
-        `Error while deleting object=${uploadedObjectName} from s3bucket=${s3Bucket}, error=${error}`
+        `Error while deleting object from s3bucket=${s3Bucket}, error=${error}`
       );
     }
 
@@ -129,15 +128,15 @@ const deleteObjectFromS3Bucket = asyncHandler(
   }
 );
 
-const deleteObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames) => {
+const deleteObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames, s3Bucket) => {
   var allObjectsDeleted = true;
   try {
     logger.info(
-      `Deleting objects=${uploadedObjectNames} from s3bucket=${s3Bucket}`
+      `Deleting object from s3bucket=${s3Bucket}`
     );
     await Promise.all(
       uploadedObjectNames.map(async (object) => {
-        const isObjectDeleted = await deleteObjectFromS3Bucket(object);
+        const isObjectDeleted = await deleteObjectFromS3Bucket(object, s3Bucket);
         if (!isObjectDeleted) {
           allObjectsDeleted = false;
         }
@@ -145,7 +144,7 @@ const deleteObjectsFromS3Bucket = asyncHandler(async (uploadedObjectNames) => {
     );
   } catch (error) {
     logger.error(
-      `Error while deleting object=${uploadedObjectNames} from s3bucket=${s3Bucket}, error=${error}`
+      `Error while deleting object from s3bucket=${s3Bucket}, error=${error}`
     );
   }
 

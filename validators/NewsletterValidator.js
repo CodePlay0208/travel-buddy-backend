@@ -1,15 +1,9 @@
 const { ValidationError } = require("../exceptions/ValidationError");
+const { isValidEmail } = require("../Utils");
 
 const newsletterValidator = {
   validateEmail: (emailId) => {
-    if (!emailId || typeof emailId !== 'string') {
-      throw new ValidationError("Invalid email: emailId can't be empty or null");
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailId)) {
-      throw new ValidationError("Invalid email format");
-    }
+   isValidEmail(emailId);
   },
 };
 

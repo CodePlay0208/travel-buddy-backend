@@ -6,6 +6,7 @@ const {
   deleteObjectsFromS3Bucket,
 } = require("../aws/S3");
 const { dateFromDateString } = require("../Utils");
+const { v4: uuidv4 } = require("uuid");
 const { ValidationError } = require("../exceptions/ValidationError.js");
 
 function addDestinationToQuery(query, destination) {
@@ -103,7 +104,7 @@ async function createTrip(payload, files, userId) {
 
     await tripRepository.createTrip(newTrip);
     logger.info(
-      `Trip with payload=${payload}, tripId=${tripId} created successfully`
+      `Trip with payload=${JSON.stringify(payload)}, tripId=${tripId} created successfully`
     );
     return allObjectsUploaded;
   } catch (error) {
@@ -135,23 +136,24 @@ async function getTripById(tripId) {
 async function editTrip(tripId, userId, newPayload, newDestinationImages) {
   try {
     const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
-
     if (!tripInDatabase) {
       throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
     }
-    if (!tripInDatabase.userId.equals(userId)) {
+    if (!tripInDatabase.userId == userId) {
       throw new ValidationError(
         `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
         403
       );
     }
-    const queryStartDate = dateFromDateString(startDate);
-    const queryEndDate = dateFromDateString(endDate);
+
+    const queryStartDate = dateFromDateString(newPayload.startDate);
+    const queryEndDate = dateFromDateString(newPayload.endDate);
     const fieldsToUpdate = {
       ...newPayload,
       startDate: queryStartDate,
       endDate: queryEndDate,
     };
+    console.log(fieldsToUpdate);
     Object.entries(fieldsToUpdate).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         tripInDatabase[key] = value;
@@ -172,7 +174,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     logger.info(`Trip with tripId=${tripId} updated successfully`);
     return allFilesUploaded;
   } catch (error) {
-    logger.error(`Error creating trip with payload=${payload}, error=${error}`);
+    logger.error(`Error editing trip with newPayload=${JSON.stringify(newPayload)}, error=${error}`);
     throw error;
   }
 }
@@ -181,7 +183,7 @@ async function getTripsByUser(filter, userId) {
   try {
     const { offset = 0, limit = process.env.LIMIT_FOR_SENDING_TRIPS } = filter;
 
-    const query = createQuery(destination, date, userId, true);
+    const query = createQuery(null, null, userId, true);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
       query,
       limit,
