@@ -6,6 +6,8 @@ const OtpSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, expires: "5m" },
 });
 
-OtpSchema.index({userId: 1}, {name: "userId_single_index"});
+OtpSchema.index({ userId: 1, createdAt: -1 }, { name: "userId_createdAt_index" });
+OtpSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
+
 
 module.exports = mongoose.model("OtpSchema", OtpSchema, "OtpSchema");

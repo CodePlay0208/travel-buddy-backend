@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const logger = require("../Logger");
-const requestContext = require("../config/RequestContext");
+const { requestContext } = require("../middleware/RequestContextMiddleware");
 const {
   DELETE_TRIP,
   CREATE_TRIP,
@@ -33,7 +33,8 @@ const createTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${CREATE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -61,7 +62,8 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GET_TRIP_BY_ID}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -90,7 +92,8 @@ const getTripsByUserHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GET_TRIPS_BY_USER}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -121,7 +124,8 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GET_TRIPS_WITH_FILTERS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -158,7 +162,8 @@ const editTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${EDIT_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (err) {
     logger.error(
@@ -188,7 +193,8 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${DELETE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(

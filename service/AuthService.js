@@ -6,6 +6,7 @@ const userProfileRepository = require("../repositories/UserProfileRepository");
 const otpRepository = require("../repositories/OtpRepository");
 const generateOtpEmail = require("../mailTemplates/otpMail/GenerateOtpEmail");
 const generateToken = require("../config/GenerateToken");
+const { v4: uuidv4 } = require("uuid");
 
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -85,7 +86,7 @@ async function signUp(useremail, password, username, phoneNumber) {
     logger.info(
       `Successfully sent otp=${otp} for user with userId=${tempUserId}, emailId=${useremail}`
     );
-    await otpRepository.create(userId, otp);
+    await otpRepository.create(tempUserId, otp);
     const token = generateToken(
       tempUserId,
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
@@ -97,28 +98,28 @@ async function signUp(useremail, password, username, phoneNumber) {
   }
 }
 
-async function verifyOtp(userId, userOtp) {
+async function verifyOtp(newUser, userOtp, isSignUpRequest) {
   try {
+    const userId = newUser.userId; 
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
-    let createdUser = req.user;
 
     if (!originalOtp || originalOtp.otp != userOtp) {
       throw new ValidationError("Otp Verification Failed");
     }
 
-    const { isSignUpRequest } = req.body;
-
     if (!isSignUpRequest) {
       return;
     }
 
-    const newUser = { ...req.user._doc };
-    delete newUser._id;
-    await userProfileRepository.create(newUser);
+    const newUserObj = newUser.toObject();
+    delete newUserObj._id;
+    
+    console.log(newUser, "the new");
+    const createdUser = await userProfileRepository.create(newUserObj);
     logger.info(`Created user in permanent database, user=${createdUser}`);
   } catch (error) {
     logger.error(
-      `Failed to verify otp for user with userId=${userId}, error=${error}`
+      `Failed to verify otp for user with user=${newUser}, error=${error}`
     );
     throw error;
   }

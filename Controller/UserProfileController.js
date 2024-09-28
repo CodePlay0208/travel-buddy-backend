@@ -9,8 +9,9 @@ const {
   EDIT_USER_PROFILE,
   DELETE_USER_PROFILE,
 } = require("../constants/ApiConstants");
-const requestContext = require("../config/RequestContext");
+const { requestContext } = require("../middleware/RequestContextMiddleware");
 
+  
 const getUserProfileHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
@@ -18,18 +19,14 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${GET_USER_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-
-    res.status(200).json({
-      name: req.user.username,
-      emailId: req.user.emailId,
-      phoneNumber: req.user.phoneNumber,
-      profilePic: req.user.profilePic,
-    });
+    const user = await userProfileService.getUserProfile(req.user);
+    res.status(200).json(user);
     const endTime = Date.now();
     logger.info(
       `API_NAME=${GET_USER_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -47,19 +44,21 @@ const editUserHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${EDIT_USER_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const userId = req.user.userId;
+    const user = req.user;
     const updateData = req.body;
-
+    const { files } = req;
     const updatedUserProfile = await userProfileService.updateUserProfile(
-      userId,
-      updateData
+      user,
+      updateData,
+      files
     );
 
     const endTime = Date.now();
     logger.info(
       `API_NAME=${EDIT_USER_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
     res.status(200).json(updatedUserProfile);
   } catch (error) {
@@ -78,19 +77,14 @@ const deleteUserHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${DELETE_USER_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const userId = req.user.userId;
-    const username = req.user.username;
-    const emailId = req.user.emailId;
-
-    logger.info(`Request to delete user profile for user ID: ${userId}`);
-
-    await userProfileService.deleteUserProfile(userId, username, emailId);
+    await userProfileService.deleteUserProfile(req.user);
 
     const endTime = Date.now();
     logger.info(
       `API_NAME=${DELETE_USER_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
     res.status(200).json();
   } catch (error) {

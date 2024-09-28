@@ -7,7 +7,9 @@ const {
   API_SUCCESS,
   LOCATIONS_FROM_GOOGLE,
 } = require("../constants/ApiConstants");
-const requestContext = require("../config/RequestContext");
+const { requestContext } = require("../middleware/RequestContextMiddleware");
+
+
 
 const getLocationByNameHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
@@ -26,9 +28,10 @@ const getLocationByNameHandler = asyncHandler(async (req, res) => {
     res.status(200).json(transformedLocations);
     const endTime = Date.now();
     logger.info(
-      `API_NAME=${NEWSLETTER_SUBSCRIPTION}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+      `API_NAME=${LOCATIONS_FROM_GOOGLE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+ms`
     );
   } catch (error) {
     logger.error(

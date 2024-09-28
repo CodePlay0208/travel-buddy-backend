@@ -35,7 +35,7 @@ async function getLocationsFromGooglePlaces(inputLocation) {
       throw new Error(data.error || "Failed to fetch locations.");
     }
 
-    logger.info(`Successfully fetched locations for input=${inputLocation} with values=${data}`);
+    logger.info(`Successfully fetched locations for input=${inputLocation}`);
     return data;
   } catch (error) {
     logger.error(

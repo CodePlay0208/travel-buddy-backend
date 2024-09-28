@@ -1,13 +1,14 @@
 const DeletedUser = require("../models/DeletedUserModel");
+const logger = require("../Logger");
 
 async function create(user) {
   try {
-    logger.info(`Request received for storing data of deleted user, user=${user}`)
+    logger.info(`Request received for storing data of deleted user, user=${JSON.stringify(user)}`)
     const deletedUser = new DeletedUser(user);
     deletedUser.save();
   } catch (error) {
-    logger.error(`Error occurred while deleting trips for user with userId=${user}`)
-    throw new Error(`Error deleting trips for user=${user}, error=$${error}`);
+    logger.error(`Error occurred while creating user=${user}`)
+    throw new Error(`Error creating user, error=$${error}`);
   }
 }
 

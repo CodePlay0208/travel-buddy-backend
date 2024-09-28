@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const deletedUserSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
+  userId: { type: String, required: true },
   username: { type: String },
   emailId: { type: String, required: true },
   deletedAt: { type: Date, default: Date.now },

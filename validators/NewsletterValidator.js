@@ -1,6 +1,6 @@
 const { ValidationError } = require("../exceptions/ValidationError");
 
-const validatorService = {
+const newsletterValidator = {
   validateEmail: (emailId) => {
     if (!emailId || typeof emailId !== 'string') {
       throw new ValidationError("Invalid email: emailId can't be empty or null");
@@ -13,4 +13,4 @@ const validatorService = {
   },
 };
 
-module.exports = validatorService;
+module.exports = newsletterValidator;

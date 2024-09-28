@@ -1,6 +1,5 @@
 const logger = require("../Logger");
 const tripRepository = require("../repositories/TripRepository.js");
-
 const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
@@ -48,7 +47,7 @@ function createQuery(destination, date, userId, includeUser) {
   return query;
 }
 
-async function getTripsUsingQueryWithLimitAndOffset() {
+async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   const parsedOffset = parseInt(offset, 10);
   const parsedLimit = parseInt(limit, 10);
   const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
@@ -70,7 +69,8 @@ async function addDestinationImagesToTrips(trips) {
   trips = await Promise.all(
     trips.map(async (trip) => {
       trip.destinationImages = await getObjectsFromS3Bucket(
-        trip.destinationImages
+        trip.destinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
       return trip;
     })
@@ -82,7 +82,7 @@ async function addDestinationImagesToTrips(trips) {
 async function createTrip(payload, files, userId) {
   try {
     const { uploadedObjectNames, allObjectsUploaded } =
-      await uploadObjectsToS3Bucket(files);
+      await uploadObjectsToS3Bucket(files, process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES);
     const destinationImages = uploadedObjectNames;
 
     const { startDate, endDate } = payload;
@@ -119,7 +119,8 @@ async function getTripById(tripId) {
       throw new ValidationError(`Trip not found for tripId=${tripId}`, 404);
     }
     trip.destinationImages = await getObjectsFromS3Bucket(
-      trip.destinationImages
+      trip.destinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
     logger.info(`fetched trip with tripId=${tripId}, trip=${trip}`);
     return trip;
@@ -158,15 +159,12 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     });
     var allFilesUploaded = true;
     if (newDestinationImages && newDestinationImages.length > 0) {
-      const uploadImagesPromise = uploadObjectsToS3Bucket(newDestinationImages);
-      const deleteImagesPromise = deleteObjectsFromS3Bucket(
-        tripInDatabase.destinationImages
+      const { uploadedObjectNames, allObjectsUploaded } =
+        await uploadObjectsToS3Bucket(newDestinationImages, process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES);
+      deleteObjectsFromS3Bucket(
+        tripInDatabase.destinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
-      const [uploadResult, deleteResult] = await Promise.all([
-        uploadImagesPromise,
-        deleteImagesPromise,
-      ]);
-      const { uploadedObjectNames, allObjectsUploaded } = uploadResult;
       tripInDatabase.destinationImages = uploadedObjectNames;
       allFilesUploaded = allObjectsUploaded;
     }
@@ -253,7 +251,10 @@ async function deleteTrip(tripId, userId) {
         404
       );
     }
-    deleteObjectsFromS3Bucket(tripInDatabase.destinationImages);
+    deleteObjectsFromS3Bucket(
+      tripInDatabase.destinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
     await tripRepository.deleteTripsByTripId(tripId);
     logger.info(`Trip with tripId=${tripId} deleted successfully`);
   } catch (error) {
@@ -268,5 +269,5 @@ module.exports = {
   getTripsWithFilter,
   editTrip,
   deleteTrip,
-  getTripsByUser
+  getTripsByUser,
 };

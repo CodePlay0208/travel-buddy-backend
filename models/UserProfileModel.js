@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Personas = require('../enums/Personas'); 
 
 const userProfileSchema = new mongoose.Schema({
   username: { type: String, required: true },
@@ -6,14 +7,9 @@ const userProfileSchema = new mongoose.Schema({
   phoneNumber: { type: String },
   emailId: { type: String, required: true, unique: true },
   dateOfBirth: { type: String },
-  persona: { type: String },
+  persona: { type: String, enum: Object.values(Personas), default: Personas.TRAVELLER},
   createdAt: { type: Date, default: Date.now },
-  profilePic: {
-    type: "String",
-    required: false,
-    default:
-      "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
-  },
+  profilePic: [{ type: String }],
   userId: { type: String, required: true, unique: true },
 });
 

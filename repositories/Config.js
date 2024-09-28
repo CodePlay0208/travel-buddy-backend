@@ -19,6 +19,20 @@ const listAllIndexes = async () => {
   }
 }
 
+const dropAllIndexes = async () => {
+  const db = mongoose.connection.db; 
+
+  const collections = await db.listCollections().toArray();
+
+  for (const collection of collections) {
+    const collectionName = collection.name;
+    const collectionObj = db.collection(collectionName);
+    collectionObj.dropIndexes();
+
+    console.log(`Dropping Indexes for collection ${collectionName}:`)
+  }
+}
+
 const connectDB = async () => {
   try {
     logger.info("Connecting to database...");
@@ -39,19 +53,19 @@ const connectDB = async () => {
 const createIndexes = async () => {
   try {
     logger.info(`Creating indexes in the database`);
-    TripDataModel.createIndexes();
-    TempUserSignUpModel.createIndexes();
-    OtpModel.createIndexes();
+    await TripDataModel.createIndexes();
+    await TempUserSignUpModel.createIndexes();
+    await OtpModel.createIndexes();
   } catch (error) {
-    logger.error(`Error creating indexes`);
+    logger.error(`Error creating indexes, error=${error}`);
     throw new Error("Error while creating indexes", error);
   }
 };
 
 const initializeDB = async () => {
   try {
-    connectDB();
-    createIndexes();
+    await connectDB();
+    await createIndexes();
   } catch (error) {
     logger.error("Error while initializing database");
     process.exit(1);

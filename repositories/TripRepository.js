@@ -1,13 +1,14 @@
 const TripData = require("../models/TripDataModel");
+const logger = require("../Logger");
 
 async function deleteTripsByUserId(userId) {
   try {
-    await TripData.deleteMany({ userId });
+    await TripData.deleteMany({ userId: userId });
   } catch (error) {
     logger.error(
-      `Error occurred while deleting trips for user with userId=${userId}`
+      `Error occurred while deleting trips for user with userId=${userId}, error=${error}`
     );
-    throw new Error(`Error deleting trips for user ${userId}, error=${error}`);
+    throw new Error(`Error deleting trips for user with userId=${userId}, error=${error}`);
   }
 }
 

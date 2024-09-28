@@ -2,12 +2,37 @@ const logger = require("../Logger");
 const userProfileRepository = require("../repositories/UserProfileRepository.js");
 const tripRepository = require("../repositories/TripRepository.js");
 const deletedUserRepository = require("../repositories/DeletedUserRepository.js");
+const {
+  uploadObjectsToS3Bucket,
+  getObjectsFromS3Bucket,
+  deleteObjectsFromS3Bucket,
+} = require("../aws/S3");
 
-async function updateUserProfile(userId, updateData) {
+async function getUserProfile(user) {
   try {
-    logger.info(
-      `Updating user with userId=${userId} with values=${updateData}`
+    console.log(user);
+    const userId = user.userId;
+    logger.info(`Fetching user with userId=${userId}`);
+    const userProfilePic = await getObjectsFromS3Bucket(
+      user.profilePic,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
+    user.profilePic = userProfilePic;
+    logger.info(
+      `Fetched user profile with userId=${userId}, updateUserProfile=${user}`
+    );
+    return user;
+  } catch (error) {
+    logger.error(`Failed to find profile pic for user=${user}, error=${error}`);
+    throw error;
+  }
+}
+
+async function updateUserProfile(user, updateData, newProfilePic) {
+  try {
+    console.log("hey");
+    const userId = user.userId;
+    logger.info(`Updating user with userId=${userId}`);
     const sanitizedUpdateData = {};
 
     if (updateData.username) sanitizedUpdateData.username = updateData.username;
@@ -19,43 +44,56 @@ async function updateUserProfile(userId, updateData) {
     if (updateData.profilePic)
       sanitizedUpdateData.profilePic = updateData.profilePic;
 
+    if (newProfilePic && newProfilePic.length > 0) {
+      const { uploadedObjectNames, allObjectsUploaded } =
+        await uploadObjectsToS3Bucket(newProfilePic, process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC);
+      deleteObjectsFromS3Bucket(
+        user.profilePic,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      sanitizedUpdateData.profilePic = uploadedObjectNames;
+    }
+
     const updatedUserProfile = await userProfileRepository.updateUser(
       userId,
       sanitizedUpdateData
     );
     logger.info(
-      `updated user profile with userId=${userId}, updateUsrProfile=${updatedUserProfile}`
+      `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
     );
 
     return updatedUserProfile;
   } catch (error) {
-    logger.error(`Failed to update user profile with error=${error}`);
+    logger.error(`Failed to update user=${user}, error=${error}`);
     throw error;
   }
 }
 
-async function deleteUserProfile(userId, username, emailId) {
+async function deleteUserProfile(user) {
   try {
-    logger.info(`Initiating deletion for user with userId=${userId}`);
-
+    const { userId, username, emailId } = user;
+    logger.info(`Deleting user profile with userId=${userId}`);
     const deletedUser = {
       userId,
       username,
       emailId,
     };
 
+    tripRepository.deleteTripsByUserId(userId);
+    deleteObjectsFromS3Bucket(
+      user.profilePic,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+    );
+    userProfileRepository.deleteUserByUserId(userId);
     deletedUserRepository.create(deletedUser);
-
-    await userProfileRepository.deleteUserById(userId);
-    await tripRepository.deleteTripsByUserId(userId);
 
     logger.info(
       `User profile and related data deleted for user with userId=${userId}`
     );
   } catch (error) {
-    logger.error(`Error in userService while deleting user, error=${error}`);
+    logger.error(`Error while deleting user=${user}, error=${error}`);
     throw error;
   }
 }
 
-module.exports = { updateUserProfile, deleteUserProfile };
+module.exports = { updateUserProfile, deleteUserProfile, getUserProfile };

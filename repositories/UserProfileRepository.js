@@ -1,48 +1,75 @@
 const UserProfile = require("../models/UserProfileModel");
+const logger = require("../Logger");
 
 async function updateUser(userId, updateData) {
   try {
-    const updatedUserProfile = await UserProfile.findByIdAndUpdate(
-      userId,
+    const updatedUserProfile = await UserProfile.findOneAndUpdate(
+      {userId},
       { $set: updateData },
       { new: true }
     ).select("-_id -password -createdAt -__v");
 
     return updatedUserProfile;
   } catch (error) {
-    logger.error(`Failed to update user in database with error=${error}`);
+    logger.error(
+      `Failed to update user with userId=${userId} in database with error=${error}`
+    );
     throw new Error(`Error updating user profile in DB, error=${error}`);
   }
 }
 
-async function deleteUserById(userId) {
+async function deleteUserByUserId(userId) {
   try {
-    await UserProfile.findByIdAndDelete(userId);
+    await UserProfile.findOneAndDelete(userId);
   } catch (error) {
-    logger.error(`Error occured while deleting user with userId=${userId}`);
-    throw new Error(`Error deleting user profile from DB, error=${error}`);
+    logger.error(
+      `Error occured while deleting user with userId=${userId}, error=${error}`
+    );
+    throw new Error(
+      `Error deleting user profile with userId=${userId} from DB, error=${error}`
+    );
   }
 }
 
 async function findUserWithEmailId(emailId) {
   try {
-    const userInDatabase = await UserProfile.findOne({ emailId});
+    const userInDatabase = await UserProfile.findOne({ emailId });
     return userInDatabase;
   } catch (error) {
-    logger.error(`Error occured while finding user with emailId=${emailId}`);
-    throw new Error(`Error finding user profile using emailId from DB, error=${error}`);
+    logger.error(
+      `Error occured while finding user with emailId=${emailId}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profile using emailId from DB, error=${error}`
+    );
   }
 }
 
 async function create(user) {
   try {
     const saveUserInPermanentDatabase = new UserProfile(user);
-    createdUser = await saveUserInPermanentDatabase.save();
+    const createdUser = await saveUserInPermanentDatabase.save();
     return createdUser;
-  } catch (err) {
-    logger.error(`Error occured while creating user =${user}`);
-    throw new Error(`Error occured while creating user=${user}, error=${error}`);
+  } catch (error) {
+    logger.error(`Error occured while creating user=${user}, error=${error}`);
+    throw new Error(
+      `Error occured while creating user with error=${error}`
+    );
   }
 }
 
-module.exports = { updateUser, deleteUserById, findUserWithEmailId, create };
+async function findUserByUserId(userId) {
+  try {
+    const userInDatabase = await UserProfile.findOne({ userId });
+    return userInDatabase;
+  } catch (error) {
+    logger.error(
+      `Error occured while finding user with userId=${userId}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profile using userId=${userId} from DB, error=${error}`
+    );
+  }
+}
+
+module.exports = { updateUser, deleteUserByUserId, findUserWithEmailId, create, findUserByUserId };

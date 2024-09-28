@@ -15,13 +15,14 @@ const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const initializeDB = require("./repositories/Config");
 const logger = require("./Logger");
-const requestContextMiddleware = require("./middleware/RequestContextMiddleware");
+const {
+  requestContextMiddleware,
+} = require("./middleware/RequestContextMiddleware");
 
 const corsOptions = {
   origin: process.env.ORIGIN_FOR_CLIENT,
   credentials: true,
 };
-
 
 try {
   app.use(cors(corsOptions));

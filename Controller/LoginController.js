@@ -8,13 +8,15 @@ const {
   LOGIN,
   API_STARTED,
   API_FAILED,
+  API_SUCCESS,
   SIGN_UP,
   OTP_VERIFICATION,
   RESEND_OTP,
   FORGOT_PASSWORD,
   RESET_PASSWORD,
 } = require("../constants/ApiConstants");
-const requestContext = require("../config/RequestContext");
+const { requestContext } = require("../middleware/RequestContextMiddleware");
+
 const authService = require("../service/AuthService");
 const { ValidationError } = require("../exceptions/ValidationError");
 
@@ -78,7 +80,8 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GOOGLE_LOGIN}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.info(
@@ -111,7 +114,8 @@ const signUpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${SIGN_UP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -132,20 +136,23 @@ const otpVerificationHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const userId = req.user.userId;
+    const user = req.user;
     const { userOtp } = req.body;
-
-    await authService.verifyOtp(userId, userOtp);
-
+    const { isSignUpRequest } = req.body;
+    await authService.verifyOtp(user, userOtp, isSignUpRequest);
     res.status(200).json({
-      token: generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+      token: generateToken(
+        user.userId,
+        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+      ),
     });
 
     const endTime = Date.now();
     logger.info(
       `API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -173,7 +180,8 @@ const loginHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${LOGIN}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -200,7 +208,8 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -229,7 +238,8 @@ const resetPasswordHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${RESET_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms
+`
     );
   } catch (error) {
     logger.error(
@@ -253,7 +263,7 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${RESEND_OTP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }`
+      }ms`
     );
   } catch (error) {
     logger.error(
