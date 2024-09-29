@@ -31,9 +31,10 @@ const dateFromDateString = (date) => {
     if (date == null || date == undefined) {
       return date;
     }
-    var queryDate = new Date(date);
-    queryDate.setUTCHours(0, 0, 0, 0);
-    return queryDate;
+    const [day, month, year] = date.split("-").map(Number);
+    const inputDate = new Date(year, month - 1, day+1);
+    inputDate.setUTCHours(0, 0, 0, 0);
+    return inputDate;
   } catch (error) {
     console.log("error converting date string to date format", error);
   }

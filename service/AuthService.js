@@ -19,7 +19,7 @@ async function sendOTP(name, useremail, otp, status) {
     logger.info(`Sending otp to user with emailId=${useremail}`);
     const otpString = `${otp}`;
     const htmlContent = generateOtpEmail(name, useremail, otpString, status);
-    const subject = status ? "THANKS FOR SIGNING UP" : "VERIFY OTP";
+    const subject = status ? "Thanks for signing up" : "Verify Otp";
     const mailingData = {
       sender: {
         name: "travmigoz",

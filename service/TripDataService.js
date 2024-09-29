@@ -8,6 +8,7 @@ const {
 const { dateFromDateString } = require("../Utils");
 const { v4: uuidv4 } = require("uuid");
 const { ValidationError } = require("../exceptions/ValidationError.js");
+const tripValidator = require("../validators/TripValidator.js");
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
@@ -17,7 +18,7 @@ function addDestinationToQuery(query, destination) {
 
 function addDateToQuery(query, date) {
   if (date) {
-    const queryDate = new Date(date);
+    const queryDate = dateFromDateString(date);
     if (!isNaN(queryDate)) {
       query.startDate = { $lte: queryDate };
       query.endDate = { $gte: queryDate };
@@ -182,6 +183,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 async function getTripsByUser(filter, userId) {
   try {
     const { offset = 0, limit = process.env.LIMIT_FOR_SENDING_TRIPS } = filter;
+    tripValidator.validateLimit(limit);
 
     const query = createQuery(null, null, userId, true);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
@@ -218,6 +220,9 @@ async function getTripsWithFilter(filter, userId) {
       offset = 0,
       limit = process.env.LIMIT_FOR_SENDING_TRIPS,
     } = filter;
+
+    tripValidator.validateFilter(filter);
+
     const query = createQuery(destination, date, userId, false);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
       query,
