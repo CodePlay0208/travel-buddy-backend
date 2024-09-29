@@ -1,5 +1,7 @@
 const multer = require("multer");
 const multerStorage = multer.memoryStorage();
+const { ValidationError } = require("../exceptions/ValidationError");
+ 
 const uploadMiddlewareForImages = multer({
   storage: multerStorage,
   limits: {

@@ -14,7 +14,7 @@ const errorHandler = (error, req, res, next) => {
   logger.error(`Error occurred before routing, error=${error}`);
 
   res.status(statusCode);
-  res.json(error);
+  res.json(error.message);
 };
 
 module.exports = { notFound, errorHandler };

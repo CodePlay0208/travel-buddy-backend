@@ -3,7 +3,6 @@ const {
   tokenProtect,
   jwtTokenDecoder,
 } = require("../middleware/AuthMiddleware");
-const { ValidationError } = require("../exceptions/ValidationError");
 const {
   createTripHandler,
   getTripByIdHandler,
