@@ -1,5 +1,7 @@
+const Gender = require("../enums/Gender");
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../Logger");
+const { getMaxListeners } = require("../models/TripDataModel");
 const { dateFromDateString } = require("../Utils");
 
 const tripValidator = {
@@ -12,18 +14,16 @@ const tripValidator = {
 
   validateDate: (date) => {
     if (date) {
-      const inputDate = dateFromDateString(date);
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
-
       const oneYearFromNow = new Date(today);
       oneYearFromNow.setFullYear(today.getFullYear() + 1);
 
-      if (inputDate < today) {
+      if (date < today) {
         throw new ValidationError("Date cannot be in the past.");
       }
 
-      if (inputDate > oneYearFromNow) {
+      if (date > oneYearFromNow) {
         throw new ValidationError(
           "Date cannot be more than 1 year from today."
         );
@@ -41,6 +41,59 @@ const tripValidator = {
 
     tripValidator.validateDate(date);
     tripValidator.validateLimit(limit);
+  },
+
+  validateStartEndDateAndEndDate: (startDate, endDate) => {
+    if(startDate > endDate){
+      throw new ValidationError(`Start Date is greater than end Date, startDate=${startDate}, endDate=${endDate}`);
+    }
+    tripValidator.validateDate(startDate);
+    tripValidator.validateDate(endDate);
+  },
+
+  validateTotalMembers: (totalMembers) => {
+    totalMembers = Number(totalMembers);
+    if(totalMembers < 0 || totalMembers > process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP){
+      throw new ValidationError(`Invalid Total Members=${totalMembers}`);
+    }
+  },
+
+  validateAge: (age) => {
+    age = Number(age);
+    if(age < 0 || age > process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON){
+      throw new ValidationError(`Invalid Age=${age}`);
+    }
+  },
+
+  validateGender: (gender) => {
+    const validGenders = Object.values(Gender);
+    if(!validGenders.includes(gender)){
+      throw new ValidationError(`Invalid Gender=${gender}`);
+    }
+  },
+
+  validateDescription: (description) => {
+    if(description && description.length > process.env.LIMIT_FOR_TOTAL_LETTERS_IN_DESCRIPTION){
+      throw new ValidationError(`Description too long, description=${description}`);
+    }
+  },
+
+  validateTripPayload: (payload) => {
+    const {
+      startDate,
+      endDate,
+      totalMembers,
+      age,
+      gender,
+      description
+    } = payload;
+
+  
+    tripValidator.validateStartEndDateAndEndDate(startDate, endDate);
+    tripValidator.validateTotalMembers(totalMembers);
+    tripValidator.validateAge(age);
+    tripValidator.validateGender(gender);
+    tripValidator.validateDescription(description);
   },
 };
 

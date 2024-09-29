@@ -8,22 +8,13 @@ const notFound = (req, res, next) => {
   next(error);
 };
 
-const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+const errorHandler = (error, req, res, next) => {
+  const statusCode = error.errorCode ? error.errorCode : 500;
 
-  logger.error("Unhandled Error", {
-    message: err.message,
-    stack: err.stack,
-    statusCode: statusCode,
-    url: req.originalUrl,
-    method: req.method,
-  });
+  logger.error(`Error occurred before routing, error=${error}`);
 
   res.status(statusCode);
-  res.json({
-    message: err.message,
-    stack: process.env.NODE_ENV === "production" ? null : err.stack
-  });
+  res.json(error);
 };
 
 module.exports = { notFound, errorHandler };

@@ -18,7 +18,6 @@ function addDestinationToQuery(query, destination) {
 
 function addDateToQuery(query, date) {
   if (date) {
-    const queryDate = dateFromDateString(date);
     if (!isNaN(queryDate)) {
       query.startDate = { $lte: queryDate };
       query.endDate = { $gte: queryDate };
@@ -91,13 +90,16 @@ async function createTrip(payload, files, userId) {
 
     const queryStartDate = dateFromDateString(startDate);
     const queryEndDate = dateFromDateString(endDate);
+    payload.startDate = queryStartDate;
+    payload.endDate = queryEndDate;
+  
+    tripValidator.validateTripPayload(payload);
 
     const tripId = uuidv4();
 
+
     const newTrip = {
       ...payload,
-      startDate: queryStartDate,
-      endDate: queryEndDate,
       destinationImages,
       userId,
       tripId,
@@ -109,7 +111,7 @@ async function createTrip(payload, files, userId) {
     );
     return allObjectsUploaded;
   } catch (error) {
-    logger.error(`Error creating trip with payload=${payload}, error=${error}`);
+    logger.error(`Error creating trip with payload=${JSON.stringify(payload)}, error=${error}`);
     throw error;
   }
 }
@@ -149,13 +151,11 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 
     const queryStartDate = dateFromDateString(newPayload.startDate);
     const queryEndDate = dateFromDateString(newPayload.endDate);
-    const fieldsToUpdate = {
-      ...newPayload,
-      startDate: queryStartDate,
-      endDate: queryEndDate,
-    };
-    console.log(fieldsToUpdate);
-    Object.entries(fieldsToUpdate).forEach(([key, value]) => {
+    newPayload.startDate = queryStartDate;
+    newPayload.endDate = queryEndDate;
+    tripValidator.validateTripPayload(newPayload);
+  
+    Object.entries(newPayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         tripInDatabase[key] = value;
       }
@@ -216,13 +216,13 @@ async function getTripsWithFilter(filter, userId) {
   try {
     const {
       destination,
-      date,
       offset = 0,
       limit = process.env.LIMIT_FOR_SENDING_TRIPS,
     } = filter;
 
+    filter.date = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
-
+    let { date } = filter;
     const query = createQuery(destination, date, userId, false);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
       query,

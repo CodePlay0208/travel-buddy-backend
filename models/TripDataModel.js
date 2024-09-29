@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const Gender = require("../enums/Gender");
 
 const tripDataSchema = new mongoose.Schema({
   destination: { type: String, required: true },
@@ -9,7 +9,7 @@ const tripDataSchema = new mongoose.Schema({
   totalMembers: { type: Number, required: true },
   budget: { type: Number },
   age: { type: Number, required: true },
-  gender: { type: String, required: true },
+  gender: { type: String, enum: Object.values(Gender),required: true },
   description: { type: String, required: true },
   destinationImages: [{ type: String }],
   userId: { type: String, required: true },

@@ -30,10 +30,10 @@ async function findTripWithTripIdAndUserId(tripId, userId) {
     return tripInDatabase;
   } catch (error) {
     logger.error(
-      `Error occurred while deleting trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
+      `Error occurred while finding trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while deleting trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
+      `Error occurred while finding trips for user with userId=${userId}, tripId=${tripId}, error=${error}`
     );
   }
 }
@@ -48,7 +48,7 @@ async function createTrip(newTrip) {
       `Error occurred while creating trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while deleting trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
+      `Error occurred while creating trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
     );
   }
 }
