@@ -198,8 +198,8 @@ const forgotPasswordHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { userEmail } = req.body;
-    const token = await authService.forgotPassword(userEmail);
+    const { useremail } = req.body;
+    const token = await authService.forgotPassword(useremail);
     res.status(200).json({token});
     const endTime = Date.now();
     logger.info(
