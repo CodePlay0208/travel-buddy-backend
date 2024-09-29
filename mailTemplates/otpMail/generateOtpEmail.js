@@ -50,7 +50,7 @@ function generateEmailTemplate(name, email, otp, status) {
             padding: 40px 20px;
             color: #ffffff;
             text-align: center;
-            background: url('https://travmigoz-assethosting.s3.ap-south-1.amazonaws.com/otpEmailAssets/image.png') no-repeat center center;
+            background: url('https://d2ez198i79ban.cloudfront.net/otpEmailAssets/image.png') no-repeat center center;
             background-size: cover;
           }
 
@@ -174,7 +174,7 @@ function generateEmailTemplate(name, email, otp, status) {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://travmigoz-assethosting.s3.ap-south-1.amazonaws.com/otpEmailAssets/logo.png" alt="Logo" />
+            <img src="https://d2ez198i79ban.cloudfront.net/otpEmailAssets/logo.png" alt="Logo" />
           </div>
           ${signUpHeader}
           <div class="title">
