@@ -7,7 +7,7 @@ const logger = require("../Logger"); // import your logger
 const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
   try {
     const { recievedUserId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     if (!recievedUserId) {
       logger.error("ReceiverUserId param not sent with request");
@@ -63,7 +63,7 @@ const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
 
 const getChatsHandler = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     if (!userId) {
       logger.error("User not authenticated");
       return res.status(400).json("User not authenticated");

@@ -6,7 +6,7 @@ const logger = require("../Logger"); // Import the Winston logger
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     if (!userId) {
       logger.error("User not authenticated for fetching messages");
@@ -31,9 +31,9 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
 });
 
 const createNewMessageHandler = asyncHandler(async (req, res) => {
+  const { content, chatId } = req.body;
   try {
-    const { content, chatId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     if (!userId) {
       logger.error("User not authenticated for creating a message");

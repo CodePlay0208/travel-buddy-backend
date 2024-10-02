@@ -15,7 +15,7 @@ const {
 } = require("../controller/LoginController");
 const router = express.Router();
 
-router.route("/googleLogin").get(googleTokenProtect, googleLoginHandler);
+router.route("/googleLogin").post(googleTokenProtect, googleLoginHandler);
 router.route("/signUp").post(signUpHandler);
 router
   .route("/verifyOtp")

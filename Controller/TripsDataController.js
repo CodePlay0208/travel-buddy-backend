@@ -65,8 +65,7 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GET_TRIP_BY_ID}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }ms
-`
+      }ms`
     );
   } catch (error) {
     logger.error(
