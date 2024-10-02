@@ -91,25 +91,26 @@ const getChatsHandler = asyncHandler(async (req, res) => {
       .populate("latestMessage") // Populate latestMessage (still ObjectId)
       .sort({ updatedAt: -1 });
 
-    // Manually populate users by fetching data from UserProfile
-    chats = await Promise.all(
-      chats.map(async (chat) => {
-        const populatedUsers = await UserProfile.find({
-          userId: { $in: chat.users }, // Match userId strings in UserProfile
-        }).select("username profilePic emailId");
-
-        return {
-          ...chat.toObject(), // Convert chat to plain JS object
-          users: populatedUsers, // Replace userId strings with full user details
-        };
-      })
-    );
-
-    // Further populate the sender field in the latest message
-    chats = await UserProfile.populate(chats, {
-      path: "latestMessage.sender",
-      select: "username profilePic emailId",
-    });
+      chats = await Promise.all(
+        chats.map(async (chat) => {
+          const populatedUsers = await UserProfile.find({
+            userId: { $in: chat.users }, // Match userId strings in UserProfile
+          }).select("username profilePic emailId");
+  
+          // Manually populate sender in latestMessage
+          if (chat.latestMessage && chat.latestMessage.sender) {
+            const senderProfile = await UserProfile.findOne({
+              userId: chat.latestMessage.sender,
+            }).select("username profilePic emailId");
+            chat.latestMessage.sender = senderProfile;
+          }
+  
+          return {
+            ...chat.toObject(), // Convert chat to plain JS object
+            users: populatedUsers, // Replace userId strings with full user details
+          };
+        })
+      );
 
     logger.info(`Fetched chat list for user ${userId}`);
     return res.status(200).send(chats);
