@@ -116,8 +116,6 @@ async function verifyOtp(newUser, userOtp, isSignUpRequest) {
 
     const newUserObj = newUser.toObject();
     delete newUserObj._id;
-
-    console.log(newUser, "the new");
     const createdUser = await userProfileRepository.create(newUserObj);
     logger.info(`Created user in permanent database, user=${createdUser}`);
   } catch (error) {

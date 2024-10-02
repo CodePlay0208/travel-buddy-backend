@@ -10,7 +10,6 @@ const {
 
 async function getUserProfile(user) {
   try {
-    console.log(user);
     const userId = user.userId;
     logger.info(`Fetching user with userId=${userId}`);
     const userProfilePic = await getObjectsFromS3Bucket(
@@ -30,7 +29,6 @@ async function getUserProfile(user) {
 
 async function updateUserProfile(user, updateData, newProfilePic) {
   try {
-    console.log("hey");
     const userId = user.userId;
     logger.info(`Updating user with userId=${userId}`);
     const sanitizedUpdateData = {};
