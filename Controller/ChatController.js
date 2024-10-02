@@ -33,7 +33,7 @@ const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
         isChat.map(async (chat) => {
           const populatedUsers = await UserProfile.find({
             userId: { $in: chat.users }, // Match userId strings in UserProfile
-          }).select("username profilePic emailId");
+          }).select("username profilePic emailId userId");
 
           return {
             ...chat.toObject(), // Convert to plain JS object
@@ -63,7 +63,7 @@ const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
 
     const populatedUsers = await UserProfile.find({
       userId: { $in: fullChat.users },
-    }).select("username profilePic emailId");
+    }).select("username profilePic emailId userId");
 
     fullChat = {
       ...fullChat.toObject(),
@@ -95,13 +95,13 @@ const getChatsHandler = asyncHandler(async (req, res) => {
         chats.map(async (chat) => {
           const populatedUsers = await UserProfile.find({
             userId: { $in: chat.users }, // Match userId strings in UserProfile
-          }).select("username profilePic emailId");
+          }).select("username profilePic emailId userId");
   
           // Manually populate sender in latestMessage
           if (chat.latestMessage && chat.latestMessage.sender) {
             const senderProfile = await UserProfile.findOne({
               userId: chat.latestMessage.sender,
-            }).select("username profilePic emailId");
+            }).select("username profilePic emailId userId");
             chat.latestMessage.sender = senderProfile;
           }
   

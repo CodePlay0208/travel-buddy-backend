@@ -30,7 +30,7 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
       // Fetch user details for sender and readBy
       const usersToPopulate = await UserProfile.find({
         userId: { $in: [...new Set([...senderIds, ...readByIds])] },
-      }).select("username profilePic emailId");
+      }).select("username profilePic emailId userId");
 
       // Map userIds to user details
       const userMap = usersToPopulate.reduce((map, user) => {
@@ -95,7 +95,7 @@ const createNewMessageHandler = asyncHandler(async (req, res) => {
     const chatUsersIds = message.chat.users;
     const usersToPopulate = await UserProfile.find({
       userId: { $in: chatUsersIds },
-    }).select("username profilePic emailId");
+    }).select("username profilePic emailId userId");
 
     // Replace the users field with fully populated user details
     message.chat.users = usersToPopulate;
