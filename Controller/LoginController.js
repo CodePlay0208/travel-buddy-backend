@@ -87,7 +87,7 @@ const googleLoginHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${GOOGLE_LOGIN}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
-    res.status(500).json({});
+    res.status(500).json();
   }
 });
 
@@ -235,8 +235,7 @@ const resetPasswordHandler = asyncHandler(async (req, res) => {
     logger.info(
       `API_NAME=${RESET_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
-      }ms
-`
+      }ms`
     );
   } catch (error) {
     logger.error(

@@ -1,124 +1,69 @@
-const Chat = require("../models/ChatModel");
-const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
-
-const logger = require("../Logger"); // import your logger
+const chatService = require("../service/ChatService");
+const logger = require("../Logger");
+const {
+  API_STARTED,
+  API_FAILED,
+  API_SUCCESS,
+  FETCH_OR_CREATE_CHAT,
+  GET_ALL_CHATS,
+} = require("../constants/ApiConstants");
+const { requestContext } = require("../middleware/RequestContextMiddleware");
+const { ValidationError } = require("../exceptions/ValidationError");
 
 const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
   try {
-    const { recievedUserId } = req.body;
-    const userId = req.user.userId; // Assuming `userId` is passed as a string in req.user
-
-    if (!recievedUserId) {
-      logger.error("ReceiverUserId param not sent with request");
-      return res.status(400).json("recieverUserId param not sent with request");
-    }
-
-    if (!userId) {
-      logger.error("UserId param not sent with request");
-      return res.status(400).json("User Not authenticated");
-    }
-
-    // Fetch existing chat between the two users
-    let isChat = await Chat.find({
-      $and: [
-        { users: { $elemMatch: { $eq: userId } } },
-        { users: { $elemMatch: { $eq: recievedUserId } } },
-      ],
-    }).populate("latestMessage"); // Only populate latestMessage as it uses ObjectId
-
-    // Manually populate the 'users' field by querying UserProfile
-    if (isChat.length > 0) {
-      isChat = await Promise.all(
-        isChat.map(async (chat) => {
-          const populatedUsers = await UserProfile.find({
-            userId: { $in: chat.users }, // Match userId strings in UserProfile
-          }).select("username profilePic emailId userId");
-
-          return {
-            ...chat.toObject(), // Convert to plain JS object
-            users: populatedUsers, // Replace user IDs with user details
-          };
-        })
-      );
-
-      logger.info(`Chat fetched for user ${userId}`);
-      return res.status(200).send(isChat[0]); // Return the first chat if found
-    }
-
-    // If no chat exists, create a new one
-    let chatData = {
-      chatName: "sender", // Default chat name
-      users: [userId, recievedUserId], // Array of userId strings
-    };
-
-    logger.info(`Creating new chat for user ${userId}`);
-
-    const createdChat = await Chat.create(chatData);
-
-    // Fetch the newly created chat and manually populate users
-    let fullChat = await Chat.findOne({ _id: createdChat._id }).populate(
-      "latestMessage"
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${FETCH_OR_CREATE_CHAT}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-
-    const populatedUsers = await UserProfile.find({
-      userId: { $in: fullChat.users },
-    }).select("username profilePic emailId userId");
-
-    fullChat = {
-      ...fullChat.toObject(),
-      users: populatedUsers, // Replace user IDs with full user data
-    };
-
-    logger.info(`New chat created for user ${userId}`);
-    return res.status(200).json(fullChat);
+    const { receiverUserId } = req.body;
+    const fetchedChat = await chatService.fetchOrCreateChats(
+      receiverUserId,
+      req.user
+    );
+    res.status(200).json(fetchedChat);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${FETCH_OR_CREATE_CHAT}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
   } catch (error) {
-    logger.error(`Error fetching or creating chat: ${error.message}`);
-    return res.status(400).json(error.message);
+    logger.error(
+      `API_NAME=${FETCH_OR_CREATE_CHAT}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
   }
 });
 
 const getChatsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
   try {
-    const userId = req.user.userId; // Assuming userId is a string
-    if (!userId) {
-      logger.error("User not authenticated");
-      return res.status(400).json("User not authenticated");
-    }
-
-    // Find chats where the user is part of the chat's 'users' array
-    let chats = await Chat.find({ users: { $elemMatch: { $eq: userId } } })
-      .populate("latestMessage") // Populate latestMessage (still ObjectId)
-      .sort({ updatedAt: -1 });
-
-      chats = await Promise.all(
-        chats.map(async (chat) => {
-          const populatedUsers = await UserProfile.find({
-            userId: { $in: chat.users }, // Match userId strings in UserProfile
-          }).select("username profilePic emailId userId");
-  
-          // Manually populate sender in latestMessage
-          if (chat.latestMessage && chat.latestMessage.sender) {
-            const senderProfile = await UserProfile.findOne({
-              userId: chat.latestMessage.sender,
-            }).select("username profilePic emailId userId");
-            chat.latestMessage.sender = senderProfile;
-          }
-  
-          return {
-            ...chat.toObject(), // Convert chat to plain JS object
-            users: populatedUsers, // Replace userId strings with full user details
-          };
-        })
-      );
-
-    logger.info(`Fetched chat list for user ${userId}`);
-    return res.status(200).send(chats);
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_ALL_CHATS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.user.userId;
+    const fetchedChats = await chatService.getChats(userId);
+    res.status(200).send(fetchedChats);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_ALL_CHATS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
   } catch (error) {
-    logger.error(`Error fetching chats: ${error.message}`);
-    return res.status(400).json(error.message);
+    logger.error(
+      `API_NAME=${GET_ALL_CHATS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    return res.status(500).json();
   }
 });
-
 
 module.exports = { fetchOrCreateChatsHandler, getChatsHandler };

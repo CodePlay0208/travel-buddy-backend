@@ -4,7 +4,7 @@ const logger = require("../Logger");
 async function updateUser(userId, updateData) {
   try {
     const updatedUserProfile = await UserProfile.findOneAndUpdate(
-      {userId},
+      { userId },
       { $set: updateData },
       { new: true }
     ).select("-_id -password -createdAt -__v");
@@ -52,9 +52,7 @@ async function create(user) {
     return createdUser;
   } catch (error) {
     logger.error(`Error occured while creating user=${user}, error=${error}`);
-    throw new Error(
-      `Error occured while creating user with error=${error}`
-    );
+    throw new Error(`Error occured while creating user with error=${error}`);
   }
 }
 
@@ -72,4 +70,27 @@ async function findUserByUserId(userId) {
   }
 }
 
-module.exports = { updateUser, deleteUserByUserId, findUserWithEmailId, create, findUserByUserId };
+async function findUsersByUserId(userIds) {
+  try {
+    const userProfiles = await UserProfile.find({
+      userId: { $in: userIds },
+    }).select("username profilePic emailId userId");
+    return userProfiles;
+  } catch (error) {
+    logger.error(
+      `Error occured while finding userProfiles with userIds=${userIds}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profiles using userIds=${userIds} from DB, error=${error}`
+    );
+  }
+}
+
+module.exports = {
+  updateUser,
+  deleteUserByUserId,
+  findUserWithEmailId,
+  create,
+  findUserByUserId,
+  findUsersByUserId,
+};

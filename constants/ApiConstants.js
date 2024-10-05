@@ -19,6 +19,10 @@ const EDIT_TRIP = "edit_trip";
 const GET_TRIP_BY_ID = "get_trip_by_id";
 const GET_TRIPS_BY_USER = "get_trip_by_user";
 const GET_TRIPS_WITH_FILTERS = "get_trip_with_filters";
+const FETCH_OR_CREATE_CHAT = "fetch_or_create_chat";
+const GET_ALL_CHATS = "get_all_chats";
+const CREATE_NEW_MESSAGE = "create_new_message";
+const GET_ALL_MESSAGES = "get_all_messages";
 
 
 module.exports = {
@@ -42,5 +46,9 @@ module.exports = {
   GET_TRIP_BY_ID,
   EDIT_TRIP,
   GET_TRIPS_BY_USER,
-  GET_TRIPS_WITH_FILTERS
+  GET_TRIPS_WITH_FILTERS,
+  FETCH_OR_CREATE_CHAT,
+  GET_ALL_CHATS,
+  CREATE_NEW_MESSAGE,
+  GET_ALL_MESSAGES,
 };

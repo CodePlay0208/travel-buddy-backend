@@ -2,15 +2,15 @@ const mongoose = require("mongoose");
 
 const chatModel = new mongoose.Schema(
   {
-    users: [{ type: String}],
+    users: [{ type: String }],
     latestMessage: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Message",
+      type: String,
     },
+    chatId: { type: String, required: true, unique: true },
   },
   { timestamps: true }
 );
 
-const Chat = mongoose.model("Chat", chatModel);
+const Chat = mongoose.model("ChatModel", chatModel);
 
 module.exports = Chat;
