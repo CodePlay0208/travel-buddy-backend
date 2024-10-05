@@ -70,11 +70,14 @@ async function findUserByUserId(userId) {
   }
 }
 
-async function findUsersByUserId(userIds) {
+async function findUsersByUserId(userIds, projection) {
   try {
-    const userProfiles = await UserProfile.find({
-      userId: { $in: userIds },
-    }).select("username profilePic emailId userId");
+    const userProfiles = await UserProfile.find(
+      {
+        userId: { $in: userIds },
+      },
+      projection
+    );
     return userProfiles;
   } catch (error) {
     logger.error(

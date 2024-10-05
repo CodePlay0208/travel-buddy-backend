@@ -1,5 +1,7 @@
 const messageRepository = require("../repositories/MessageRepository");
+const chatRepository = require("../repositories/ChatRepository");
 const { v4: uuidv4 } = require("uuid");
+const logger = require("../Logger");
 
 async function createNewMessage(chatId, content, userId) {
   try {
@@ -11,7 +13,7 @@ async function createNewMessage(chatId, content, userId) {
       messageId,
     };
 
-    const createdMessage = messageRepository.create(newMessage);
+    const createdMessage = await messageRepository.create(newMessage);
 
     const updatedChat = await chatRepository.updateLatestMessage(
       chatId,
@@ -19,7 +21,9 @@ async function createNewMessage(chatId, content, userId) {
     );
 
     logger.info(
-      `New message created, updatedChat=${JSON.stringify(updatedChat)}`
+      `New message created message=${createdMessage}, updatedChat=${JSON.stringify(
+        updatedChat
+      )}`
     );
     return createdMessage;
   } catch (error) {
@@ -32,14 +36,13 @@ async function createNewMessage(chatId, content, userId) {
 
 async function getAllMessagesForAChat(userId, chatId) {
   try {
-    const userId = req.user.userId;
-    const { chatId } = req.params;
-
-    let messages = await messageRepository.getAllMessagesForAChat(chatId);
-
-    messages = messages
-      .filter(messages.senderId !== userId)
-      .map((message) => ({ ...message, readByReceiver: true }));
+    let messages = await messageRepository.findMessagesByChatId(chatId);
+    messages = messages.map((message) => {
+      if (message.senderId !== userId) {
+        return { ...message, readByReceiver: true };
+      }
+      return message;
+    });
 
     logger.info(
       `Successfully fetched messages=${JSON.stringify(
@@ -51,6 +54,7 @@ async function getAllMessagesForAChat(userId, chatId) {
     logger.error(
       `Error fetching messages for chatId=${chatId}, error=${error}`
     );
+    throw error;
   }
 }
 

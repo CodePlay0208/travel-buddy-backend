@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const logger = require("../Logger");
 const messageService = require("../service/MessageService");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
+const { ValidationError } = require("../exceptions/ValidationError");
 const {
   API_STARTED,
   API_FAILED,
@@ -20,7 +21,10 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${GET_ALL_MESSAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const messages = messageService.getAllMessagesForAChat(userId, chatId);
+    const messages = await messageService.getAllMessagesForAChat(
+      userId,
+      chatId
+    );
 
     res.status(200).json(messages);
     const endTime = Date.now();
@@ -52,7 +56,11 @@ const createNewMessageHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${CREATE_NEW_MESSAGE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const message = messageService.createNewMessage(chatId, content, userId);
+    const message = await messageService.createNewMessage(
+      chatId,
+      content,
+      userId
+    );
 
     res.status(200).json(message);
     const endTime = Date.now();

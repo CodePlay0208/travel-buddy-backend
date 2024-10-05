@@ -4,41 +4,32 @@ const chatRepository = require("../repositories/ChatRepository");
 const messageRepository = require("../repositories/MessageRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const { v4: uuidv4 } = require("uuid");
-
-function addUserProfilesToChat(populatedChat, userProfiles) {
-  populatedChat.users = userProfiles.map((userProfile) => {
-    const newObj = {
-      userId: userProfile.userId,
-      username: userProfile.username,
-    };
-    return newObj;
-  });
-}
-
-function addLatestMessageToChat(populatedChat, latestMessage) {
-  if(!latestMessage){
-    return;
-  }
-  populatedChat.latestMessage = {};
-  populatedChat.latestMessage.senderId = latestMessage.senderId;
-  populatedChat.latestMessage.content = latestMessage.content;
-  populatedChat.latestMessage.readByReceiver = latestMessage.readByReceiver;
-}
+const {
+  LATEST_MESSAGE_PROJECTION_IN_CHAT,
+  USER_PROFILE_PROJECTION_IN_CHAT,
+} = require("../constants/Projections");
 
 async function populateChat(storedChat) {
   let populatedChat = storedChat;
+
   const messagePromise = messageRepository.findMessageByMessageId(
-    storedChat.messageId
+    storedChat.messageId,
+    LATEST_MESSAGE_PROJECTION_IN_CHAT
   );
+
   const userProfilePromise = userProfileRepository.findUsersByUserId(
-    storedChat.users
+    storedChat.users,
+    USER_PROFILE_PROJECTION_IN_CHAT
   );
-  const [latestMessage, userProfiles] = await Promise.all(
+
+  const [latestMessage, userProfiles] = await Promise.all([
     messagePromise,
-    userProfilePromise
-  );
-  addUserProfilesToChat(populatedChat, userProfiles);
-  addLatestMessageToChat(populatedChat, latestMessage);
+    userProfilePromise,
+  ]);
+
+  populatedChat.latestMessage = latestMessage;
+  populatedChat.users = userProfiles;
+
   return populatedChat;
 }
 
@@ -60,7 +51,7 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
       senderUserId,
       receiverUserId
     );
-    
+
     if (chatInDatabase) {
       const populatedChat = await populateChat(chatInDatabase);
       return populatedChat;
@@ -70,17 +61,17 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
     let chatData = {
       users: [senderUserId, receiverUserId],
       chatId,
-      latestMessage: null
+      latestMessage: null,
     };
 
     logger.info(
       `Creating new chat for users=${senderUserId},${receiverUserId}`
     );
     const createdChat = await chatRepository.create(chatData);
-    const populatedChat = await populateChat(createdChat)
+    const populatedChat = await populateChat(createdChat);
     return populatedChat;
   } catch (error) {
-    logger.error(`Error fetching or creating chat, error=${error}`);
+    logger.error(`Error fetching or creating chat for users=${senderUserId},${receiverUserId}, error=${error}`);
     throw error;
   }
 }
@@ -88,11 +79,13 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
 async function getChats(userId) {
   try {
     let chats = await chatRepository.findChatsByUserId(userId);
+    console.log(chats);
     chats = await Promise.all(
       chats.map(async (chat) => {
-        populateChat(chat);
+        return populateChat(chat);
       })
     );
+
     logger.info(
       `Fetched chat list for userId=${userId}, chats=${JSON.stringify(chats)}`
     );
