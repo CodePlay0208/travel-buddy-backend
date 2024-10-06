@@ -82,7 +82,7 @@ async function updateTrip(trip) {
 
 async function findTripsWithQuery(query, limit, offset) {
   try {
-    const trips = TripData.find(query).skip(offset).limit(limit);
+    const trips = TripData.find(query).skip(offset).limit(limit).sort({ createdAt: -1 });
     return trips;
   } catch (error) {
     logger.error(

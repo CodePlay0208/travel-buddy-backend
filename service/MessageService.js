@@ -38,13 +38,13 @@ async function createNewMessage(chatId, content, userId) {
 }
 
 async function getAllMessagesForAChat(userId, filter) {
+  const {
+    chatId,
+    limit = process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT,
+    offset = 0,
+  } = filter;
+  
   try {
-    const {
-      chatId,
-      limit = process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT,
-      offset = 0,
-    } = filter;
-
     await messageValidator.validateIfUserBelongsToChat(userId, chatId);
 
     const { skip, limitNumber } = parseLimitAndOffset(

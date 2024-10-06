@@ -22,7 +22,7 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
 
     const messages = await messageService.getAllMessagesForAChat(
       userId,
-      req.params
+      req.query
     );
 
     res.status(200).json(messages);

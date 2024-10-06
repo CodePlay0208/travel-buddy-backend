@@ -38,7 +38,7 @@ async function findChatsByUserId(userId) {
   try {
     const chat = await ChatModel.find({
       users: { $elemMatch: { $eq: userId } },
-    });
+    }).sort({ createdAt: -1 });
     return chat;
   } catch (error) {
     logger.error(`Error finding chat with userIds=${userId}, error=${error}`);
@@ -62,7 +62,7 @@ async function updateLatestMessage(chatId, messageId) {
 
 async function findChatsByChatId(chatId) {
   try {
-    const chat = await ChatModel.find({chatId});
+    const chat = await ChatModel.findOne({chatId});
     return chat;
   } catch (error) {
     logger.error(`Error finding chat with userIds=${userId}, error=${error}`);
