@@ -43,11 +43,11 @@ async function getAllMessagesForAChat(userId, filter) {
     limit = process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT,
     offset = 0,
   } = filter;
-  
+
   try {
     await messageValidator.validateIfUserBelongsToChat(userId, chatId);
 
-    const { skip, limitNumber } = parseLimitAndOffset(
+    const { skip, limitNumber, newOffset } = parseLimitAndOffset(
       limit,
       offset,
       process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT
@@ -72,7 +72,7 @@ async function getAllMessagesForAChat(userId, filter) {
         messages
       )} messages for chat with chatId=${chatId}`
     );
-    return messages;
+    return { messages, newOffset };
   } catch (error) {
     logger.error(
       `Error fetching messages for chatId=${chatId}, error=${error}`

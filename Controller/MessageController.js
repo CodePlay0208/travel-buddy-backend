@@ -20,12 +20,12 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${GET_ALL_MESSAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const messages = await messageService.getAllMessagesForAChat(
+    const { messages, newOffset } = await messageService.getAllMessagesForAChat(
       userId,
       req.query
     );
 
-    res.status(200).json(messages);
+    res.status(200).json({ messages, offset: newOffset });
     const endTime = Date.now();
 
     logger.info(

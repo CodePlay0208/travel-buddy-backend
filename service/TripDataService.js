@@ -50,14 +50,14 @@ function createQuery(destination, date, userId, includeUser) {
 
 async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
  
-  const {skip, limitNumber} = parseLimitAndOffset(limit, offset, process.env.LIMIT_FOR_SENDING_TRIPS)
+  const {skip, limitNumber, newOffset} = parseLimitAndOffset(limit, offset, process.env.LIMIT_FOR_SENDING_TRIPS)
 
   const trips = await tripRepository.findTripsWithQuery(
     query,
     limitNumber,
     skip
   );
-  const newOffset = skip + parsedLimit;
+
   return { trips, newOffset };
 }
 

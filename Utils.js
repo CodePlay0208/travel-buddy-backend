@@ -17,7 +17,7 @@ function isValidEmail(emailId) {
 
 function isValidPhoneNumber(phoneNumber) {
   if (phoneNumber && phoneNumberRegex.test(phoneNumber)) {
-    return true; 
+    return true;
   } else {
     throw new ValidationError(`Invalid phoneNumber=${phoneNumber}`);
   }
@@ -33,7 +33,7 @@ const dateFromDateString = (date) => {
       return date;
     }
     const [day, month, year] = date.split("-").map(Number);
-    const inputDate = new Date(year, month - 1, day+1);
+    const inputDate = new Date(year, month - 1, day + 1);
     inputDate.setUTCHours(0, 0, 0, 0);
     return inputDate;
   } catch (error) {
@@ -51,6 +51,14 @@ const parseLimitAndOffset = (limit, offset, defaultLimit) => {
       ? process.env.LIMIT_FOR_SENDING_TRIPS
       : parsedLimit;
 
-  return {skip, limitNumber}
-}
-module.exports = { isValidEmail, randomFileName, dateFromDateString, isValidPhoneNumber, parseLimitAndOffset };
+  const newOffset = skip + limitNumber;
+  return { skip, limitNumber, newOffset };
+};
+
+module.exports = {
+  isValidEmail,
+  randomFileName,
+  dateFromDateString,
+  isValidPhoneNumber,
+  parseLimitAndOffset,
+};
