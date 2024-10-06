@@ -2,6 +2,8 @@ const messageRepository = require("../repositories/MessageRepository");
 const chatRepository = require("../repositories/ChatRepository");
 const { v4: uuidv4 } = require("uuid");
 const logger = require("../Logger");
+const { parseLimitAndOffset } = require("../Utils");
+const messageValidator = require("../validators/MessageValidator");
 
 async function createNewMessage(chatId, content, userId) {
   try {
@@ -13,6 +15,7 @@ async function createNewMessage(chatId, content, userId) {
       messageId,
     };
 
+    messageValidator.validateIfUserBelongsToChat(userId, chatId);
     const createdMessage = await messageRepository.create(newMessage);
 
     const updatedChat = await chatRepository.updateLatestMessage(
@@ -34,9 +37,29 @@ async function createNewMessage(chatId, content, userId) {
   }
 }
 
-async function getAllMessagesForAChat(userId, chatId) {
+async function getAllMessagesForAChat(userId, filter) {
   try {
-    let messages = await messageRepository.findMessagesByChatId(chatId);
+    const {
+      chatId,
+      limit = process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT,
+      offset = 0,
+    } = filter;
+
+    await messageValidator.validateIfUserBelongsToChat(userId, chatId);
+
+    const { skip, limitNumber } = parseLimitAndOffset(
+      limit,
+      offset,
+      process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT
+    );
+
+    let messages = await messageRepository.findMessagesByChatId(
+      chatId,
+      limitNumber,
+      skip
+    );
+
+    // Change this logic
     messages = messages.map((message) => {
       if (message.senderId !== userId) {
         return { ...message, readByReceiver: true };

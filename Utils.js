@@ -2,6 +2,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneNumberRegex = /^[0-9]+$/;
 const crypto = require("crypto");
 const { ValidationError } = require("./exceptions/ValidationError");
+const logger = require("./Logger");
 
 function isValidEmail(emailId) {
   if (!emailId || typeof emailId !== "string") {
@@ -16,7 +17,7 @@ function isValidEmail(emailId) {
 
 function isValidPhoneNumber(phoneNumber) {
   if (phoneNumber && phoneNumberRegex.test(phoneNumber)) {
-    return true; // Valid phone number
+    return true; 
   } else {
     throw new ValidationError(`Invalid phoneNumber=${phoneNumber}`);
   }
@@ -36,8 +37,20 @@ const dateFromDateString = (date) => {
     inputDate.setUTCHours(0, 0, 0, 0);
     return inputDate;
   } catch (error) {
-    console.log("error converting date string to date format", error);
+    logger.error(`error converting date string to date format, error=${error}`);
   }
   return null;
 };
-module.exports = { isValidEmail, randomFileName, dateFromDateString, isValidPhoneNumber };
+
+const parseLimitAndOffset = (limit, offset, defaultLimit) => {
+  const parsedOffset = parseInt(offset, 10);
+  const parsedLimit = parseInt(limit, 10);
+  const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
+  const limitNumber =
+    isNaN(parsedLimit) || parsedLimit < 0
+      ? process.env.LIMIT_FOR_SENDING_TRIPS
+      : parsedLimit;
+
+  return {skip, limitNumber}
+}
+module.exports = { isValidEmail, randomFileName, dateFromDateString, isValidPhoneNumber, parseLimitAndOffset };

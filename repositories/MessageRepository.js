@@ -23,9 +23,9 @@ async function create(message) {
   }
 }
 
-async function findMessagesByChatId(chatId) {
+async function findMessagesByChatId(chatId, limit, offset) {
   try {
-    const messages = await MessageModel.find({ chatId });
+    const messages = await MessageModel.find({ chatId }).skip(offset).limit(limit);
     return messages;
   } catch (error) {
     logger.error(`Error finding chats with userIds=${userId1},${userId2}`);

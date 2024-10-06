@@ -4,23 +4,23 @@ const TempUserSignUpModel = require("../models/TempUserSignUpModel");
 const OtpModel = require("../models/OtpModel");
 const logger = require("../Logger");
 
-
 const listAllIndexes = async () => {
-  const db = mongoose.connection.db; 
 
+  const db = mongoose.connection.db;
   const collections = await db.listCollections().toArray();
-
   for (const collection of collections) {
     const collectionName = collection.name;
     const indexes = await db.collection(collectionName).indexes();
-
-    console.log(`Indexes for collection ${collectionName}:`);
-    console.log(indexes);
+    logger.info(
+      `Indexes for collection=${collectionName}, indexes=${JSON.stringify(
+        indexes
+      )}`
+    );
   }
-}
+};
 
 const dropAllIndexes = async () => {
-  const db = mongoose.connection.db; 
+  const db = mongoose.connection.db;
 
   const collections = await db.listCollections().toArray();
 
@@ -28,10 +28,9 @@ const dropAllIndexes = async () => {
     const collectionName = collection.name;
     const collectionObj = db.collection(collectionName);
     collectionObj.dropIndexes();
-
-    console.log(`Dropping Indexes for collection ${collectionName}:`)
+    logger.info(`Dropped Indexes for collection=${collectionName}`);
   }
-}
+};
 
 const connectDB = async () => {
   try {
@@ -52,10 +51,10 @@ const connectDB = async () => {
 
 const createIndexes = async () => {
   try {
-    logger.info(`Creating indexes in the database`);
     await TripDataModel.createIndexes();
     await TempUserSignUpModel.createIndexes();
     await OtpModel.createIndexes();
+    logger.info(`Created indexes in the database`);
   } catch (error) {
     logger.error(`Error creating indexes, error=${error}`);
     throw new Error("Error while creating indexes", error);

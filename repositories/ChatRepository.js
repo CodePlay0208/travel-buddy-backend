@@ -60,5 +60,14 @@ async function updateLatestMessage(chatId, messageId) {
   }
 }
 
+async function findChatsByChatId(chatId) {
+  try {
+    const chat = await ChatModel.find({chatId});
+    return chat;
+  } catch (error) {
+    logger.error(`Error finding chat with userIds=${userId}, error=${error}`);
+    throw new Error(`Error finding chats with userId=${userId}`);
+  }
+}
 
-module.exports = { findChatByUsers, create, findChatsByUserId, updateLatestMessage };
+module.exports = { findChatByUsers, create, findChatsByUserId, updateLatestMessage, findChatsByChatId };

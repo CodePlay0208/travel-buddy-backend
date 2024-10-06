@@ -8,6 +8,7 @@ const {
   LATEST_MESSAGE_PROJECTION_IN_CHAT,
   USER_PROFILE_PROJECTION_IN_CHAT,
 } = require("../constants/Projections");
+const chatValidator = require("../validators/ChatValidator");
 
 async function populateChat(storedChat) {
   let populatedChat = storedChat;
@@ -36,17 +37,11 @@ async function populateChat(storedChat) {
 async function fetchOrCreateChats(receiverUserId, senderProfile) {
   try {
     const senderUserId = senderProfile.userId;
-    const receiverProfile =
-      userProfileRepository.findUserByUserId(receiverUserId);
-    if (!receiverProfile) {
-      logger.error(
-        `receiverId=${receiverUserId} not valid or not found in database`
-      );
-      throw new ValidationError(
-        `receiverId=${receiverUserId} not valid or not found in database`,
-        400
-      );
-    }
+    const receiverProfile = await userProfileRepository.findUserByUserId(
+      receiverUserId
+    );
+    chatValidator.validateReceiverProfile(receiverProfile);
+
     let chatInDatabase = await chatRepository.findChatByUsers(
       senderUserId,
       receiverUserId
@@ -71,7 +66,9 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
     const populatedChat = await populateChat(createdChat);
     return populatedChat;
   } catch (error) {
-    logger.error(`Error fetching or creating chat for users=${senderUserId},${receiverUserId}, error=${error}`);
+    logger.error(
+      `Error fetching or creating chat for users=${senderUserId},${receiverUserId}, error=${error}`
+    );
     throw error;
   }
 }
@@ -79,7 +76,6 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
 async function getChats(userId) {
   try {
     let chats = await chatRepository.findChatsByUserId(userId);
-    console.log(chats);
     chats = await Promise.all(
       chats.map(async (chat) => {
         return populateChat(chat);

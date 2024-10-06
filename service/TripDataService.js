@@ -5,7 +5,7 @@ const {
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
 } = require("../aws/S3");
-const { dateFromDateString } = require("../Utils");
+const { dateFromDateString, parseLimitAndOffset } = require("../Utils");
 const { v4: uuidv4 } = require("uuid");
 const { ValidationError } = require("../exceptions/ValidationError.js");
 const tripValidator = require("../validators/TripValidator.js");
@@ -49,13 +49,8 @@ function createQuery(destination, date, userId, includeUser) {
 }
 
 async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
-  const parsedOffset = parseInt(offset, 10);
-  const parsedLimit = parseInt(limit, 10);
-  const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
-  const limitNumber =
-    isNaN(parsedLimit) || parsedLimit < 0
-      ? process.env.LIMIT_FOR_SENDING_TRIPS
-      : parsedLimit;
+ 
+  const {skip, limitNumber} = parseLimitAndOffset(limit, offset, process.env.LIMIT_FOR_SENDING_TRIPS)
 
   const trips = await tripRepository.findTripsWithQuery(
     query,
@@ -83,7 +78,10 @@ async function addDestinationImagesToTrips(trips) {
 async function createTrip(payload, files, userId) {
   try {
     const { uploadedObjectNames, allObjectsUploaded } =
-      await uploadObjectsToS3Bucket(files, process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES);
+      await uploadObjectsToS3Bucket(
+        files,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
     const destinationImages = uploadedObjectNames;
 
     const { startDate, endDate } = payload;
@@ -92,11 +90,10 @@ async function createTrip(payload, files, userId) {
     const queryEndDate = dateFromDateString(endDate);
     payload.startDate = queryStartDate;
     payload.endDate = queryEndDate;
-  
+
     tripValidator.validateTripPayload(payload);
 
     const tripId = uuidv4();
-
 
     const newTrip = {
       ...payload,
@@ -107,11 +104,17 @@ async function createTrip(payload, files, userId) {
 
     await tripRepository.createTrip(newTrip);
     logger.info(
-      `Trip with payload=${JSON.stringify(payload)}, tripId=${tripId} created successfully`
+      `Trip with payload=${JSON.stringify(
+        payload
+      )}, tripId=${tripId} created successfully`
     );
     return allObjectsUploaded;
   } catch (error) {
-    logger.error(`Error creating trip with payload=${JSON.stringify(payload)}, error=${error}`);
+    logger.error(
+      `Error creating trip with payload=${JSON.stringify(
+        payload
+      )}, error=${error}`
+    );
     throw error;
   }
 }
@@ -154,7 +157,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     newPayload.startDate = queryStartDate;
     newPayload.endDate = queryEndDate;
     tripValidator.validateTripPayload(newPayload);
-  
+
     Object.entries(newPayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         tripInDatabase[key] = value;
@@ -163,7 +166,10 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     var allFilesUploaded = true;
     if (newDestinationImages && newDestinationImages.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(newDestinationImages, process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES);
+        await uploadObjectsToS3Bucket(
+          newDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
       deleteObjectsFromS3Bucket(
         tripInDatabase.destinationImages,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
@@ -175,7 +181,11 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     logger.info(`Trip with tripId=${tripId} updated successfully`);
     return allFilesUploaded;
   } catch (error) {
-    logger.error(`Error editing trip with newPayload=${JSON.stringify(newPayload)}, error=${error}`);
+    logger.error(
+      `Error editing trip with newPayload=${JSON.stringify(
+        newPayload
+      )}, error=${error}`
+    );
     throw error;
   }
 }

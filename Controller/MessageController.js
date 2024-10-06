@@ -13,7 +13,6 @@ const {
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
-  const { chatId } = req.params;
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
@@ -23,7 +22,7 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
 
     const messages = await messageService.getAllMessagesForAChat(
       userId,
-      chatId
+      req.params
     );
 
     res.status(200).json(messages);

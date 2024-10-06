@@ -1,4 +1,3 @@
-const { ValidationError } = require("../exceptions/ValidationError");
 const { isValidEmail } = require("../Utils");
 
 const newsletterValidator = {
