@@ -23,7 +23,8 @@ const FETCH_OR_CREATE_CHAT = "fetch_or_create_chat";
 const GET_ALL_CHATS = "get_all_chats";
 const CREATE_NEW_MESSAGE = "create_new_message";
 const GET_ALL_MESSAGES = "get_all_messages";
-
+const GENERATE_TRIP_LINK = "generate-trip-link";
+const JOIN_TRIP = "join_trip";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -51,4 +52,6 @@ module.exports = {
   GET_ALL_CHATS,
   CREATE_NEW_MESSAGE,
   GET_ALL_MESSAGES,
+  GENERATE_TRIP_LINK,
+  JOIN_TRIP,
 };

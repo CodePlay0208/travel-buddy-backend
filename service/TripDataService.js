@@ -9,6 +9,7 @@ const { dateFromDateString, parseLimitAndOffset } = require("../Utils");
 const { v4: uuidv4 } = require("uuid");
 const { ValidationError } = require("../exceptions/ValidationError.js");
 const tripValidator = require("../validators/TripValidator.js");
+const generateToken = require("../config/GenerateToken.js");
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
@@ -49,8 +50,11 @@ function createQuery(destination, date, userId, includeUser) {
 }
 
 async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
- 
-  const {skip, limitNumber, newOffset} = parseLimitAndOffset(limit, offset, process.env.LIMIT_FOR_SENDING_TRIPS)
+  const { skip, limitNumber, newOffset } = parseLimitAndOffset(
+    limit,
+    offset,
+    process.env.LIMIT_FOR_SENDING_TRIPS
+  );
 
   const trips = await tripRepository.findTripsWithQuery(
     query,
@@ -75,8 +79,9 @@ async function addDestinationImagesToTrips(trips) {
   return trips;
 }
 
-async function createTrip(payload, files, userId) {
+async function createTrip(payload, files, user) {
   try {
+    const userId = user.userId;
     const { uploadedObjectNames, allObjectsUploaded } =
       await uploadObjectsToS3Bucket(
         files,
@@ -90,7 +95,7 @@ async function createTrip(payload, files, userId) {
     const queryEndDate = dateFromDateString(endDate);
     payload.startDate = queryStartDate;
     payload.endDate = queryEndDate;
-
+    payload.tripMembers = [user];
     tripValidator.validateTripPayload(payload);
 
     const tripId = uuidv4();
@@ -102,13 +107,13 @@ async function createTrip(payload, files, userId) {
       tripId,
     };
 
-    await tripRepository.createTrip(newTrip);
+    const createdTrip = await tripRepository.createTrip(newTrip);
     logger.info(
       `Trip with payload=${JSON.stringify(
         payload
       )}, tripId=${tripId} created successfully`
     );
-    return allObjectsUploaded;
+    return { createdTrip, allObjectsUploaded };
   } catch (error) {
     logger.error(
       `Error creating trip with payload=${JSON.stringify(
@@ -129,6 +134,19 @@ async function getTripById(tripId) {
       trip.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
+
+    const updatedMembersPromises = await trip.tripMembers.map(
+      async (member) => {
+        member.profilePic = await getObjectsFromS3Bucket(
+          member.profilePic,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+        );
+        return member;
+      }
+    );
+
+    trip.tripMembers = await Promise.all(updatedMembersPromises);
+
     logger.info(`fetched trip with tripId=${tripId}, trip=${trip}`);
     return trip;
   } catch (error) {
@@ -145,6 +163,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     if (!tripInDatabase) {
       throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
     }
+
     if (!tripInDatabase.userId == userId) {
       throw new ValidationError(
         `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
@@ -154,6 +173,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 
     const queryStartDate = dateFromDateString(newPayload.startDate);
     const queryEndDate = dateFromDateString(newPayload.endDate);
+
     newPayload.startDate = queryStartDate;
     newPayload.endDate = queryEndDate;
     tripValidator.validateTripPayload(newPayload);
@@ -163,6 +183,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
         tripInDatabase[key] = value;
       }
     });
+
     var allFilesUploaded = true;
     if (newDestinationImages && newDestinationImages.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
@@ -170,16 +191,20 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
           newDestinationImages,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
         );
+
       deleteObjectsFromS3Bucket(
         tripInDatabase.destinationImages,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
+
       tripInDatabase.destinationImages = uploadedObjectNames;
       allFilesUploaded = allObjectsUploaded;
     }
-    await tripRepository.updateTrip(tripInDatabase);
+
+    const updatedTrip = await tripRepository.updateTrip(tripInDatabase);
     logger.info(`Trip with tripId=${tripId} updated successfully`);
-    return allFilesUploaded;
+
+    return { updatedTrip, allFilesUploaded };
   } catch (error) {
     logger.error(
       `Error editing trip with newPayload=${JSON.stringify(
@@ -264,7 +289,7 @@ async function deleteTrip(tripId, userId) {
 
     if (!tripInDatabase) {
       throw new ValidationError(
-        `Trip not found with tripId=${tripId}, userId=${userId}`,
+        `Trip not found or user doesn't have permssion to delete trip with tripId=${tripId}, userId=${userId}`,
         404
       );
     }
@@ -280,6 +305,57 @@ async function deleteTrip(tripId, userId) {
   }
 }
 
+async function generateTripLink(tripId, userId) {
+  try {
+    const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
+      tripId,
+      userId
+    );
+
+    if (!tripInDatabase) {
+      throw new ValidationError(
+        `Trip not found or user doesn't have permssion to generate trip link for trip with tripId=${tripId}, userId=${userId}`,
+        404
+      );
+    }
+
+    if (tripInDatabase.totalMembers >= 20) {
+      throw new ValidationError(
+        `Exceeded maximum members allowed per trip, tripId=${tripId}, userId=${userId}, totalMembers=${tripInDatabase.totalMembers}`,
+        403
+      );
+    }
+    return generateToken(
+      tripId,
+      process.env.SECRET_KEY_FOR_GENERATING_TRIP_LINK,
+      "2h"
+    );
+  } catch (error) {
+    logger.error(
+      `Error occurred while generating trip link for user, userId=${userId}, tripId=${tripId}`
+    );
+    throw error;
+  }
+}
+
+async function joinTrip(trip, user) {
+  try {
+    trip.tripMembers = trip.tripMembers.filter(
+      (member) => member.userId !== user.userId
+    );
+    trip.tripMembers.push(user);
+    const updatedTrip = tripRepository.updateTrip(trip);
+    return updatedTrip;
+  } catch (error) {
+    logger.error(
+      `Error occurred while joining user to trip, user=${JSON.stringify(
+        user
+      )}, trip=${JSON.stringify(trip)}`
+    );
+  }
+  throw error;
+}
+
 module.exports = {
   createTrip,
   getTripById,
@@ -287,4 +363,6 @@ module.exports = {
   editTrip,
   deleteTrip,
   getTripsByUser,
+  generateTripLink,
+  joinTrip,
 };

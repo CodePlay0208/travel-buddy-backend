@@ -69,7 +69,7 @@ async function findTripWithTripId(tripId) {
 
 async function updateTrip(trip) {
   try {
-    await trip.save();
+    return await trip.save();
   } catch (error) {
     logger.error(
       `Error occurred while updating trip=${trip}, error=${error}`

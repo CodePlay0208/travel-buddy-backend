@@ -2,6 +2,8 @@ const express = require("express");
 const {
   tokenProtect,
   jwtTokenDecoder,
+  tripTokenDecoder,
+  tripTokenProtect,
 } = require("../middleware/AuthMiddleware");
 const {
   createTripHandler,
@@ -10,6 +12,8 @@ const {
   editTripHandler,
   deleteTripHandler,
   getTripsWithFilterHandler,
+  generateTripLinkHandler,
+  joinTripHandler,
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -41,6 +45,21 @@ router
   .delete(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     deleteTripHandler
+  );
+
+router
+  .route("/generateTripLink/:tripId")
+  .get(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    generateTripLinkHandler
+  );
+
+router
+  .route("/joinTrip")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    tripTokenProtect(process.env.SECRET_KEY_FOR_GENERATING_TRIP_LINK),
+    joinTripHandler
   );
 
 module.exports = router;

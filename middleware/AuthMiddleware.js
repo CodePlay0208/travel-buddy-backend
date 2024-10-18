@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const logger = require("../Logger");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
+const tripRepository = require("../repositories/TripRepository");
 
 const tokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {
@@ -27,6 +28,38 @@ const tokenProtect = (jwtSecretKey) => {
         next();
       } catch (error) {
         logger.error(`Error in authorization middleware, error=${error}`);
+        res.status(401).json();
+      }
+    } else {
+      logger.error(`No bearer token found in request headers`);
+      res.status(401).json();
+    }
+  });
+};
+
+const tripTokenProtect = (jwtSecretKey) => {
+  return asyncHandler(async (req, res, next) => {
+    let token;
+    console.log(req.headers);
+    if (
+      req.headers.triptoken &&
+      req.headers.triptoken.startsWith("Bearer")
+    ) {
+      try {
+        token = req.headers.triptoken.split(" ")[1];
+        const decoded = jwt.verify(token, jwtSecretKey);
+
+        const trip = await tripRepository.findTripWithTripId(decoded.id);
+
+        if (!trip) {
+          logger.info(`trip not found with tripId=${decoded.id}`);
+          res.status(404).json();
+        }
+        
+        req.trip = trip;
+        next();
+      } catch (error) {
+        logger.error(`Error in trip authorization middleware, error=${error}`);
         res.status(401).json();
       }
     } else {
@@ -134,4 +167,5 @@ module.exports = {
   googleTokenProtect,
   jwtTokenDecoder,
   tokenProtectForTempFlows,
+  tripTokenProtect,
 };
