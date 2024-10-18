@@ -11,7 +11,7 @@ const {
 const chatValidator = require("../validators/ChatValidator");
 
 async function populateChat(storedChat) {
-  let populatedChat = storedChat;
+  let populatedChat = { chatId: storedChat.chatId };
 
   const messagePromise = messageRepository.findMessageByMessageId(
     storedChat.messageId,

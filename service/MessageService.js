@@ -59,12 +59,10 @@ async function getAllMessagesForAChat(userId, filter) {
       skip
     );
 
-    // Change this logic
-    messages = messages.map((message) => {
+    messages.forEach((message) => {
       if (message.senderId !== userId) {
-        return { ...message, readByReceiver: true };
+        message.readByReceiver = true
       }
-      return message;
     });
 
     logger.info(
