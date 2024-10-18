@@ -84,9 +84,9 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
 };
 
 const googleTokenProtect = asyncHandler(async (req, res, next) => {
-  if (req.headers.googleToken && req.headers.googleToken.startsWith("Bearer")) {
+  if (req.headers.googletoken && req.headers.googletoken.startsWith("Bearer")) {
     try {
-      req.googleToken = req.headers.googleToken.split(" ")[1];
+      req.googleToken = req.headers.googletoken.split(" ")[1];
       logger.info(`Authorized user for google auth`);
       next();
     } catch (error) {

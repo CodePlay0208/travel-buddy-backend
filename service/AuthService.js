@@ -55,6 +55,66 @@ async function sendOTP(name, useremail, otp, status) {
   }
 }
 
+async function getUserDataFromGoogle(accessToken) {
+  try {
+    const url = process.env.GOOGLE_API_FOR_FETCHING_USER_DATA;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || "Failed to fetch user data.");
+    }
+
+    return data;
+  } catch (error) {
+    logger.error(`Failed to fetch user data from google with error=${error}`);
+    throw error;
+  }
+}
+
+async function googleLogin(googleToken) {
+  try {
+    const userData = await getUserDataFromGoogle(googleToken);
+    const { emailAddresses, names } = userData;
+
+    const useremail = emailAddresses[0].value;
+    const username = names[0].displayName;
+    let userInDatabase = await userProfileRepository.findUserWithEmailId(
+      useremail
+    );
+
+    if (!userInDatabase) {
+      const userId = uuidv4();
+      logger.info(
+        `Creating user with userId=${userId} and emailId=${useremail} in google auth`
+      );
+      const user = {
+        username,
+        emailId: useremail,
+        userId,
+      };
+      userInDatabase = await userProfileRepository.create(user);
+    }
+
+    const currentUserId = userInDatabase.userId;
+    logger.info(`loggedIn user with userId=${currentUserId} using google auth`);
+
+    return generateToken(
+      currentUserId,
+      process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+    );
+  } catch (error) {
+    logger.error(`Failed to login user with google, error=${error}`);
+    throw error;
+  }
+}
 async function signUp(payload) {
   try {
     const tempUserId = uuidv4();
@@ -165,7 +225,9 @@ async function login(payload) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to verify otp for user with payload=${JSON.stringify(payload)}, error=${error}`
+      `Failed to verify otp for user with payload=${JSON.stringify(
+        payload
+      )}, error=${error}`
     );
     throw error;
   }
@@ -235,4 +297,5 @@ module.exports = {
   login,
   forgotPassword,
   resetPassword,
+  googleLogin,
 };
