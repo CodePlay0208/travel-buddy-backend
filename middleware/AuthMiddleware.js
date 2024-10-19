@@ -40,7 +40,6 @@ const tokenProtect = (jwtSecretKey) => {
 const tripTokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {
     let token;
-    console.log(req.headers);
     if (
       req.headers.triptoken &&
       req.headers.triptoken.startsWith("Bearer")
