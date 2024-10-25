@@ -17,8 +17,8 @@ function addDestinationToQuery(query, destination) {
   }
 }
 
-function addDateToQuery(query, date) {
-  if (date) {
+function addDateToQuery(query, queryDate) {
+  if (queryDate) {
     if (!isNaN(queryDate)) {
       query.startDate = { $lte: queryDate };
       query.endDate = { $gte: queryDate };
