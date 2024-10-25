@@ -61,7 +61,7 @@ async function getAllMessagesForAChat(userId, filter) {
 
     messages.forEach((message) => {
       if (message.senderId !== userId) {
-        message.readByReceiver = true
+        message.readByReceiver = true;
       }
     });
 

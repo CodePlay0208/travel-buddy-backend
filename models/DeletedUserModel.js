@@ -7,7 +7,7 @@ const deletedUserSchema = new mongoose.Schema({
   deletedAt: { type: Date, default: Date.now },
 });
 
-deletedUserSchema.index({emailId: 1}, {name: "emailId_single_index"});
+deletedUserSchema.index({ emailId: 1 }, { name: "emailId_single_index" });
 
 const DeletedUser = mongoose.model("DeletedUser", deletedUserSchema);
 

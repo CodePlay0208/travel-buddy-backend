@@ -20,7 +20,7 @@ const {
 } = require("./middleware/RequestContextMiddleware");
 
 const corsOptions = {
-  origin: process.env.ORIGIN_FOR_CLIENT.split(','),
+  origin: process.env.ORIGIN_FOR_CLIENT.split(","),
   credentials: true,
 };
 

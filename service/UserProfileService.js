@@ -44,7 +44,10 @@ async function updateUserProfile(user, updateData, newProfilePic) {
 
     if (newProfilePic && newProfilePic.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(newProfilePic, process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC);
+        await uploadObjectsToS3Bucket(
+          newProfilePic,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+        );
       deleteObjectsFromS3Bucket(
         user.profilePic,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC

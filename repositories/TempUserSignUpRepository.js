@@ -8,7 +8,9 @@ async function createUniqueUserWithEmailId(user) {
     await newTempSignedUser.save();
   } catch (error) {
     logger.error(
-      `Error while creating user=${JSON.stringify(user)} in temporary signup collection, error=${error}`
+      `Error while creating user=${JSON.stringify(
+        user
+      )} in temporary signup collection, error=${error}`
     );
     throw new Error(error);
   }

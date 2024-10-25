@@ -5,7 +5,6 @@ const OtpModel = require("../models/OtpModel");
 const logger = require("../Logger");
 
 const listAllIndexes = async () => {
-
   const db = mongoose.connection.db;
   const collections = await db.listCollections().toArray();
   for (const collection of collections) {

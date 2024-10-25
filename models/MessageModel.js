@@ -11,8 +11,8 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-messageSchema.index({chatId: 1}, {name: "chat_index_in_messages"});
-messageSchema.index({senderId: 1}, {name: "senderId_index_in_messages"});
+messageSchema.index({ chatId: 1 }, { name: "chat_index_in_messages" });
+messageSchema.index({ senderId: 1 }, { name: "senderId_index_in_messages" });
 messageSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
 
 const Message = mongoose.model("MessageModel", messageSchema);

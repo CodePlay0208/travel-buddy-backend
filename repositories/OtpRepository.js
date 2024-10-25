@@ -26,11 +26,11 @@ async function findOtpWithUserId(userId) {
     return otp;
   } catch (error) {
     logger.error(
-        `Error occurred while finding otp user for user with userId=${userId}`
-      );
-      throw new Error(
-        `Error occurred while finding otp for user with userId=${userId}, error=${error}`
-      );
+      `Error occurred while finding otp user for user with userId=${userId}`
+    );
+    throw new Error(
+      `Error occurred while finding otp for user with userId=${userId}, error=${error}`
+    );
   }
 }
 

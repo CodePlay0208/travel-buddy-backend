@@ -33,7 +33,6 @@ const authValidator = {
   validateForgotPasswordRequest: (useremail) => {
     validateEmail(useremail);
   },
-
 };
 
 module.exports = authValidator;

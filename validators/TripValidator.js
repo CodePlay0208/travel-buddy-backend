@@ -44,8 +44,10 @@ const tripValidator = {
   },
 
   validateStartEndDateAndEndDate: (startDate, endDate) => {
-    if(startDate > endDate){
-      throw new ValidationError(`Start Date is greater than end Date, startDate=${startDate}, endDate=${endDate}`);
+    if (startDate > endDate) {
+      throw new ValidationError(
+        `Start Date is greater than end Date, startDate=${startDate}, endDate=${endDate}`
+      );
     }
     tripValidator.validateDate(startDate);
     tripValidator.validateDate(endDate);
@@ -53,42 +55,43 @@ const tripValidator = {
 
   validateTotalMembers: (totalMembers) => {
     totalMembers = Number(totalMembers);
-    if(totalMembers < 0 || totalMembers > process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP){
+    if (
+      totalMembers < 0 ||
+      totalMembers > process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP
+    ) {
       throw new ValidationError(`Invalid Total Members=${totalMembers}`);
     }
   },
 
   validateAge: (age) => {
     age = Number(age);
-    if(age < 0 || age > process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON){
+    if (age < 0 || age > process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON) {
       throw new ValidationError(`Invalid Age=${age}`);
     }
   },
 
   validateGender: (gender) => {
     const validGenders = Object.values(Gender);
-    if(!validGenders.includes(gender)){
+    if (!validGenders.includes(gender)) {
       throw new ValidationError(`Invalid Gender=${gender}`);
     }
   },
 
   validateDescription: (description) => {
-    if(description && description.length > process.env.LIMIT_FOR_TOTAL_LETTERS_IN_DESCRIPTION){
-      throw new ValidationError(`Description too long, description=${description}`);
+    if (
+      description &&
+      description.length > process.env.LIMIT_FOR_TOTAL_LETTERS_IN_DESCRIPTION
+    ) {
+      throw new ValidationError(
+        `Description too long, description=${description}`
+      );
     }
   },
 
   validateTripPayload: (payload) => {
-    const {
-      startDate,
-      endDate,
-      totalMembers,
-      age,
-      gender,
-      description
-    } = payload;
+    const { startDate, endDate, totalMembers, age, gender, description } =
+      payload;
 
-  
     tripValidator.validateStartEndDateAndEndDate(startDate, endDate);
     tripValidator.validateTotalMembers(totalMembers);
     tripValidator.validateAge(age);

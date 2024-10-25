@@ -9,8 +9,6 @@ const {
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
-
-
 const getLocationByNameHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {

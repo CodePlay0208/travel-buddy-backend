@@ -46,7 +46,7 @@ const requestContext = {
 };
 
 const generateTid = () => {
-  const timestamp = Date.now().toString(36); 
+  const timestamp = Date.now().toString(36);
   return `${Math.random().toString(36).substring(2, 17)}${timestamp}`;
 };
 

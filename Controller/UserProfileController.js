@@ -11,7 +11,6 @@ const {
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
-  
 const getUserProfileHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {

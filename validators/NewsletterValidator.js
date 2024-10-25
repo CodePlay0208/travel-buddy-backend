@@ -2,7 +2,7 @@ const { isValidEmail } = require("../Utils");
 
 const newsletterValidator = {
   validateEmail: (emailId) => {
-   isValidEmail(emailId);
+    isValidEmail(emailId);
   },
 };
 

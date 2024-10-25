@@ -8,7 +8,9 @@ async function deleteTripsByUserId(userId) {
     logger.error(
       `Error occurred while deleting trips for user with userId=${userId}, error=${error}`
     );
-    throw new Error(`Error deleting trips for user with userId=${userId}, error=${error}`);
+    throw new Error(
+      `Error deleting trips for user with userId=${userId}, error=${error}`
+    );
   }
 }
 
@@ -71,9 +73,7 @@ async function updateTrip(trip) {
   try {
     return await trip.save();
   } catch (error) {
-    logger.error(
-      `Error occurred while updating trip=${trip}, error=${error}`
-    );
+    logger.error(`Error occurred while updating trip=${trip}, error=${error}`);
     throw new Error(
       `Error occurred while updating trip=${trip}, error=${error}`
     );
@@ -82,11 +82,16 @@ async function updateTrip(trip) {
 
 async function findTripsWithQuery(query, limit, offset) {
   try {
-    const trips = TripData.find(query).skip(offset).limit(limit).sort({ createdAt: -1 });
+    const trips = TripData.find(query)
+      .skip(offset)
+      .limit(limit)
+      .sort({ createdAt: -1 });
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
     );
     throw new Error(
       `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
@@ -101,5 +106,5 @@ module.exports = {
   createTrip,
   findTripWithTripId,
   updateTrip,
-  findTripsWithQuery
+  findTripsWithQuery,
 };

@@ -49,20 +49,22 @@ async function findChatsByUserId(userId) {
 async function updateLatestMessage(chatId, messageId) {
   try {
     const updatedChat = await ChatModel.findOneAndUpdate(
-      { chatId }, 
-      { latestMessage: messageId }, 
-      { new: true } 
+      { chatId },
+      { latestMessage: messageId },
+      { new: true }
     );
     return updatedChat;
   } catch (error) {
-    logger.error(`Error updating chat with chatId=${chatId}, messageId=${messageId}`);
+    logger.error(
+      `Error updating chat with chatId=${chatId}, messageId=${messageId}`
+    );
     throw new Error(`Error updating chat with chatId=${chatId}`);
   }
 }
 
 async function findChatsByChatId(chatId) {
   try {
-    const chat = await ChatModel.findOne({chatId});
+    const chat = await ChatModel.findOne({ chatId });
     return chat;
   } catch (error) {
     logger.error(`Error finding chat with userIds=${userId}, error=${error}`);
@@ -70,4 +72,10 @@ async function findChatsByChatId(chatId) {
   }
 }
 
-module.exports = { findChatByUsers, create, findChatsByUserId, updateLatestMessage, findChatsByChatId };
+module.exports = {
+  findChatByUsers,
+  create,
+  findChatsByUserId,
+  updateLatestMessage,
+  findChatsByChatId,
+};

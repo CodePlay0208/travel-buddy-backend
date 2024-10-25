@@ -9,8 +9,7 @@ const {
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
-
-const {ValidationError} = require("../exceptions/ValidationError");
+const { ValidationError } = require("../exceptions/ValidationError");
 
 const NewsletterSubscriptionHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
@@ -25,7 +24,7 @@ const NewsletterSubscriptionHandler = asyncHandler(async (req, res) => {
     await newsletterService.subscribeUser(emailId);
 
     res.status(200).json();
-    res.header()
+    res.header();
     const endTime = Date.now();
     logger.info(
       `API_NAME=${NEWSLETTER_SUBSCRIPTION}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${

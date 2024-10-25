@@ -65,11 +65,11 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   return { trips, newOffset };
 }
 
-async function addDestinationImagesToTrips(trips) {
+async function addDestinationImagesToTrips(trips, path) {
   trips = await Promise.all(
     trips.map(async (trip) => {
       trip.destinationImages = await getObjectsFromS3Bucket(
-        trip.destinationImages,
+        path + trip.destinationImages,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
       return trip;
@@ -131,7 +131,7 @@ async function getTripById(tripId) {
       throw new ValidationError(`Trip not found for tripId=${tripId}`, 404);
     }
     trip.destinationImages = await getObjectsFromS3Bucket(
-      trip.destinationImages,
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES + trip.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
@@ -234,7 +234,10 @@ async function getTripsByUser(filter, userId) {
       );
     }
 
-    await addDestinationImagesToTrips(trips);
+    await addDestinationImagesToTrips(
+      trips,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
+    );
     logger.info(
       `Fetched trips with filter=${filter} for user with userId=${userId}, trips=${trips}`
     );
@@ -271,7 +274,10 @@ async function getTripsWithFilter(filter, userId) {
         404
       );
     }
-    await addDestinationImagesToTrips(trips);
+    await addDestinationImagesToTrips(
+      trips,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
+    );
     logger.info(`Fetched trips with filter=${filter}, trips=${trips}`);
     return { trips, newOffset };
   } catch (error) {
@@ -294,9 +300,17 @@ async function deleteTrip(tripId, userId) {
       );
     }
     deleteObjectsFromS3Bucket(
-      tripInDatabase.destinationImages,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES +
+        tripInDatabase.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
+
+    deleteObjectsFromS3Bucket(
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES +
+        tripInDatabase.destinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
     await tripRepository.deleteTripsByTripId(tripId);
     logger.info(`Trip with tripId=${tripId} deleted successfully`);
   } catch (error) {

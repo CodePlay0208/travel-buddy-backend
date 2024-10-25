@@ -20,7 +20,6 @@ const { requestContext } = require("../middleware/RequestContextMiddleware");
 const authService = require("../service/AuthService");
 const { ValidationError } = require("../exceptions/ValidationError");
 
-
 const googleLoginHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {

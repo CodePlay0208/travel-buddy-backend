@@ -40,10 +40,7 @@ const tokenProtect = (jwtSecretKey) => {
 const tripTokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {
     let token;
-    if (
-      req.headers.triptoken &&
-      req.headers.triptoken.startsWith("Bearer")
-    ) {
+    if (req.headers.triptoken && req.headers.triptoken.startsWith("Bearer")) {
       try {
         token = req.headers.triptoken.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
@@ -54,7 +51,7 @@ const tripTokenProtect = (jwtSecretKey) => {
           logger.info(`trip not found with tripId=${decoded.id}`);
           res.status(404).json();
         }
-        
+
         req.trip = trip;
         next();
       } catch (error) {
