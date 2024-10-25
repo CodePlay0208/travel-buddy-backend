@@ -20,6 +20,7 @@ const tripDataSchema = new mongoose.Schema({
   gender: { type: String, enum: Object.values(Gender), required: true },
   description: { type: String, required: true },
   destinationImages: [{ type: String }],
+  croppedDestinationImages: [{type: String}],
   userId: { type: String, required: true },
   tripId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },

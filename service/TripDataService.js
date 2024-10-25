@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require("uuid");
 const { ValidationError } = require("../exceptions/ValidationError.js");
 const tripValidator = require("../validators/TripValidator.js");
 const generateToken = require("../config/GenerateToken.js");
+const { cropAndResizeImages } = require("../Utils.js");
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
@@ -65,11 +66,12 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   return { trips, newOffset };
 }
 
-async function addDestinationImagesToTrips(trips, path) {
+async function addCroppedDestinationImagesToTrips(trips, path) {
   trips = await Promise.all(
     trips.map(async (trip) => {
-      trip.destinationImages = await getObjectsFromS3Bucket(
-        path + trip.destinationImages,
+      trip.croppedDestinationImages = await getObjectsFromS3Bucket(
+        path,
+        trip.croppedDestinationImages,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
       return trip;
@@ -84,9 +86,19 @@ async function createTrip(payload, files, user) {
     const userId = user.userId;
     const { uploadedObjectNames, allObjectsUploaded } =
       await uploadObjectsToS3Bucket(
+        process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
         files,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
+
+    files = await cropAndResizeImages(files);
+
+    const { uploadedObjectNames: croppedDestinationImages } = await uploadObjectsToS3Bucket(
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+      files,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
     const destinationImages = uploadedObjectNames;
 
     const { startDate, endDate } = payload;
@@ -103,6 +115,7 @@ async function createTrip(payload, files, user) {
     const newTrip = {
       ...payload,
       destinationImages,
+      croppedDestinationImages,
       userId,
       tripId,
     };
@@ -131,13 +144,15 @@ async function getTripById(tripId) {
       throw new ValidationError(`Trip not found for tripId=${tripId}`, 404);
     }
     trip.destinationImages = await getObjectsFromS3Bucket(
-      process.env.PATH_FOR_FULL_DESTINATION_IMAGES + trip.destinationImages,
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+      trip.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
     const updatedMembersPromises = await trip.tripMembers.map(
       async (member) => {
         member.profilePic = await getObjectsFromS3Bucket(
+          "",
           member.profilePic,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
         );
@@ -188,16 +203,33 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     if (newDestinationImages && newDestinationImages.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
+          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
           newDestinationImages,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
         );
 
+      newDestinationImages = await cropAndResizeImages(newDestinationImages);
+
+      const { uploadedObjectNames: croppedImagesNames } =await uploadObjectsToS3Bucket(
+        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+        newDestinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
+
       deleteObjectsFromS3Bucket(
+        process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+        tripInDatabase.destinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
+
+      deleteObjectsFromS3Bucket(
+        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
         tripInDatabase.destinationImages,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
       );
 
       tripInDatabase.destinationImages = uploadedObjectNames;
+      tripInDatabase.croppedDestinationImages = croppedImagesNames;
       allFilesUploaded = allObjectsUploaded;
     }
 
@@ -234,7 +266,7 @@ async function getTripsByUser(filter, userId) {
       );
     }
 
-    await addDestinationImagesToTrips(
+    await addCroppedDestinationImagesToTrips(
       trips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
     );
@@ -274,7 +306,7 @@ async function getTripsWithFilter(filter, userId) {
         404
       );
     }
-    await addDestinationImagesToTrips(
+    await addCroppedDestinationImagesToTrips(
       trips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
     );
@@ -300,14 +332,14 @@ async function deleteTrip(tripId, userId) {
       );
     }
     deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES +
-        tripInDatabase.destinationImages,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+      tripInDatabase.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
     deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_FULL_DESTINATION_IMAGES +
-        tripInDatabase.destinationImages,
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+      tripInDatabase.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 

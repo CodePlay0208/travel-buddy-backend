@@ -3,6 +3,7 @@ const phoneNumberRegex = /^[0-9]+$/;
 const crypto = require("crypto");
 const { ValidationError } = require("./exceptions/ValidationError");
 const logger = require("./Logger");
+const sharp = require("sharp");
 
 function isValidEmail(emailId) {
   if (!emailId || typeof emailId !== "string") {
@@ -48,12 +49,42 @@ const parseLimitAndOffset = (limit, offset, defaultLimit) => {
   const skip = isNaN(parsedOffset) || parsedOffset < 0 ? 0 : parsedOffset;
   const limitNumber =
     isNaN(parsedLimit) || parsedLimit < 0
-      ? process.env.LIMIT_FOR_SENDING_TRIPS
+      ? defaultLimit
       : parsedLimit;
 
   const newOffset = skip + limitNumber;
   return { skip, limitNumber, newOffset };
 };
+
+async function cropAndResizeImages(files) {
+  return Promise.all(
+    files.map(async (file) => {
+      const image = sharp(file.buffer);
+
+      const metadata = await image.metadata();
+      let width = metadata.width;
+      let height = metadata.height;
+
+      const targetAspectRatio = 4 / 3;
+
+      if (width / height > targetAspectRatio) {
+        const newWidth = Math.floor(height * targetAspectRatio);
+        const cropOffsetX = Math.floor((width - newWidth) / 2);
+        image.extract({ left: cropOffsetX, top: 0, width: newWidth, height });
+      } else {
+        const newHeight = Math.floor(width / targetAspectRatio);
+        const cropOffsetY = Math.floor((height - newHeight) / 2);
+        image.extract({ left: 0, top: cropOffsetY, width, height: newHeight });
+      }
+
+      return {
+        originalname: file.originalname,
+        buffer: await image.toBuffer(),
+        mimetype: file.mimetype,
+      };
+    })
+  );
+}
 
 module.exports = {
   isValidEmail,
@@ -61,4 +92,5 @@ module.exports = {
   dateFromDateString,
   isValidPhoneNumber,
   parseLimitAndOffset,
+  cropAndResizeImages,
 };

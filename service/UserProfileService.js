@@ -13,6 +13,7 @@ async function getUserProfile(user) {
     const userId = user.userId;
     logger.info(`Fetching user with userId=${userId}`);
     const userProfilePic = await getObjectsFromS3Bucket(
+      "",
       user.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
@@ -45,10 +46,12 @@ async function updateUserProfile(user, updateData, newProfilePic) {
     if (newProfilePic && newProfilePic.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
+          "",
           newProfilePic,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
         );
       deleteObjectsFromS3Bucket(
+        "",
         user.profilePic,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
       );
@@ -82,6 +85,7 @@ async function deleteUserProfile(user) {
 
     tripRepository.deleteTripsByUserId(userId);
     deleteObjectsFromS3Bucket(
+      "",
       user.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
