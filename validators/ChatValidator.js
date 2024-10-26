@@ -1,5 +1,6 @@
 const { ValidationError } = require("../exceptions/ValidationError");
 const chatRepository = require("../repositories/ChatRepository");
+const logger = require('../logger');
 
 const chatValidator = {
   validateReceiverProfile: async (receiverProfile) => {

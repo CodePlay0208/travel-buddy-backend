@@ -19,7 +19,7 @@ const myFormat = printf(({ level, message, timestamp }) => {
 });
 
 const logger = createLogger({
-  level: "info",
+  level: "silent",
   format: combine(timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), myFormat),
   transports: [
     new transports.Console({
