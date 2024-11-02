@@ -11,11 +11,9 @@ const handleSocketIO = (server) => {
 
   io.on("connection", (socket) => {
     console.log("Connected to socket.io");
-    console.log('--------connection-------------')
 
     socket.on("setup", (userData) => {
       try {
-        console.log('--------setup-------------')
         socket.join(userData.userId);
         socket.userData = userData; // Store userData on the socket object
         socket.emit("connected");
@@ -26,15 +24,14 @@ const handleSocketIO = (server) => {
     });
 
     socket.on("join chat", (room) => {
+      console.log('room', room)
+      const { roomId, userId } = room
       try {
-        console.log('--------join chat-------------')
-        const { chatId, userId } = room
-        console.log('room userId', chatId, userId);
-        const roomSockets = io.sockets.adapter.rooms.get(chatId);
-        console.log('rommsockets', roomSockets);
+        // console.log('--------join chat-------------')
+        const roomSockets = io.sockets.adapter.rooms.get(roomId);
 
         if (roomSockets) {
-          console.log(`Users in room ${chatId}:`);
+          console.log(`Users in room before joining ${roomId}:`);
           roomSockets.forEach((socketId) => {
             const socket = io.sockets.sockets.get(socketId);
             if (socket && socket.userData) {
@@ -42,7 +39,7 @@ const handleSocketIO = (server) => {
             }
           });
         } else {
-          console.log(`Room ${chatId} is empty or does not exist.`);
+          console.log(`Room ${roomId} is empty or does not exist.`);
         }
 
         // const roomSockets = io.sockets.adapter.rooms.get(room);
@@ -62,29 +59,30 @@ const handleSocketIO = (server) => {
           });
 
           if (userAlreadyInRoom) {
-            console.log(`User ${userId} is already in Room: ${(chatId)}`);
+            console.log(`User ${userId} is already in Room: ${(roomId)}`);
             return; // Exit the function if the user is already in the room
           }
         }
 
         // Store user data on the socket to track them
-        socket.userData = { userId }; // Store userId or other relevant data on the socket
-        socket.join(chatId);
-        console.log("User Joined Room: " + JSON.stringify(chatId));
+        // socket.userData = { userId }; // Store userId or other relevant data on the socket
+        // socket.join(chatId);
+        // console.log("User Joined Room: " + JSON.stringify(chatId));
+        //
+
+        socket.join(roomId);
 
         // Retrieve all users in the room after joining
-        const updatedRoomSockets = io.sockets.adapter.rooms.get(chatId);
+        const updatedRoomSockets = io.sockets.adapter.rooms.get(roomId);
         if (updatedRoomSockets) {
           const usersInRoom = Array.from(updatedRoomSockets).map((socketId) => {
             const connectedSocket = io.sockets.sockets.get(socketId);
             return connectedSocket?.userData; // Return userData if stored on the socket
           });
 
-          console.log("Users in room:", usersInRoom);
+          console.log("Users in room after joining:", usersInRoom);
         }
-        // socket.join(room);
-        // console.log("User Joined Room: " + room);
-        //
+
         // const roomSockets = io.sockets.adapter.rooms.get(room);
         // if (roomSockets) {
         //   const usersInRoom = Array.from(roomSockets).map((socketId) => {
@@ -92,7 +90,7 @@ const handleSocketIO = (server) => {
         //     return connectedSocket?.userData; // Return userData if stored on the socket
         //   });
         //
-        //   console.log("Users in room:", usersInRoom);
+        //   console.log("Users in room AFTER JOINING:", usersInRoom);
         // }
 
       } catch (error) {
@@ -101,10 +99,9 @@ const handleSocketIO = (server) => {
       }
     });
 
-    socket.on("typing", async (room) => {
-      console.log('--------typing-------------')
+    socket.on("typing", (room) => {
       try {
-        const { chatId, userId } = room
+        // const { chatId, userId } = room
         // console.log('chatID userId', chatId, userId)
         // var chat = await chatRepository.findChatsByChatId(chatId)
         //
@@ -118,31 +115,29 @@ const handleSocketIO = (server) => {
         //   // console.log('user', user)
         //   socket.to(user).emit("typing");
         // })
-        socket.in(chatId).emit("typing");
+        socket.in(room).emit("typing");
       } catch (error) {
         console.error("Error in typing event:", error);
         socket.emit("error", "Typing event failed");
       }
     });
 
-    socket.on("stop typing", async (room) => {
-      console.log('--------stop typing-------------')
-
+    socket.on("stop typing", (room) => {
       try {
-        const { chatId, userId } = room
-        var chat = await chatRepository.findChatsByChatId(chatId)
-
-        if (!chat?.users) {
-          console.log("chat.users not defined");
-          return;
-        }
-
-        chat?.users.forEach((user) => {
-          if (user === userId) return
-          // console.log('user', user)
-          socket.to(user).emit("stop typing");
-        })
-        // socket.in(chatId).emit("stop typing")
+        // const { chatId, userId } = room
+        // var chat = await chatRepository.findChatsByChatId(chatId)
+        //
+        // if (!chat?.users) {
+        //   console.log("chat.users not defined");
+        //   return;
+        // }
+        //
+        // chat?.users.forEach((user) => {
+        //   if (user === userId) return
+        //   // console.log('user', user)
+        //   socket.to(user).emit("stop typing");
+        // })
+        socket.in(room).emit("stop typing")
 
       } catch (error) {
         console.error("Error in stop typing event:", error);
@@ -150,24 +145,21 @@ const handleSocketIO = (server) => {
       }
     });
 
-    socket.on("send message", async (newMessageReceived) => {
-      console.log('------------message event---------');
+    socket.on("new message", async (newMessageReceived) => {
+      console.log("new messsage event", newMessageReceived);
       try {
         const chatId = newMessageReceived.chatId;
         // console.log(newMessageReceived);
         var chat = await chatRepository.findChatsByChatId(chatId)
 
         if (!chat.users) {
-          console.log("chat.users not defined");
           return;
         }
 
         chat.users.forEach((user) => {
-          console.log('user before', user)
           if (user === newMessageReceived.senderId) return;
-          console.log('user after', user)
-
-          socket.to(user).emit("message to received", newMessageReceived);
+          console.log('sending to user', user)
+          socket.to(user).emit("message received", newMessageReceived);
         });
         // socket.in(chatId).emit("message received", newMessageReceived);
       } catch (error) {
@@ -188,6 +180,9 @@ const handleSocketIO = (server) => {
     //     console.error("Error in disconnect event:", error);
     //   }
     // });
+    socket.off("setup", () => {
+      socket.leave(userData.userId);
+    });
   });
 };
 
