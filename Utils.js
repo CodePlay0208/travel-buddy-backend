@@ -57,6 +57,9 @@ const parseLimitAndOffset = (limit, offset, defaultLimit) => {
 };
 
 async function cropAndResizeImages(files) {
+  if(!files){
+    return null;
+  }
   return Promise.all(
     files.map(async (file) => {
       const image = sharp(file.buffer);

@@ -96,7 +96,6 @@ const tripValidator = {
     tripValidator.validateTotalMembers(totalMembers);
     tripValidator.validateAge(age);
     tripValidator.validateGender(gender);
-    tripValidator.validateDescription(description);
   },
 };
 

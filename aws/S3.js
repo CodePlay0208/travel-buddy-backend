@@ -3,41 +3,44 @@ const {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
-  HeadObjectCommand
+  HeadObjectCommand,
 } = require("@aws-sdk/client-s3");
 const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { randomFileName } = require("../Utils");
 const logger = require("../logger");
 
+const uploadObjectToS3Bucket = asyncHandler(
+  async (path = "", object, s3Bucket) => {
+    try {
+      logger.info(`Uploading object to s3bucket=${s3Bucket} at path=${path}`);
+      const uploadedObjectName = randomFileName(object.originalname);
+      const params = {
+        Bucket: s3Bucket,
+        Key: path + uploadedObjectName,
+        Body: object.buffer,
+        ContentType: object.mimetype,
+      };
 
-const uploadObjectToS3Bucket = asyncHandler(async (path="", object, s3Bucket) => {
-  try {
-    logger.info(`Uploading object to s3bucket=${s3Bucket} at path=${path}`);
-    const uploadedObjectName = randomFileName(object.originalname);
-    const params = {
-      Bucket: s3Bucket,
-      Key: path + uploadedObjectName,
-      Body: object.buffer,
-      ContentType: object.mimetype,
-    };
-
-    const command = new PutObjectCommand(params);
-    await s3Client.send(command);
-    return uploadedObjectName;
-  } catch (error) {
-    logger.error(
-      `Error while uploading object to s3bucket=${s3Bucket}, error=${error}`
-    );
+      const command = new PutObjectCommand(params);
+      await s3Client.send(command);
+      return uploadedObjectName;
+    } catch (error) {
+      logger.error(
+        `Error while uploading object to s3bucket=${s3Bucket}, error=${error}`
+      );
+    }
+    return null;
   }
-  return null;
-});
+);
 
 const uploadObjectsToS3Bucket = asyncHandler(
   async (path, objects, s3Bucket) => {
     var uploadedObjectNames = [];
     var allObjectsUploaded = true;
-
+    if (!objects) {
+      return { uploadedObjectNames, allObjectsUploaded };
+    }
     try {
       logger.info(`Uploading objects to s3bucket=${s3Bucket} at path=${path}`);
       await Promise.all(
@@ -89,6 +92,9 @@ const getObjectFromS3Bucket = asyncHandler(
 const getObjectsFromS3Bucket = asyncHandler(
   async (path, uploadedObjectNames, s3Bucket) => {
     var uploadedObjectUrls = [];
+    if (!uploadedObjectNames) {
+      return { uploadedObjectUrls, allObjectsUploaded };
+    }
     try {
       logger.info(`Fetching objects from s3bucket=${s3Bucket}`);
       await Promise.all(
@@ -139,6 +145,9 @@ const deleteObjectFromS3Bucket = asyncHandler(
 const deleteObjectsFromS3Bucket = asyncHandler(
   async (path, uploadedObjectNames, s3Bucket) => {
     var allObjectsDeleted = true;
+    if (!uploadedObjectNames) {
+      return { allObjectsDeleted };
+    }
     try {
       logger.info(`Deleting object from s3bucket=${s3Bucket}`);
       await Promise.all(
