@@ -9,6 +9,9 @@ const {
   USER_PROFILE_PROJECTION_IN_CHAT,
 } = require("../constants/Projections");
 const chatValidator = require("../validators/ChatValidator");
+const {
+  getObjectsFromS3Bucket,
+} = require("../aws/S3");
 
 async function populateChat(storedChat) {
   let populatedChat = { chatId: storedChat.chatId };
@@ -27,6 +30,17 @@ async function populateChat(storedChat) {
     messagePromise,
     userProfilePromise,
   ]);
+
+  await Promise.all(
+    userProfiles.map(async (user) => {
+      const userProfilePic = await getObjectsFromS3Bucket(
+        "",
+        user.profilePic,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      user.profilePic = userProfilePic;
+    })
+  );
 
   populatedChat.latestMessage = latestMessage;
   populatedChat.users = userProfiles;

@@ -3,11 +3,13 @@ const {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand
 } = require("@aws-sdk/client-s3");
 const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { randomFileName } = require("../Utils");
-const logger = require("../Logger");
+const logger = require("../logger");
+
 
 const uploadObjectToS3Bucket = asyncHandler(async (path="", object, s3Bucket) => {
   try {
@@ -70,6 +72,8 @@ const getObjectFromS3Bucket = asyncHandler(
         Key: path + uploadedObjectName,
       };
       const command = new GetObjectCommand(getObjectParams);
+      const headCommand = new HeadObjectCommand(getObjectParams);
+      await s3Client.send(headCommand);
       const url = await getSignedUrl(s3Client, command, { expiresIn: 36000 });
       return url;
     } catch (error) {
