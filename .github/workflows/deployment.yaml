@@ -7,7 +7,7 @@ on:
 
 env:
   ELASTIC_BEANSTALK_NAME: Travmigoz
-  ELASTIC_BEANSTALK_ENV_NAME: Travmigoz-env
+  ELASTIC_BEANSTALK_ENV_NAME: Travmigoz-env-1
 
 jobs:
   build:

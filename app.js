@@ -20,11 +20,12 @@ const {
 } = require("./middleware/RequestContextMiddleware");
 
 const corsOptions = {
-  origin: process.env.ORIGIN_FOR_CLIENT.split(","),
+  origin: process.env.ORIGIN_FOR_CLIENT,
   credentials: true,
 };
 
 try {
+  logger.info("Got env var", process.env.ORIGIN_FOR_CLIENT);
   app.use(cors(corsOptions));
   app.use(express.json());
   app.use(requestContextMiddleware);
