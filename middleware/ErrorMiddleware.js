@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 
 const notFound = (req, res, next) => {
   logger.info(`Not found - ${req.originalUrl}`);

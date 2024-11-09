@@ -1,6 +1,6 @@
 const NewsletterSubscriptionUser = require("../models/NewsletterSubscriptionUserModel");
 const databaseConstants = require("../constants/DatabaseConstants");
-const logger = require("../Logger");
+const logger = require("../logger");
 
 const createSubscription = async (subscriptionData) => {
   try {

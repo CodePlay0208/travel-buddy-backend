@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 const ChatModel = require("../models/ChatModel");
 
 async function findChatByUsers(userId1, userId2) {

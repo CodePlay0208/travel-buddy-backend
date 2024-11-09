@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const logger = require("../Logger");
+const logger = require("../logger");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const {
   API_STARTED,

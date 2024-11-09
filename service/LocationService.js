@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 
 async function getLocationsFromGooglePlaces(inputLocation) {
   try {

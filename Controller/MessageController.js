@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const logger = require("../Logger");
+const logger = require("../logger");
 const messageService = require("../service/MessageService");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const { ValidationError } = require("../exceptions/ValidationError");

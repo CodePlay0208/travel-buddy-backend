@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const newsletterService = require("../service/NewsletterService");
-const logger = require("../Logger");
+const logger = require("../logger");
 const {
   API_STARTED,
   API_FAILED,

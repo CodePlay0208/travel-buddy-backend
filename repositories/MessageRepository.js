@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 const MessageModel = require("../models/MessageModel");
 
 async function findMessageByMessageId(messageId, projection) {

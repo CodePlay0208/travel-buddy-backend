@@ -14,7 +14,7 @@ const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const initializeDB = require("./repositories/Config");
-const logger = require("./Logger");
+const logger = require("./logger");
 const {
   requestContextMiddleware,
 } = require("./middleware/RequestContextMiddleware");

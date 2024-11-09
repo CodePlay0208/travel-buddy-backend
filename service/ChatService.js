@@ -1,5 +1,5 @@
 const { ValidationError } = require("../exceptions/ValidationError");
-const logger = require("../Logger");
+const logger = require("../logger");
 const chatRepository = require("../repositories/ChatRepository");
 const messageRepository = require("../repositories/MessageRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");

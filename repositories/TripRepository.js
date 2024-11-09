@@ -1,5 +1,5 @@
 const TripData = require("../models/TripDataModel");
-const logger = require("../Logger");
+const logger = require("../logger");
 
 async function deleteTripsByUserId(userId) {
   try {

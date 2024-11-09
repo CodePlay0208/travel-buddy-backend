@@ -1,7 +1,7 @@
 const messageRepository = require("../repositories/MessageRepository");
 const chatRepository = require("../repositories/ChatRepository");
 const { v4: uuidv4 } = require("uuid");
-const logger = require("../Logger");
+const logger = require("../logger");
 const { parseLimitAndOffset } = require("../Utils");
 const messageValidator = require("../validators/MessageValidator");
 

@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository.js");
 const tripRepository = require("../repositories/TripRepository.js");
 const deletedUserRepository = require("../repositories/DeletedUserRepository.js");

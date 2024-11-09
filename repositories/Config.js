@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const TripDataModel = require("../models/TripDataModel");
 const TempUserSignUpModel = require("../models/TempUserSignUpModel");
 const OtpModel = require("../models/OtpModel");
-const logger = require("../Logger");
+const logger = require("../logger");
 
 const listAllIndexes = async () => {
   const db = mongoose.connection.db;

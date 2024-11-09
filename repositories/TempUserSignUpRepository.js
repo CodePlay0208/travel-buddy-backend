@@ -1,5 +1,5 @@
 const TempUserSignUpModel = require("../models/TempUserSignUpModel");
-const logger = require("../Logger");
+const logger = require("../logger");
 
 async function createUniqueUserWithEmailId(user) {
   try {

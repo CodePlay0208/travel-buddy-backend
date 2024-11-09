@@ -1,6 +1,6 @@
 const Gender = require("../enums/Gender");
 const { ValidationError } = require("../exceptions/ValidationError");
-const logger = require("../Logger");
+const logger = require("../logger");
 const { getMaxListeners } = require("../models/TripDataModel");
 const { dateFromDateString } = require("../Utils");
 

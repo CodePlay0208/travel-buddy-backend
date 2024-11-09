@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const { ValidationError } = require("../exceptions/ValidationError");
-const logger = require("../Logger");
+const logger = require("../logger");
 const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const otpRepository = require("../repositories/OtpRepository");

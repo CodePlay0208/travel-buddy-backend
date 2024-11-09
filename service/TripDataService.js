@@ -1,4 +1,4 @@
-const logger = require("../Logger");
+const logger = require("../logger");
 const tripRepository = require("../repositories/TripRepository.js");
 const {
   uploadObjectsToS3Bucket,

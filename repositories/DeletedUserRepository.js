@@ -1,5 +1,5 @@
 const DeletedUser = require("../models/DeletedUserModel");
-const logger = require("../Logger");
+const logger = require("../logger");
 
 async function create(user) {
   try {

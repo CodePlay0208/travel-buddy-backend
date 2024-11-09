@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-const logger = require("../Logger");
+const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
 const tripRepository = require("../repositories/TripRepository");

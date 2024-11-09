@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const logger = require("../Logger");
+const logger = require("../logger");
 const userProfileService = require("../service/UserProfileService");
 const {
   API_STARTED,

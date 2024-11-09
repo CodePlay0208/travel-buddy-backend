@@ -2,7 +2,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneNumberRegex = /^[0-9]+$/;
 const crypto = require("crypto");
 const { ValidationError } = require("./exceptions/ValidationError");
-const logger = require("./Logger");
+const logger = require("./logger");
 const sharp = require("sharp");
 
 function isValidEmail(emailId) {
