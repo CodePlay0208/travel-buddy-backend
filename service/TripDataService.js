@@ -54,7 +54,7 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   const { skip, limitNumber, newOffset } = parseLimitAndOffset(
     limit,
     offset,
-    process.env.LIMIT_FOR_SENDING_TRIPS
+    parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10)
   );
 
   const trips = await tripRepository.findTripsWithQuery(
@@ -249,7 +249,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 
 async function getTripsByUser(filter, userId) {
   try {
-    const { offset = 0, limit = process.env.LIMIT_FOR_SENDING_TRIPS } = filter;
+    const { offset = 0, limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10) } = filter;
     tripValidator.validateLimit(limit);
 
     const query = createQuery(null, null, userId, true);
@@ -287,7 +287,7 @@ async function getTripsWithFilter(filter, userId) {
     const {
       destination,
       offset = 0,
-      limit = process.env.LIMIT_FOR_SENDING_TRIPS,
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10),
     } = filter;
 
     filter.date = dateFromDateString(filter.date);

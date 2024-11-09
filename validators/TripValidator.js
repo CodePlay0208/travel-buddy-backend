@@ -36,7 +36,7 @@ const tripValidator = {
       destination,
       date,
       offset = 0,
-      limit = process.env.LIMIT_FOR_SENDING_TRIPS,
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
     } = filter;
 
     tripValidator.validateDate(date);
@@ -57,7 +57,7 @@ const tripValidator = {
     totalMembers = Number(totalMembers);
     if (
       totalMembers < 0 ||
-      totalMembers > process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP
+      totalMembers > parseInt(process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP,10)
     ) {
       throw new ValidationError(`Invalid Total Members=${totalMembers}`);
     }
@@ -65,7 +65,7 @@ const tripValidator = {
 
   validateAge: (age) => {
     age = Number(age);
-    if (age < 0 || age > process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON) {
+    if (age < 0 || age > parseInt(process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON, 10)) {
       throw new ValidationError(`Invalid Age=${age}`);
     }
   },

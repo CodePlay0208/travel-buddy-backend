@@ -40,7 +40,7 @@ async function createNewMessage(chatId, content, userId) {
 async function getAllMessagesForAChat(userId, filter) {
   const {
     chatId,
-    limit = process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT,
+    limit = parseInt(process.env.LIMIT_ON_TOTAL_MESSAGES_PER_CHAT, 10),
     offset = 0,
   } = filter;
 

@@ -66,7 +66,7 @@ async function getLocationsByName(inputLocation) {
 
     const limitedNumberOfLocations = prefixMatchingLocations.predictions.slice(
       0,
-      process.env.LIMIT_FOR_LOCATIONS_BY_GOOGLE_PLACES_API || 5
+      parseInt(process.env.LIMIT_FOR_LOCATIONS_BY_GOOGLE_PLACES_API) || 5
     );
 
     logger.info(

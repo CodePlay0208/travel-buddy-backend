@@ -8,7 +8,7 @@ const uploadMiddlewareForImages = multer({
     fileSize: Number(process.env.LIMIT_ON_SIZE_OF_DESTINATION_IMAGES),
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = process.env.ALLOWED_IMAGE_TYPES;
+    const allowedMimeTypes = process.env.ALLOWED_IMAGE_TYPES.split(",");
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
