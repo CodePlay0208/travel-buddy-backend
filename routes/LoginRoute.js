@@ -12,7 +12,7 @@ const {
   resetPasswordHandler,
   otpVerificationHandler,
   resendOtpHandler,
-} = require("../xyz/LoginController");
+} = require("../controller/LoginController");
 const router = express.Router();
 
 router.route("/googleLogin").post(googleTokenProtect, googleLoginHandler);

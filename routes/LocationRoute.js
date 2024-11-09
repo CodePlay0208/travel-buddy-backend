@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   getLocationByNameHandler,
-} = require("../xyz/LocationController");
+} = require("../controller/LocationController");
 const router = express.Router();
 
 router.route("/getLocationByName/:inputLocation").get(getLocationByNameHandler);

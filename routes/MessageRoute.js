@@ -3,7 +3,7 @@ const { tokenProtect } = require("../middleware/AuthMiddleware");
 const {
   getAllMessagesForAChatHandler,
   createNewMessageHandler,
-} = require("../xyz/MessageController");
+} = require("../controller/MessageController");
 const router = express.Router();
 
 router

@@ -3,7 +3,7 @@ const { tokenProtect } = require("../middleware/AuthMiddleware");
 const {
   fetchOrCreateChatsHandler,
   getChatsHandler,
-} = require("../xyz/ChatController");
+} = require("../controller/ChatController");
 const router = express.Router();
 
 router
