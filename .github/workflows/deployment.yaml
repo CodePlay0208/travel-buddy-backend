@@ -11,23 +11,23 @@ env:
 
 jobs:
   build:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout Source
-      uses: actions/checkout@v4
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-    - name: Install Dependencies
-      run: npm install
-    - name: Genrate Deployment Package
-      run: zip -r ${{github.run_id}}.zip .
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4.3.3
-      with: 
-        name: deploy-files
-        path: ${{github.run_id}}.zip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Dependencies
+        run: npm install
+      - name: Genrate Deployment Package
+        run: zip -r ${{github.run_id}}.zip .
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4.3.3
+        with: 
+          name: deploy-files
+          path: ${{github.run_id}}.zip
   deploy:
 
     runs-on: ubuntu-latest
