@@ -22,7 +22,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
       - name: Genrate Deployment Package
-        run: zip -r ${{github.run_id}}.zip . -x "node_modules/*"
+        run: zip -r ${{github.run_id}}.zip"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4.3.3
         with: 
