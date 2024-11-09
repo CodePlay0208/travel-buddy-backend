@@ -4,7 +4,7 @@ const {
   getUserProfileHandler,
   editUserHandler,
   deleteUserHandler,
-} = require("../controller/UserProfileController");
+} = require("../xyz/UserProfileController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
 

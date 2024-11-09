@@ -14,7 +14,7 @@ const {
   getTripsWithFilterHandler,
   generateTripLinkHandler,
   joinTripHandler,
-} = require("../controller/TripsDataController");
+} = require("../xyz/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
 
