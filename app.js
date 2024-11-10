@@ -19,12 +19,23 @@ const {
   requestContextMiddleware,
 } = require("./middleware/RequestContextMiddleware");
 
-const corsOptions = {
-  origin: process.env.ORIGIN_FOR_CLIENT.split(","),
-  credentials: true,
-};
 
 try {
+  const allowedOrigins = process.env.ORIGIN_FOR_CLIENT.split(",");
+  logger.info(`The allowed origins are=${JSON.stringify(allowedOrigins)}`);
+  const corsOptions = {
+    origin: (origin, callback) => {
+      
+      if (!origin || allowedOrigins.includes(origin)) {
+        logger.info(`The origin is=${origin}`)
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  };
+
   app.use(cors(corsOptions));
   app.use(express.json());
   app.use(requestContextMiddleware);
