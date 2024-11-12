@@ -4,7 +4,7 @@ const handleSocketIO = (server) => {
   const io = require("socket.io")(server, {
     pingTimeout: 60000,
     cors: {
-      origin: process.env.ORIGIN_FOR_CLIENT,
+      origin: process.env.ORIGIN_FOR_CLIENT.split(","),
       // credentials: true,
     },
   });
