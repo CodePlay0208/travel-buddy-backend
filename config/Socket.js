@@ -5,7 +5,7 @@ const handleSocketIO = (server) => {
     pingTimeout: 60000,
     cors: {
       origin: process.env.ORIGIN_FOR_CLIENT.split(","),
-      // credentials: true,
+      credentials: true,
     },
   });
 
