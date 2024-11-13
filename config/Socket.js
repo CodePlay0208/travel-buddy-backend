@@ -74,7 +74,7 @@ const handleSocketIO = (server) => {
 
     socket.on("typing", (room) => {
       try {
-        socket.in(room).emit("typing");
+        socket.to(room).emit("typing");
         console.log("The user is typing", room);
       } catch (error) {
         console.error("Error in typing event:", error);
@@ -84,7 +84,7 @@ const handleSocketIO = (server) => {
 
     socket.on("stop typing", (room) => {
       try {
-        socket.in(room).emit("stop typing")
+        socket.to(room).emit("stop typing")
         console.log("The user has stopped typing", room);
       } catch (error) {
         console.error("Error in stop typing event:", error);
