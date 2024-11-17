@@ -58,14 +58,18 @@ async function updateUserProfile(user, updateData, newProfilePic) {
       sanitizedUpdateData.profilePic = uploadedObjectNames;
     }
 
-    const updatedUserProfile = await userProfileRepository.updateUser(
+    var updatedUserProfile = await userProfileRepository.updateUser(
       userId,
       sanitizedUpdateData
     );
     logger.info(
       `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
     );
-
+    updatedUserProfile.profilePic = await getObjectsFromS3Bucket(
+      "",
+      updatedUserProfile.profilePic,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+    );
     return updatedUserProfile;
   } catch (error) {
     logger.error(`Failed to update user=${user}, error=${error}`);
