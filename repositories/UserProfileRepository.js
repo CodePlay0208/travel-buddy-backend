@@ -33,7 +33,7 @@ async function deleteUserByUserId(userId) {
 
 async function findUserWithEmailId(emailId) {
   try {
-    const userInDatabase = await UserProfile.findOne({ emailId });
+    const userInDatabase = await UserProfile.findOne({ emailId }).select("-_id -password -createdAt -__v");
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -58,7 +58,7 @@ async function create(user) {
 
 async function findUserByUserId(userId) {
   try {
-    const userInDatabase = await UserProfile.findOne({ userId });
+    const userInDatabase = await UserProfile.findOne({ userId }).select("-_id -password -createdAt -__v");
     return userInDatabase;
   } catch (error) {
     logger.error(
