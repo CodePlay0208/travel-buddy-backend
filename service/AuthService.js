@@ -225,7 +225,7 @@ async function login(payload) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to verify otp for user with payload=${JSON.stringify(
+      `Failed to login user with payload=${JSON.stringify(
         payload
       )}, error=${error}`
     );

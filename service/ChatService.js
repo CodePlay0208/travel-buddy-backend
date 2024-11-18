@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const {
   LATEST_MESSAGE_PROJECTION_IN_CHAT,
   USER_PROFILE_PROJECTION_IN_CHAT,
+  USER_PROFILE_PROJECTION
 } = require("../constants/Projections");
 const chatValidator = require("../validators/ChatValidator");
 const {
@@ -52,7 +53,8 @@ async function fetchOrCreateChats(receiverUserId, senderProfile) {
   try {
     const senderUserId = senderProfile.userId;
     const receiverProfile = await userProfileRepository.findUserByUserId(
-      receiverUserId
+      receiverUserId,
+      USER_PROFILE_PROJECTION
     );
     chatValidator.validateReceiverProfile(receiverProfile);
 

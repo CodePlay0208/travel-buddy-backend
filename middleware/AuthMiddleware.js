@@ -4,6 +4,9 @@ const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
 const tripRepository = require("../repositories/TripRepository");
+const {
+  USER_PROFILE_PROJECTION
+} = require("../constants/Projections");
 
 const tokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {
@@ -17,7 +20,7 @@ const tokenProtect = (jwtSecretKey) => {
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
-        const user = await userProfileRepository.findUserByUserId(decoded.id);
+        const user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
 
         if (!user) {
           logger.info(`User not found with userId=${decoded.id}`);
@@ -87,9 +90,9 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
         let user = null;
 
         if (isSignUpRequest) {
-          user = await tempUserSignUpRepository.findUserByUserId(decoded.id);
+          user = await tempUserSignUpRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
         } else {
-          user = await userProfileRepository.findUserByUserId(decoded.id);
+          user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
         }
 
         if (!user) {
@@ -142,7 +145,7 @@ const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
         process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
       );
 
-      const user = await userProfileRepository.findUserByUserId(decoded.id);
+      const user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
 
       if (!user) {
         throw new Error(

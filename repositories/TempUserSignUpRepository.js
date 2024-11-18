@@ -16,9 +16,9 @@ async function createUniqueUserWithEmailId(user) {
   }
 }
 
-async function findUserByUserId(userId) {
+async function findUserByUserId(userId, projection) {
   try {
-    const userInDatabase = await TempUserSignUpModel.findOne({ userId });
+    const userInDatabase = await TempUserSignUpModel.findOne({ userId }, projection);
     return userInDatabase;
   } catch (error) {
     logger.error(

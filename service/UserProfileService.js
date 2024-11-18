@@ -19,7 +19,7 @@ async function getUserProfile(user) {
     );
     user.profilePic = userProfilePic;
     logger.info(
-      `Fetched user profile with userId=${userId}, updateUserProfile=${user}`
+      `Fetched user profile with userId=${userId}, userProfile=${user}`
     );
     return user;
   } catch (error) {
@@ -70,6 +70,7 @@ async function updateUserProfile(user, updateData, newProfilePic) {
       updatedUserProfile.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
+
     return updatedUserProfile;
   } catch (error) {
     logger.error(`Failed to update user=${user}, error=${error}`);

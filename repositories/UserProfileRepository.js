@@ -31,9 +31,9 @@ async function deleteUserByUserId(userId) {
   }
 }
 
-async function findUserWithEmailId(emailId) {
+async function findUserWithEmailId(emailId, projection) {
   try {
-    const userInDatabase = await UserProfile.findOne({ emailId }).select("-_id -password -createdAt -__v");
+    const userInDatabase = await UserProfile.findOne({ emailId }, projection);
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -56,9 +56,9 @@ async function create(user) {
   }
 }
 
-async function findUserByUserId(userId) {
+async function findUserByUserId(userId, projection) {
   try {
-    const userInDatabase = await UserProfile.findOne({ userId }).select("-_id -password -createdAt -__v");
+    const userInDatabase = await UserProfile.findOne({ userId }, projection);
     return userInDatabase;
   } catch (error) {
     logger.error(
