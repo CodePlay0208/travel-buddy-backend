@@ -16,6 +16,7 @@ const USER_PROFILE_PROJECTION = {
   persona: 1,
   gender: 1,
   phoneNumber: 1,
+  dateOfBirth: 1,
 };
 
 module.exports = {
