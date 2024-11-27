@@ -1,5 +1,6 @@
 const logger = require("../logger");
 const tripRepository = require("../repositories/TripRepository.js");
+const userMetadataRepository = require("../repositories/UserMetadataRepository.js");
 const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
@@ -42,11 +43,36 @@ function addUserIdToQuery(query, userId) {
   }
 }
 
+function addTripIdsToQuery(query, tripIds) {
+  if (Array.isArray(tripIds) && tripIds.length > 0) {
+    query.tripId = { $in: tripIds };
+  }
+}
+
 function createQuery(destination, date, userId, includeUser) {
   let query = {};
   addDestinationToQuery(query, destination);
   addDateToQuery(query, date);
-  includeUser ? addUserIdToQuery : excludeUserIdFromQuery(query, userId);
+  includeUser
+    ? addUserIdToQuery(query, userId)
+    : excludeUserIdFromQuery(query, userId);
+  return query;
+}
+
+function createQueryWithTripIds(
+  destination,
+  date,
+  userId,
+  includeUser,
+  tripIds
+) {
+  let query = {};
+  addDestinationToQuery(query, destination);
+  addDateToQuery(query, date);
+  includeUser
+    ? addUserIdToQuery(query, userId)
+    : excludeUserIdFromQuery(query, userId);
+  addTripIdsToQuery(query, tripIds);
   return query;
 }
 
@@ -54,7 +80,7 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   const { skip, limitNumber, newOffset } = parseLimitAndOffset(
     limit,
     offset,
-    parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10)
+    parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
   );
 
   const trips = await tripRepository.findTripsWithQuery(
@@ -93,11 +119,12 @@ async function createTrip(payload, files, user) {
 
     files = await cropAndResizeImages(files);
 
-    const { uploadedObjectNames: croppedDestinationImages } = await uploadObjectsToS3Bucket(
-      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-      files,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-    );
+    const { uploadedObjectNames: croppedDestinationImages } =
+      await uploadObjectsToS3Bucket(
+        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+        files,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
 
     const destinationImages = uploadedObjectNames;
 
@@ -210,11 +237,12 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 
       newDestinationImages = await cropAndResizeImages(newDestinationImages);
 
-      const { uploadedObjectNames: croppedImagesNames } =await uploadObjectsToS3Bucket(
-        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-        newDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
+      const { uploadedObjectNames: croppedImagesNames } =
+        await uploadObjectsToS3Bucket(
+          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+          newDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
 
       deleteObjectsFromS3Bucket(
         process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
@@ -249,7 +277,10 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
 
 async function getTripsByUser(filter, userId) {
   try {
-    const { offset = 0, limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10) } = filter;
+    const {
+      offset = 0,
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
+    } = filter;
     tripValidator.validateLimit(limit);
 
     const query = createQuery(null, null, userId, true);
@@ -287,7 +318,7 @@ async function getTripsWithFilter(filter, userId) {
     const {
       destination,
       offset = 0,
-      limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS,10),
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
     } = filter;
 
     filter.date = dateFromDateString(filter.date);
@@ -402,6 +433,88 @@ async function joinTrip(trip, user) {
   throw error;
 }
 
+async function getWishlistedTrips(filter, userId) {
+  try {
+    const {
+      offset = 0,
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_WISHLISTED_TRIPS, 10),
+    } = filter;
+    tripValidator.validateLimit(limit);
+
+    const userMetadata =
+      await userMetadataRepository.findWishlistedTripsByUserId(userId);
+    const { wishlistedTripIds } = userMetadata;
+
+    if (!wishlistedTripIds || wishlistedTripIds.length == 0) {
+      throw new ValidationError(
+        `No wishlisted trips for userId=${userId}`,
+        404
+      );
+    }
+
+    const query = createQueryWithTripIds(
+      null,
+      null,
+      userId,
+      true,
+      wishlistedTripIds
+    );
+
+    var { trips: wishlistedTrips, newOffset } =
+      await getTripsUsingQueryWithLimitAndOffset(query, limit, offset);
+
+    if (!wishlistedTrips || wishlistedTrips.length === 0) {
+      throw new ValidationError(
+        `No wishlisted trips found with the filter=${filter}, query=${query}`,
+        404
+      );
+    }
+
+    await addCroppedDestinationImagesToTrips(
+      wishlistedTrips,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
+    );
+
+    logger.info(
+      `Fetched wishlisted trips with filter=${filter} for user with userId=${userId}, trips=${wishlistedTrips}`
+    );
+    return { trips: wishlistedTrips, newOffset };
+  } catch (error) {
+    logger.error(
+      `failed to fetch wishlisted trips for user with userId=${userId}, filter=${filter}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function addWishlistTrip(tripId, userId) {
+  try {
+    const addedTrip = await userMetadataRepository.addTripToWishlistedTripsByUserId(userId, tripId);
+    logger.info(
+      `added tripId=${tripId} to wishlisted trips for user with userId=${userId} with result=${addedTrip}`
+    );
+  } catch (error) {
+    logger.error(
+      `failed to add tripId=${tripId} to wishlisted trips for user with userId=${userId}`
+    );
+    throw error;
+  }
+}
+
+async function removeWishlistedTrip(tripId, userId) {
+  try {
+    const addedTrip = await userMetadataRepository.removeTripFromWishlistedTripsByUserId(userId, tripId);
+    logger.info(
+      `removed tripId=${tripId} from wishlisted trips for user with userId=${userId} with result=${addedTrip}`
+    );
+  } catch (error) {
+    logger.error(
+      `failed to remove tripId=${tripId} from wishlisted trips for user with userId=${userId}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   createTrip,
   getTripById,
@@ -411,4 +524,7 @@ module.exports = {
   getTripsByUser,
   generateTripLink,
   joinTrip,
+  getWishlistedTrips,
+  addWishlistTrip,
+  removeWishlistedTrip
 };

@@ -99,6 +99,25 @@ async function findTripsWithQuery(query, limit, offset) {
   }
 }
 
+async function findWishlistedTripsWithQuery(query, limit, offset) {
+  try {
+    const trips = TripData.find(query)
+      .skip(offset)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+  }
+}
+
 module.exports = {
   deleteTripsByUserId,
   findTripWithTripIdAndUserId,
@@ -107,4 +126,5 @@ module.exports = {
   findTripWithTripId,
   updateTrip,
   findTripsWithQuery,
+  findWishlistedTripsWithQuery,
 };

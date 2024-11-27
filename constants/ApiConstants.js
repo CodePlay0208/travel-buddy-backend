@@ -25,6 +25,9 @@ const CREATE_NEW_MESSAGE = "create_new_message";
 const GET_ALL_MESSAGES = "get_all_messages";
 const GENERATE_TRIP_LINK = "generate-trip-link";
 const JOIN_TRIP = "join_trip";
+const GET_WISHLISTED_TRIPS = "get_wishlisted_trips";
+const ADD_WISHLIST_TRIP = "add_wishlist_trip";
+const REMOVE_WISHLIST_TRIP = "remove_wishlist_trip";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -54,4 +57,7 @@ module.exports = {
   GET_ALL_MESSAGES,
   GENERATE_TRIP_LINK,
   JOIN_TRIP,
+  GET_WISHLISTED_TRIPS,
+  ADD_WISHLIST_TRIP,
+  REMOVE_WISHLIST_TRIP
 };

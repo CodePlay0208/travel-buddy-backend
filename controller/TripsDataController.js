@@ -13,6 +13,9 @@ const {
   GET_TRIPS_BY_USER,
   GENERATE_TRIP_LINK,
   JOIN_TRIP,
+  GET_WISHLISTED_TRIPS,
+  ADD_WISHLIST_TRIP,
+  REMOVE_WISHLIST_TRIP
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
@@ -273,6 +276,101 @@ const joinTripHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const getWishlistedTripsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_WISHLISTED_TRIPS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.user.userId;
+    const filter = req.query;
+    const { trips, newOffset } = await tripDataService.getWishlistedTrips(
+      filter,
+      userId
+    );
+    res.status(200).json({ trips, offset: newOffset });
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_WISHLISTED_TRIPS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GET_WISHLISTED_TRIPS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const addWishlistTripHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${ADD_WISHLIST_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const tripId = req.params.tripId;
+    const userId = req.user.userId;
+
+    await tripDataService.addWishlistTrip(tripId, userId);
+    res.status(200).json({});
+
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${ADD_WISHLIST_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${ADD_WISHLIST_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const removeWishlistedTripHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${REMOVE_WISHLIST_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const tripId = req.params.tripId;
+    const userId = req.user.userId;
+
+    await tripDataService.removeWishlistedTrip(tripId, userId);
+    res.status(200).json();
+
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${REMOVE_WISHLIST_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${REMOVE_WISHLIST_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+
 module.exports = {
   createTripHandler,
   getTripByIdHandler,
@@ -282,4 +380,7 @@ module.exports = {
   getTripsWithFilterHandler,
   generateTripLinkHandler,
   joinTripHandler,
+  getWishlistedTripsHandler,
+  addWishlistTripHandler,
+  removeWishlistedTripHandler
 };
