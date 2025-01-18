@@ -2,15 +2,21 @@ name: CI/CD
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ] 
-    types: [ "closed" ] 
+    branches:
+      - "main"
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Manual deployment trigger"
+        required: true
+        default: "non-prod"
 
 env:
-  ELASTIC_BEANSTALK_NAME: Travmigoz
-  ELASTIC_BEANSTALK_ENV_NAME: Travmigoz-env-1
+  S3_BUCKET_PREFIX: "elasticbeanstalk-ap-south-1-"
+  ELASTIC_BEANSTALK_NAME_PROD: "Travmigoz"
+  ELASTIC_BEANSTALK_ENV_NAME_PROD: "Travmigoz-env-1"
+  ELASTIC_BEANSTALK_NAME_NON_PROD: "Travmigoz-NonProd"
+  ELASTIC_BEANSTALK_ENV_NAME_NON_PROD: "Travmigoz-env-nonprod"
 
 jobs:
   build:
@@ -27,30 +33,75 @@ jobs:
           node-version: 20
       - name: Install Dependencies
         run: npm ci
-      - name: Genrate Deployment Package
-        run: zip -r ${{github.run_id}}.zip .
+      - name: Add Environment Config
+        run: |
+          if [[ ${{ github.event.inputs.environment }} == "prod" ]]; then
+            cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config
+          else
+            cp .ebextensions/preprod-env.config .ebextensions/environmentVariables.config
+          fi
+      - name: Generate Deployment Package
+        run: zip -r ${{ github.run_id }}.zip .
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4.3.3
-        with: 
+        with:
           name: deploy-files
-          path: ${{github.run_id}}.zip
+          path: ${{ github.run_id }}.zip
           retention-days: 7
-  deploy:
 
+  deploy-non-prod:
     runs-on: ubuntu-latest
     needs: build
-
+    if: ${{ github.event.inputs.environment != 'prod' }}
     steps:
-    - uses: actions/download-artifact@v4.1.7
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-region: ap-south-1
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    - name: Deploy
-      run: |
-        aws s3 cp "deploy-files/${{github.run_id}}.zip" s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/artifact/Travmigoz/
-        aws elasticbeanstalk create-application-version --application-name $ELASTIC_BEANSTALK_NAME --version-label ${{github.run_id}} --description ${{github.run_id}} --source-bundle S3Bucket="elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}",S3Key="artifact/Travmigoz/${{github.run_id}}.zip"
-        aws elasticbeanstalk update-environment --application-name $ELASTIC_BEANSTALK_NAME --environment-name $ELASTIC_BEANSTALK_ENV_NAME --version-label ${{github.run_id}}
-        aws elasticbeanstalk wait environment-updated --application-name $ELASTIC_BEANSTALK_NAME --environment-name $ELASTIC_BEANSTALK_ENV_NAME
+      - uses: actions/download-artifact@v4.1.7
+        with:
+          name: deploy-files
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Check and Create Non-Prod Environment
+        run: |
+          aws elasticbeanstalk describe-environments --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} | grep ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }} || \
+          aws elasticbeanstalk create-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }} --solution-stack-name "64bit Amazon Linux 2 v3.6.5 running Node.js 16"
+      - name: Deploy to Non-Production
+        run: |
+          aws s3 cp "deploy-files/${{ github.run_id }}.zip" s3://${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}/artifact/Travmigoz/
+          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="artifact/Travmigoz/${{ github.run_id }}.zip"
+          aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }} --version-label ${{ github.run_id }}
+          aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }}
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event.inputs.environment == 'prod' }}
+    environment:
+      name: production
+    steps:
+      - name: Wait for Approval
+        uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          label: ready-for-prod
+      - uses: actions/download-artifact@v4.1.7
+        with:
+          name: deploy-files
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Check and Create Prod Environment
+        run: |
+          aws elasticbeanstalk describe-environments --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} | grep ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} || \
+          aws elasticbeanstalk create-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} --solution-stack-name "64bit Amazon Linux 2 v3.6.5 running Node.js 16"
+      - name: Deploy to Production
+        run: |
+          aws s3 cp "deploy-files/${{ github.run_id }}.zip" s3://${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}/artifact/Travmigoz/
+          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="artifact/Travmigoz/${{ github.run_id }}.zip"
+          aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} --version-label ${{ github.run_id }}
+          aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }}
