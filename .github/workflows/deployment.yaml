@@ -59,8 +59,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Deploy to Non-Production
         run: |
-          aws s3 cp "deploy-files/${{github.run_id}}.zip" s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/artifact/Travmigoz/
-          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="artifact/Travmigoz/${{ github.run_id }}.zip"
+        echo "Deploying to pre-production environment"
+
+        # Define the S3 file path
+        S3_FILE_PATH="artifact/Travmigoz/${{ github.run_id }}.zip"
+
+        # Check if the file already exists in S3
+        if ! aws s3 ls s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/${S3_FILE_PATH} > /dev/null; then
+          echo "File not found in S3. Uploading the file..."
+          aws s3 cp "deploy-files/${{ github.run_id }}.zip" s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/${S3_FILE_PATH}
+        else
+          echo "File already exists in S3. Skipping upload."
+        fi
+    
+          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${S3_FILE_PATH}"
           aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }} --version-label ${{ github.run_id }}
           aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_NON_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_NON_PROD }}
 
@@ -78,8 +90,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Deploy to Production
         run: |
-          echo "Deploying to production environment"
-          aws s3 cp "deploy-files/${{github.run_id}}.zip" s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/artifact-prod/Travmigoz/
-          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="artifact-prod/Travmigoz/${{ github.run_id }}.zip"
-          aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} --version-label ${{ github.run_id }}
-          aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }}
+        echo "Deploying to production environment"
+
+        # Define the S3 file path
+        S3_FILE_PATH="artifact-prod/Travmigoz/${{ github.run_id }}.zip"
+
+        # Check if the file already exists in S3
+        if ! aws s3 ls s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/${S3_FILE_PATH} > /dev/null; then
+          echo "File not found in S3. Uploading the file..."
+          aws s3 cp "deploy-files/${{ github.run_id }}.zip" s3://elasticbeanstalk-ap-south-1-${{ secrets.AWS_ACCOUNT_ID }}/${S3_FILE_PATH}
+        else
+          echo "File already exists in S3. Skipping upload."
+        fi
+
+        # Create a new application version and update the environment
+        aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${S3_FILE_PATH}"
+        aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} --version-label ${{ github.run_id }}
+        aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }}
