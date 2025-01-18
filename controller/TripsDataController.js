@@ -378,7 +378,6 @@ module.exports = {
   editTripHandler,
   deleteTripHandler,
   getTripsWithFilterHandler,
-  generateTripLinkHandler,
   joinTripHandler,
   getWishlistedTripsHandler,
   addWishlistTripHandler,
