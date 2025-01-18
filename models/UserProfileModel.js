@@ -20,7 +20,7 @@ const userProfileSchema = new mongoose.Schema({
   requestingTrips: [{ type: String }],
 });
 
-tripDataSchema.index({ destination: 1 }, { name: "username_index" });
+userProfileSchema.index({ destination: 1 }, { name: "username_index" });
 
 module.exports = mongoose.model(
   "UserProfile",
