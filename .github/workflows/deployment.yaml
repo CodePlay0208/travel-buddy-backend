@@ -104,6 +104,6 @@ jobs:
           fi
 
           # Create a new application version and update the environment
-          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --version-label ${{ github.run_id }} --description ${{ github.run_id }} --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${S3_FILE_PATH}"
+          aws elasticbeanstalk create-application-version --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --version-label ${{ github.run_id }}-prod --description ${{ github.run_id }}-prod --source-bundle S3Bucket="${{ env.S3_BUCKET_PREFIX }}${{ secrets.AWS_ACCOUNT_ID }}",S3Key="${S3_FILE_PATH}"
           aws elasticbeanstalk update-environment --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} --version-label ${{ github.run_id }}
           aws elasticbeanstalk wait environment-updated --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }}
