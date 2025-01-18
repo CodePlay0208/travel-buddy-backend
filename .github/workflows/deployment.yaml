@@ -32,11 +32,7 @@ jobs:
         run: npm ci
       - name: Add Environment Config
         run: |
-          if [[ ${{ github.event.inputs.environment }} == "prod" ]]; then
-            cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config
-          else
             cp .ebextensions/preprod-env.config .ebextensions/environmentVariables.config
-          fi
       - name: Generate Deployment Package
         run: zip -r ${{ github.run_id }}.zip .
       - name: Upload Artifacts
@@ -88,6 +84,9 @@ jobs:
           aws-region: ap-south-1
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Add Environment Config for Prod
+        run: |
+            cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config         
       - name: Deploy to Production
         run: |
           echo "Deploying to production environment"
