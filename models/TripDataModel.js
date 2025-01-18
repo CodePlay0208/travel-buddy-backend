@@ -15,6 +15,22 @@ const tripDataSchema = new mongoose.Schema({
       profilePic: [{ type: String }],
     },
   ],
+  requestingTripMembers: [
+    {
+      userId: { type: String, required: true },
+      username: { type: String, required: true },
+      emailId: { type: String, required: true },
+      profilePic: [{ type: String }],
+    },
+  ],
+  requestedTripMembers: [
+    {
+      userId: { type: String, required: true },
+      username: { type: String, required: true },
+      emailId: { type: String, required: true },
+      profilePic: [{ type: String }],
+    },
+  ],
   budget: { type: Number },
   age: { type: Number, required: true },
   gender: { type: String, enum: Object.values(Gender), required: true },

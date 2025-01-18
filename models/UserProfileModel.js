@@ -17,7 +17,10 @@ const userProfileSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   profilePic: [{ type: String }],
   userId: { type: String, required: true, unique: true },
+  requestingTrips: [{ type: String }],
 });
+
+tripDataSchema.index({ destination: 1 }, { name: "username_index" });
 
 module.exports = mongoose.model(
   "UserProfile",

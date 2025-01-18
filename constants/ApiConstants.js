@@ -28,6 +28,8 @@ const JOIN_TRIP = "join_trip";
 const GET_WISHLISTED_TRIPS = "get_wishlisted_trips";
 const ADD_WISHLIST_TRIP = "add_wishlist_trip";
 const REMOVE_WISHLIST_TRIP = "remove_wishlist_trip";
+const FIND_USER_PROFILE = "find_user_profile";
+const ADD_MEMBERS_TO_TRIP = "add_members_to_trip";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -59,5 +61,7 @@ module.exports = {
   JOIN_TRIP,
   GET_WISHLISTED_TRIPS,
   ADD_WISHLIST_TRIP,
-  REMOVE_WISHLIST_TRIP
+  REMOVE_WISHLIST_TRIP,
+  FIND_USER_PROFILE,
+  ADD_MEMBERS_TO_TRIP,
 };

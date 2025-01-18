@@ -99,6 +99,47 @@ async function findTripsWithQuery(query, limit, offset) {
   }
 }
 
+async function addMembersToTrip(tripId, membersToAdd) {
+  try {
+    await TripData.findOneAndUpdate(
+      { tripId: tripId },
+      { $addToSet: { requestedTripMembers: { $each: membersToAdd } } },
+      { new: true }
+    );
+  } catch (error) {
+    logger.error(
+      `Error occured while adding members to trip with tripId=${trip.tripId}`
+    );
+    throw error;
+  }
+}
+
+async function joinMemberToTrip(tripId, user) {
+  try {
+    const updatedTrip = await TripData.findOneAndUpdate(
+      { tripId: tripId },
+      {
+        $pull: { requestedTripMembers: { userId: user.userId } }, 
+        $addToSet: {
+          tripMembers: {
+            userId: user.userId,
+            username: user.username,
+            emailId: user.emailId,
+            profilePic: user.profilePic,
+          },
+        }, 
+      },
+      { new: true } 
+    );
+    return updatedTrip;
+  } catch (error) {
+    logger.error(
+      `Error occured while adding members to trip with tripId=${trip.tripId}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   deleteTripsByUserId,
   findTripWithTripIdAndUserId,
@@ -107,4 +148,6 @@ module.exports = {
   findTripWithTripId,
   updateTrip,
   findTripsWithQuery,
+  addMembersToTrip,
+  joinMemberToTrip,
 };

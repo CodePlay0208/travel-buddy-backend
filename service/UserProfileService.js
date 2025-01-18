@@ -7,6 +7,9 @@ const {
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
 } = require("../aws/S3");
+const {
+  USER_PROFILE_PROJECTION_IN_SEARCH_BAR,
+} = require("../constants/Projections.js");
 
 async function getUserProfile(user) {
   try {
@@ -106,4 +109,27 @@ async function deleteUserProfile(user) {
   }
 }
 
-module.exports = { updateUserProfile, deleteUserProfile, getUserProfile };
+async function findUserProfile(query) {
+  try {
+    const userKey = query.userKey;
+    logger.info(`Finding user with userId=${userId}`);
+    const users = await userProfileRepository.findUsersByPrefix(
+      userKey,
+      USER_PROFILE_PROJECTION_IN_SEARCH_BAR
+    );
+    logger.info(
+      `Fetched user profile matching prefix=${userKey}, users=${users}`
+    );
+    return users;
+  } catch (error) {
+    logger.error(`Failed to find pusers with prefix=${prefix}, error=${error}`);
+    throw error;
+  }
+}
+
+module.exports = {
+  updateUserProfile,
+  deleteUserProfile,
+  getUserProfile,
+  findUserProfile,
+};

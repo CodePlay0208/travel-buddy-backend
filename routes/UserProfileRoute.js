@@ -1,9 +1,10 @@
 const express = require("express");
-const { tokenProtect } = require("../middleware/AuthMiddleware");
+const { tokenProtect, tripTokenProtect } = require("../middleware/AuthMiddleware");
 const {
   getUserProfileHandler,
   editUserHandler,
   deleteUserHandler,
+  findUserHandler
 } = require("../controller/UserProfileController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -26,6 +27,12 @@ router
   .delete(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     deleteUserHandler
+  );
+
+router
+  .route("/findUserProfile")
+  .get(
+    findUserHandler
   );
 
 module.exports = router;

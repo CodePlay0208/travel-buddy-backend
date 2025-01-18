@@ -1,6 +1,7 @@
 const logger = require("../logger");
 const tripRepository = require("../repositories/TripRepository.js");
 const userMetadataRepository = require("../repositories/UserMetadataRepository.js");
+const userProfileRepository = require("../repositories/UserProfileRepository.js");
 const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
@@ -12,6 +13,9 @@ const { ValidationError } = require("../exceptions/ValidationError.js");
 const tripValidator = require("../validators/TripValidator.js");
 const generateToken = require("../config/GenerateToken.js");
 const { cropAndResizeImages } = require("../Utils.js");
+const {
+  USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS,
+} = require("../constants/Projections.js");
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
@@ -416,21 +420,29 @@ async function generateTripLink(tripId, userId) {
 }
 
 async function joinTrip(trip, user) {
-  try {
-    trip.tripMembers = trip.tripMembers.filter(
-      (member) => member.userId !== user.userId
+  try{
+    if (!user.requestingTrips.includes(trip.tripId)) {
+      throw new ValidationError(`User has not been requested to join this trip.`, 403);
+    }
+
+    const userInRequestedMembers = trip.requestedTripMembers.find(
+      (member) => member.userId === user.userId
     );
-    trip.tripMembers.push(user);
-    const updatedTrip = tripRepository.updateTrip(trip);
-    return updatedTrip;
-  } catch (error) {
-    logger.error(
-      `Error occurred while joining user to trip, user=${JSON.stringify(
-        user
-      )}, trip=${JSON.stringify(trip)}`
-    );
+
+    if (!userInRequestedMembers) {
+      throw new ValidationError(`User is not in the requested members of the trip`, 403);
+    }
+
+    const updatedUser = await userProfileRepository.joinUserToTrip(user.userId, trip.tripId);
+
+    const updatedTrip = await tripRepository.joinMemberToTrip(trip.tripId, user);
+
+    return {updatedUser, updatedTrip};
   }
-  throw error;
+  catch(error){
+    logger.error(`Failed to join user with userId=${user.userId} to tripId=${trip.tripId}, error=${error}`);
+    throw error;
+  }
 }
 
 async function getWishlistedTrips(filter, userId) {
@@ -489,7 +501,11 @@ async function getWishlistedTrips(filter, userId) {
 
 async function addWishlistTrip(tripId, userId) {
   try {
-    const addedTrip = await userMetadataRepository.addTripToWishlistedTripsByUserId(userId, tripId);
+    const addedTrip =
+      await userMetadataRepository.addTripToWishlistedTripsByUserId(
+        userId,
+        tripId
+      );
     logger.info(
       `added tripId=${tripId} to wishlisted trips for user with userId=${userId} with result=${addedTrip}`
     );
@@ -503,7 +519,11 @@ async function addWishlistTrip(tripId, userId) {
 
 async function removeWishlistedTrip(tripId, userId) {
   try {
-    const addedTrip = await userMetadataRepository.removeTripFromWishlistedTripsByUserId(userId, tripId);
+    const addedTrip =
+      await userMetadataRepository.removeTripFromWishlistedTripsByUserId(
+        userId,
+        tripId
+      );
     logger.info(
       `removed tripId=${tripId} from wishlisted trips for user with userId=${userId} with result=${addedTrip}`
     );
@@ -511,6 +531,29 @@ async function removeWishlistedTrip(tripId, userId) {
     logger.error(
       `failed to remove tripId=${tripId} from wishlisted trips for user with userId=${userId}`
     );
+    throw error;
+  }
+}
+
+async function addMembersToTrip(trip, user, userIds) {
+  try {
+    if (trip.userId != user.userId) {
+      throw new ValidationError(`User not authorised to edit trip`, 401);
+    }
+    const users = await userProfileRepository.findUserByUserId(userIds, USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS);
+
+    const membersToAdd = users.map((user) => ({
+      userId: user.userId,
+      username: user.username,
+      emailId: user.emailId,
+      profilePic: user.profilePic,
+    }));
+
+    const updatedTrip = await tripRepository.addMembersToTrip(trip.tripId, membersToAdd);
+    await userProfileRepository.addTripToUsers(userIds, trip.tripId);
+    return updatedTrip;
+  } catch (error) {
+    logger.error(`Error occured while adding members trip with tripId=${trip.tripId}, userIds=${userIds}, error=${error}`);
     throw error;
   }
 }
@@ -526,5 +569,6 @@ module.exports = {
   joinTrip,
   getWishlistedTrips,
   addWishlistTrip,
-  removeWishlistedTrip
+  removeWishlistedTrip,
+  addMembersToTrip,
 };

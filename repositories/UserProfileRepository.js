@@ -1,5 +1,6 @@
 const UserProfile = require("../models/UserProfileModel");
 const logger = require("../logger");
+const { log } = require("winston");
 
 async function updateUser(userId, updateData) {
   try {
@@ -89,6 +90,57 @@ async function findUsersByUserId(userIds, projection) {
   }
 }
 
+async function findUsersByPrefix(prefix, projection) {
+  try {
+    const regex = new RegExp(`^${prefix}`, "i");
+    const users = await UserProfile.find({
+      $or: [{ username: { $regex: regex } }, { emailId: { $regex: regex } }],
+      projection,
+    }).limit(LIMIT_FOR_SENDING_PREFIX_MATCHED_USERS);
+
+    return users;
+  } catch (error) {
+    logger.error(
+      `Error occured while finding userProfiles with prefix=${prefix}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profiles using prefix=${prefix} from DB, error=${error}`
+    );
+  }
+}
+
+async function addTripToUsers(userIds, tripId) {
+  try {
+    await UserProfile.updateMany(
+      { _id: { $in: userIds } },
+      { $addToSet: { requestTrips: tripId } }
+    );
+    logger.info(
+      `Added members userIds=${JSON.stringify(userIds)}, tripId=${tripId}`
+    );
+  } catch (error) {
+    logger.error(
+      `Failed to add members with userIds=${userIds}, to trip with tripId=${tripId} `
+    );
+    throw error;
+  }
+}
+
+async function joinUserToTrip(userId, tripId){
+  try{
+    const updatedUser = await UserProfile.findOneAndUpdate(
+      { userId: userId },
+      { $pull: { requestingTrips: tripId } }, 
+      { new: true } 
+    );
+    return updatedUser;
+  }
+  catch(error){
+    logger.error(`Failed to join user with userId=${userId}, tripId=${tripId}`)
+    throw error;
+  }
+}
+
 module.exports = {
   updateUser,
   deleteUserByUserId,
@@ -96,4 +148,7 @@ module.exports = {
   create,
   findUserByUserId,
   findUsersByUserId,
+  findUsersByPrefix,
+  addTripToUsers,
+  joinUserToTrip
 };
