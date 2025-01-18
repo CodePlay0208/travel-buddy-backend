@@ -15,7 +15,7 @@ env:
   S3_BUCKET_PREFIX: "elasticbeanstalk-ap-south-1-"
   ELASTIC_BEANSTALK_NAME_PROD: "Travmigoz"
   ELASTIC_BEANSTALK_ENV_NAME_PROD: "Travmigoz-env-1"
-  ELASTIC_BEANSTALK_NAME_NON_PROD: "Travmigoz-NonProd"
+  ELASTIC_BEANSTALK_NAME_NON_PROD: "Travmigoz"
   ELASTIC_BEANSTALK_ENV_NAME_NON_PROD: "Travmigoz-env-nonprod"
 
 jobs:
