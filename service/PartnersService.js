@@ -1,9 +1,8 @@
-const bcrypt = require("bcrypt");
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
 const partnersOtpRepository = require("../repositories/PartnersOtpRepository");
 const partnersProfileRepository = require("../repositories/PartnersProfileRepository");
-const otpRepository = require("../repositories/OtpRepository");
+const agentDataRepository = require("../repositories/AgentDataRepository");
 const { v4: uuidv4 } = require("uuid");
 const generateToken = require("../config/GenerateToken");
 
@@ -54,7 +53,7 @@ async function sendOTPHelper(useremail, otp) {
 }
 
 async function login(userOtp) {
-    const user = req.user;
+  const user = req.user;
   try {
     const userId = user.userId;
     const originalOtp = await partnersOtpRepository.findOtpWithUserId(userId);
@@ -63,7 +62,10 @@ async function login(userOtp) {
       throw new ValidationError("Otp Verification Failed");
     }
 
-    const token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN);
+    const token = generateToken(
+      userId,
+      process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN
+    );
     return token;
   } catch (error) {
     logger.error(
@@ -101,5 +103,33 @@ async function sendOtp(useremail) {
     throw error;
   }
 }
+
+async function setAgentData(payload) {
+  try {
+    const agentDataId = uuidv4();
+    const agentData = {
+      ...payload,
+      agentDataId,
+    };
+    await agentDataRepository.createAgentData(agentData);
+  } catch (error) {
+    logger.error(
+      `Failed to send otp to user with emailId=${emailId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function getAgentsData() {
+    try {
+      const agentsData = await agentDataRepository.getAgentsData();
+      return agentsData;
+    } catch (error) {
+      logger.error(
+        `Failed to send otp to user with emailId=${emailId}, error=${error}`
+      );
+      throw error;
+    }
+  }
 
 module.exports = { sendOtp, login };

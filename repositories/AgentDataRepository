@@ -1,0 +1,33 @@
+const AgentData = require("../models/AgentDataModel");
+const logger = require("../logger");
+
+async function createAgentData(agentData) {
+  try {
+    const agentData = new AgentData(newTrip);
+    const createdAgentData = await agentData.save();
+    return createdAgentData;
+  } catch (error) {
+    logger.error(
+      `Error occurred while creating data for agent with phoneNumber=${agentData.phoneNumber}, name=${agentData.name}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while creating trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
+    );
+  }
+}
+
+async function getAgentsData(agentData) {
+    try {
+      const agentsData = await AgentData.find({});
+      return agentsData;
+    } catch (error) {
+      logger.error(
+        `Error occurred while getting agents data, error=${error}`
+      );
+      throw new Error(
+        `Error occurred while getting agents data, error=${error}`
+      );
+    }
+  }
+
+module.exports = { createAgentData };

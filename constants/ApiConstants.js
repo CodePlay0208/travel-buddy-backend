@@ -32,6 +32,8 @@ const FIND_USER_PROFILE = "find_user_profile";
 const ADD_MEMBERS_TO_TRIP = "add_members_to_trip";
 const SEND_OTP_TO_PARTNERS = "send_otp_to_partners";
 const PARTNER_LOGIN = "partner_login";
+const SET_AGENT_DATA = "set_agent_data";
+const GET_AGENT_DATA = "get_agent_data";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -68,4 +70,6 @@ module.exports = {
   ADD_MEMBERS_TO_TRIP,
   SEND_OTP_TO_PARTNERS,
   PARTNER_LOGIN,
+  SET_AGENT_DATA,
+  GET_AGENT_DATA
 };
