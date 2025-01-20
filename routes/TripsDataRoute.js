@@ -34,7 +34,7 @@ router
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     getTripsByUserHandler
   );
-router.route("/getTrips").get(jwtTokenDecoder, getTripsWithFilterHandler);
+router.route("/getTrips").get(jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN), getTripsWithFilterHandler);
 router
   .route("/editTrip/:tripId")
   .put(

@@ -1,6 +1,6 @@
 const UserProfile = require("../models/UserProfileModel");
 const logger = require("../logger");
-const { log } = require("winston");
+
 
 async function updateUser(userId, updateData) {
   try {

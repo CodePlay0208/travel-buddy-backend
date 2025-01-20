@@ -4,9 +4,7 @@ const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
 const tripRepository = require("../repositories/TripRepository");
-const {
-  USER_PROFILE_PROJECTION
-} = require("../constants/Projections");
+const { USER_PROFILE_PROJECTION } = require("../constants/Projections");
 
 const tokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {
@@ -20,7 +18,10 @@ const tokenProtect = (jwtSecretKey) => {
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
-        const user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
+        const user = await userProfileRepository.findUserByUserId(
+          decoded.id,
+          USER_PROFILE_PROJECTION
+        );
 
         if (!user) {
           logger.info(`User not found with userId=${decoded.id}`);
@@ -90,9 +91,15 @@ const tokenProtectForTempFlows = (jwtSecretKey) => {
         let user = null;
 
         if (isSignUpRequest) {
-          user = await tempUserSignUpRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
+          user = await tempUserSignUpRepository.findUserByUserId(
+            decoded.id,
+            USER_PROFILE_PROJECTION
+          );
         } else {
-          user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
+          user = await userProfileRepository.findUserByUserId(
+            decoded.id,
+            USER_PROFILE_PROJECTION
+          );
         }
 
         if (!user) {
@@ -131,35 +138,40 @@ const googleTokenProtect = asyncHandler(async (req, res, next) => {
   }
 });
 
-const jwtTokenDecoder = asyncHandler(async (req, res, next) => {
-  let token;
+const jwtTokenDecoder = (jwtSecretKey) => {
+  return asyncHandler(async (req, res, next) => {
+    let token;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
-      );
-
-      const user = await userProfileRepository.findUserByUserId(decoded.id, USER_PROFILE_PROJECTION);
-
-      if (!user) {
-        throw new Error(
-          `User not valid while decoding token with userId=${decoded.id}`
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      try {
+        token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(
+          token,
+          jwtSecretKey
         );
+
+        const user = await userProfileRepository.findUserByUserId(
+          decoded.id,
+          USER_PROFILE_PROJECTION
+        );
+
+        if (!user) {
+          throw new Error(
+            `User not valid while decoding token with userId=${decoded.id}`
+          );
+        }
+        req.user = user;
+        logger.info(`Token decoded successfully with userId=${decoded.id}`);
+      } catch (error) {
+        logger.error(`Error while decoding token, error=${error}`);
       }
-      req.user = user;
-      logger.info(`Token decoded successfully with userId=${decoded.id}`);
-    } catch (error) {
-      logger.error(`Error while decoding token, error=${error}`);
     }
-  }
-  next();
-});
+    next();
+  });
+};
 
 module.exports = {
   tokenProtect,

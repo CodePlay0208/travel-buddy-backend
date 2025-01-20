@@ -10,6 +10,7 @@ const chatRoute = require("./routes/ChatRoute");
 const messageRoute = require("./routes/MessageRoute");
 const miscRoute = require("./routes/MiscRoute");
 const locationRoute = require("./routes/LocationRoute");
+const partnersRoute = require("./routes/PartnersRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
@@ -49,6 +50,7 @@ try {
   app.use("/message", messageRoute);
   app.use("/location", locationRoute);
   app.use("/misc", miscRoute);
+  app.use("/partners", partnersRoute)
   app.use(notFound);
   app.use(errorHandler);
 
