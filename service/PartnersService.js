@@ -5,6 +5,7 @@ const partnersProfileRepository = require("../repositories/PartnersProfileReposi
 const agentDataRepository = require("../repositories/AgentDataRepository");
 const { v4: uuidv4 } = require("uuid");
 const generateToken = require("../config/GenerateToken");
+const { dateFromDateString} = require("../Utils");
 
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -106,9 +107,11 @@ async function sendOtp(useremail) {
 async function setAgentData(payload) {
   try {
     const agentDataId = uuidv4();
+    const callDate = dateFromDateString(payload.callDate);
     const agentData = {
       ...payload,
       agentDataId,
+      callDate
     };
 
     await agentDataRepository.createAgentData(agentData);
