@@ -1,5 +1,5 @@
 const logger = require("../logger");
-const OtpSchema = require("../models/OtpModel");
+const OtpSchema = require("../models/PartnersOtpModel");
 
 async function create(userId, otp) {
   try {

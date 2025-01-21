@@ -6,6 +6,8 @@ const {
   API_SUCCESS,
   SEND_OTP_TO_PARTNERS,
   PARTNER_LOGIN,
+  SET_AGENT_DATA,
+  GET_AGENT_DATA
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const partnersService = require("../service/PartnersService");
@@ -50,7 +52,8 @@ const loginHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${PARTNER_LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const { userotp } = req.body;
-    const token = await partnersService.login(userotp);
+    const user = req.user;
+    const token = await partnersService.login(user, userotp);
     res.status(200).json({ token });
     const endTime = Date.now();
     logger.info(
@@ -78,9 +81,9 @@ const setAgentDataHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${SET_AGENT_DATA}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { userotp } = req.body;
-    await partnersService.setAgentDataHandler(userotp);
-    res.status(200).json({});
+
+    await partnersService.setAgentData(req.body);
+    res.status(200).json();
     const endTime = Date.now();
     logger.info(
       `API_NAME=${SET_AGENT_DATA}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -107,8 +110,8 @@ const getAgentDataHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${GET_AGENT_DATA}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { userotp } = req.body;
-    const agentsData = await partnersService.getAgentDataHandler(userotp);
+
+    const agentsData = await partnersService.getAgentsData();
     res.status(200).json({ agentsData });
     const endTime = Date.now();
     logger.info(

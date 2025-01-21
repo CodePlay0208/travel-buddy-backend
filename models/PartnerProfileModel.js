@@ -8,7 +8,6 @@ const partnerProfileSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
 });
 
-partnerProfileSchema.index({ destination: 1 }, { name: "username_index" });
 
 module.exports = mongoose.model(
   "PartnerProfile",

@@ -3,15 +3,15 @@ const logger = require("../logger");
 
 async function createAgentData(agentData) {
   try {
-    const agentData = new AgentData(newTrip);
-    const createdAgentData = await agentData.save();
+    const agentDataPojo = new AgentData(agentData);
+    const createdAgentData = await agentDataPojo.save();
     return createdAgentData;
   } catch (error) {
     logger.error(
       `Error occurred while creating data for agent with phoneNumber=${agentData.phoneNumber}, name=${agentData.name}, error=${error}`
     );
     throw new Error(
-      `Error occurred while creating trips for user with userId=${newTrip.userId}, tripId=${newTrip.tripId}, error=${error}`
+      `Error occurred while creating data for agent with phoneNumber=${agentData.phoneNumber}, name=${agentData.name}, error=${error}`
     );
   }
 }
@@ -30,4 +30,4 @@ async function getAgentsData(agentData) {
     }
   }
 
-module.exports = { createAgentData };
+module.exports = { createAgentData, getAgentsData };

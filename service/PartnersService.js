@@ -52,8 +52,7 @@ async function sendOTPHelper(useremail, otp) {
   }
 }
 
-async function login(userOtp) {
-  const user = req.user;
+async function login(user, userOtp) {
   try {
     const userId = user.userId;
     const originalOtp = await partnersOtpRepository.findOtpWithUserId(userId);
@@ -111,10 +110,11 @@ async function setAgentData(payload) {
       ...payload,
       agentDataId,
     };
+
     await agentDataRepository.createAgentData(agentData);
   } catch (error) {
     logger.error(
-      `Failed to send otp to user with emailId=${emailId}, error=${error}`
+      `Failed to create agentData=${payload}, error=${error}`
     );
     throw error;
   }
@@ -126,10 +126,10 @@ async function getAgentsData() {
       return agentsData;
     } catch (error) {
       logger.error(
-        `Failed to send otp to user with emailId=${emailId}, error=${error}`
+        `Failed to fetch agents Data, error=${error}`
       );
       throw error;
     }
   }
 
-module.exports = { sendOtp, login };
+module.exports = { sendOtp, login, setAgentData, getAgentsData };

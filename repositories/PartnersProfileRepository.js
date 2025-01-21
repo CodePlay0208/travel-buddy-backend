@@ -1,9 +1,9 @@
 const PartnerProfile = require("../models/PartnerProfileModel");
 const logger = require("../logger");
 
-async function findUserWithEmailId(emailId, projection) {
+async function findUserWithEmailId(emailId) {
   try {
-    const userInDatabase = await UserProfile.findOne({ emailId }, projection);
+    const userInDatabase = await PartnerProfile.findOne({ emailId });
     return userInDatabase;
   } catch (error) {
     logger.error(
