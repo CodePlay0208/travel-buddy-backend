@@ -10,7 +10,7 @@ const agentDataSchema = new mongoose.Schema({
   address: { type: String, required: true },
   callDate: { type: Date, required: true },
   companyName: { type: String, required: true },
-  callSummary: { type: Number},
+  callSummary: { type: String},
   responseType: { type: String },
   agentDataId: {type: String},
   createdAt: { type: Date, default: Date.now },

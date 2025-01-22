@@ -30,6 +30,7 @@ const jwtTokenDecoder = (jwtSecretKey) => {
         logger.info(`Token decoded successfully with userId=${decoded.id}`);
       } catch (error) {
         logger.error(`Error while decoding token, error=${error}`);
+        throw error;
       }
     }
     next();
