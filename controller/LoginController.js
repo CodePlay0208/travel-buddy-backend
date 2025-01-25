@@ -5,15 +5,13 @@ const logger = require("../logger");
 const { v4: uuidv4 } = require("uuid");
 const {
   GOOGLE_LOGIN,
-  LOGIN,
   API_STARTED,
   API_FAILED,
   API_SUCCESS,
-  SIGN_UP,
   OTP_VERIFICATION,
   RESEND_OTP,
-  FORGOT_PASSWORD,
-  RESET_PASSWORD,
+  LOGIN,
+  SIGN_UP
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
@@ -79,52 +77,18 @@ const signUpHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const otpVerificationHandler = asyncHandler(async (req, res) => {
-  const REQUEST_TID = requestContext.getRequestTid();
-  try {
-    const startTime = Date.now();
-    logger.info(
-      `Request recieved for API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
-    );
-    const user = req.user;
-    const { userOtp } = req.body;
-    const { isSignUpRequest } = req.body;
-    await authService.verifyOtp(user, userOtp, isSignUpRequest);
-    res.status(200).json({
-      token: generateToken(
-        user.userId,
-        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
-      ),
-    });
-
-    const endTime = Date.now();
-    logger.info(
-      `API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
-        endTime - startTime
-      }ms
-`
-    );
-  } catch (error) {
-    logger.error(
-      `API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
-    );
-    if (error instanceof ValidationError) {
-      res.status(400).json();
-    } else {
-      res.status(500).json();
-    }
-  }
-});
-
-const loginHandler = asyncHandler(async (req, res) => {
+const sendOtpHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
       `Request recieved for API_NAME=${LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const token = await authService.login(req.body);
+ 
+    const { useremail } = req.body;
+    const token = await authService.sendOtp(useremail);
     res.status(200).json({ token });
+   
     const endTime = Date.now();
     logger.info(
       `API_NAME=${LOGIN}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -144,57 +108,31 @@ const loginHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const forgotPasswordHandler = asyncHandler(async (req, res) => {
+const verifyOtpHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
-      `Request recieved for API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+      `Request recieved for API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { useremail } = req.body;
-    const token = await authService.forgotPassword(useremail);
+    const token = await authService.verifyOtp(req.user, req.body.userOtp);
     res.status(200).json({ token });
     const endTime = Date.now();
     logger.info(
-      `API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+      `API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
       }ms
 `
     );
   } catch (error) {
     logger.error(
-      `API_NAME=${FORGOT_PASSWORD}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+      `API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(400).json();
     } else {
       res.status(500).json();
     }
-  }
-});
-
-const resetPasswordHandler = asyncHandler(async (req, res) => {
-  const REQUEST_TID = requestContext.getRequestTid();
-  try {
-    const startTime = Date.now();
-    logger.info(
-      `Request recieved for API_NAME=${RESET_PASSWORD}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
-    );
-    const { newPassword } = req.body;
-    const userId = req.user.userId;
-    await authService.resetPassword(userId, newPassword);
-    res.status(200).json();
-    const endTime = Date.now();
-    logger.info(
-      `API_NAME=${RESET_PASSWORD}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
-        endTime - startTime
-      }ms`
-    );
-  } catch (error) {
-    logger.error(
-      `API_NAME=${RESET_PASSWORD}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
-    );
-    res.status(500).json();
   }
 });
 
@@ -225,9 +163,7 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
 module.exports = {
   googleLoginHandler,
   signUpHandler,
-  loginHandler,
-  forgotPasswordHandler,
-  resetPasswordHandler,
-  otpVerificationHandler,
+  verifyOtpHandler,
+  sendOtpHandler,
   resendOtpHandler,
 };

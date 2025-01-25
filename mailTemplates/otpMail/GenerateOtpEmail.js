@@ -1,9 +1,5 @@
-function generateEmailTemplate(name, email, otp, status) {
-  const signUpHeader = status
-    ? `<div class="header">
-         <h1>Thanks for signing up!</h1>
-       </div>`
-    : "";
+function generateEmailTemplate(name, otp) {
+  const signUpHeader = "";
 
   return `
     <!DOCTYPE html>

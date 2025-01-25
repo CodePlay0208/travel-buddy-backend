@@ -2,39 +2,29 @@ const express = require("express");
 const {
   tokenProtect,
   googleTokenProtect,
-  tokenProtectForTempFlows,
 } = require("../middleware/AuthMiddleware");
 const {
   googleLoginHandler,
   signUpHandler,
-  loginHandler,
-  forgotPasswordHandler,
-  resetPasswordHandler,
-  otpVerificationHandler,
+  verifyOtpHandler,
   resendOtpHandler,
+  sendOtpHandler,
 } = require("../controller/LoginController");
 const router = express.Router();
 
 router.route("/googleLogin").post(googleTokenProtect, googleLoginHandler);
 router.route("/signUp").post(signUpHandler);
+router.route("/login").post(sendOtpHandler);
 router
   .route("/verifyOtp")
   .post(
-    tokenProtectForTempFlows(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
-    otpVerificationHandler
-  );
-router.route("/login").post(loginHandler);
-router.route("/forgotPassword").post(forgotPasswordHandler);
-router
-  .route("/resetPassword")
-  .post(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    resetPasswordHandler
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+    verifyOtpHandler
   );
 router
   .route("/resendOtp")
   .post(
-    tokenProtectForTempFlows(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     resendOtpHandler
   );
 

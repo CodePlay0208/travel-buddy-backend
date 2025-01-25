@@ -69,59 +69,6 @@ const tripTokenProtect = (jwtSecretKey) => {
   });
 };
 
-const tokenProtectForTempFlows = (jwtSecretKey) => {
-  return asyncHandler(async (req, res, next) => {
-    let token;
-
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      try {
-        token = req.headers.authorization.split(" ")[1];
-        const decoded = jwt.verify(token, jwtSecretKey);
-
-        const { isSignUpRequest } = req.body;
-
-        if (isSignUpRequest == null || isSignUpRequest == undefined) {
-          logger.error(`isSignUpRequest param is null or undefined`);
-          return res.status(400).json();
-        }
-
-        let user = null;
-
-        if (isSignUpRequest) {
-          user = await tempUserSignUpRepository.findUserByUserId(
-            decoded.id,
-            USER_PROFILE_PROJECTION
-          );
-        } else {
-          user = await userProfileRepository.findUserByUserId(
-            decoded.id,
-            USER_PROFILE_PROJECTION
-          );
-        }
-
-        if (!user) {
-          return res.status(400).json();
-        }
-
-        req.user = user;
-        logger.info(`Authorized User for temp flows with userId=${decoded.id}`);
-        next();
-      } catch (error) {
-        logger.error(
-          `Error in authorization middleware for temp flows, error=${error}`
-        );
-        res.status(401).json();
-      }
-    } else {
-      logger.error(`No bearer token found in request headers for temp flows`);
-      res.status(401).json();
-    }
-  });
-};
-
 const googleTokenProtect = asyncHandler(async (req, res, next) => {
   if (req.headers.googletoken && req.headers.googletoken.startsWith("Bearer")) {
     try {
@@ -177,6 +124,5 @@ module.exports = {
   tokenProtect,
   googleTokenProtect,
   jwtTokenDecoder,
-  tokenProtectForTempFlows,
   tripTokenProtect,
 };

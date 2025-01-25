@@ -4,7 +4,6 @@ const Gender = require("../enums/Gender");
 
 const userProfileSchema = new mongoose.Schema({
   username: { type: String, required: true },
-  password: { type: String },
   phoneNumber: { type: String },
   emailId: { type: String, required: true, unique: true },
   dateOfBirth: { type: String },
