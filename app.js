@@ -50,7 +50,10 @@ try {
   app.use("/message", messageRoute);
   app.use("/location", locationRoute);
   app.use("/misc", miscRoute);
-  app.use("/partners", partnersRoute)
+  app.use("/partners", partnersRoute);
+  app.get('/health/status', (req, res) => {
+    res.status(200).send('OK'); 
+});
   app.use(notFound);
   app.use(errorHandler);
 
