@@ -52,6 +52,7 @@ try {
   app.use("/misc", miscRoute);
   app.use("/partners", partnersRoute);
   app.get('/health/status', (req, res) => {
+    logger.info(`Responding to Health Check Status`)
     res.status(200).send('OK'); 
 });
   app.use(notFound);
