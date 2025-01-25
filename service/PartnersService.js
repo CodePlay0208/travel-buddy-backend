@@ -98,7 +98,7 @@ async function sendOtp(useremail) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to send otp to user with emailId=${emailId}, error=${error}`
+      `Failed to send otp to user with emailId=${useremail}, error=${error}`
     );
     throw error;
   }
