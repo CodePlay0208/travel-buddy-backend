@@ -82,35 +82,35 @@ async function googleLogin(googleToken) {
 
 async function signUp(payload) {
   try {
-    const userId = uuidv4();
+    let userId = uuidv4();
     const { userKey, username } = payload;
     logger.info(`Signing Up user with email=${userKey}, username=${username}`);
     authValidator.validateSignUpRequest(payload);
     const {userInDatabase, isPhoneNumber} = await findUserByUserKey(userKey);
     if (userInDatabase) {
-      logger.error("User already exists", { userKey });
-      throw new ValidationError("User Already Exists");
-    }
-
-    let user = null;
-
-    if(isPhoneNumber){
-      user = {
-        username,
-        userId,
-        phoneNumber: userKey
-      };
+      const updateData = {};
+      updateData.username = username;
+      userId = userInDatabase.userId;
+      const updatedUser = await userProfileRepository.updateUser(userId, updateData);
     }
     else{
-      user = {
-        username,
-        emailId: userKey,
-        userId,
-      };
+      let user = null;
+      if(isPhoneNumber){
+        user = {
+          username,
+          userId,
+          phoneNumber: userKey
+        };
+      }
+      else{
+        user = {
+          username,
+          emailId: userKey,
+          userId,
+        };
+      }
+      const createdUser = await userProfileRepository.create(user);
     }
-
-    const createdUser = await userProfileRepository.create(user);
-
     await otpService.sendOtp(username, userKey, userId);
     const token = generateToken(
       userId,
