@@ -4,8 +4,8 @@ const Gender = require("../enums/Gender");
 
 const userProfileSchema = new mongoose.Schema({
   username: { type: String, required: true },
-  phoneNumber: { type: String, unique: true },
-  emailId: { type: String, unique: true },
+  phoneNumber: { type: String},
+  emailId: { type: String },
   dateOfBirth: { type: String },
   persona: {
     type: String,
@@ -18,6 +18,9 @@ const userProfileSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   requestingTrips: [{ type: String }],
 });
+
+userProfileSchema.index({ phoneNumber: 1 }, { name: "phoneNumber_single_index" });
+userProfileSchema.index({ emailId: 1 }, { name: "emailId_single_index" });
 
 module.exports = mongoose.model(
   "UserProfile",
