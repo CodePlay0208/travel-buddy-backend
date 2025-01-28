@@ -1,5 +1,5 @@
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneNumberRegex = /^[0-9]+$/;
+const phoneNumberRegex = /^(\+91)?[0-9]{10}$/;
 const crypto = require("crypto");
 const { ValidationError } = require("./exceptions/ValidationError");
 const logger = require("./logger");
@@ -22,6 +22,14 @@ function isValidPhoneNumber(phoneNumber) {
   } else {
     throw new ValidationError(`Invalid phoneNumber=${phoneNumber}`);
   }
+}
+function isPhoneNumberOrEmail(userKey) {
+  if (phoneNumberRegex.test(userKey)) {
+    return { isPhoneNumber: true, isEmail: false };
+  } else if (emailRegex.test(userKey)) {
+    return { isPhoneNumber: false, isEmail: true };
+  }
+  throw new ValidationError(`Invalid UserKey=${userKey}`)
 }
 
 const randomFileName = (fileName, bytes = 32) => {
@@ -96,4 +104,5 @@ module.exports = {
   isValidPhoneNumber,
   parseLimitAndOffset,
   cropAndResizeImages,
+  isPhoneNumberOrEmail
 };

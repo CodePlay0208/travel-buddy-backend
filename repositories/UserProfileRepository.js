@@ -90,6 +90,20 @@ async function findUsersByUserId(userIds, projection) {
   }
 }
 
+async function findUserByPhoneNumber(phoneNumber) {
+  try {
+    const userInDatabase = await UserProfile.findOne({ phoneNumber });
+    return userInDatabase;
+  } catch (error) {
+    logger.error(
+      `Error occured while finding user with phoneNumber=${phoneNumber}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profile using phoneNumber from DB, error=${error}`
+    );
+  }
+}
+
 async function findUsersByPrefix(prefix, projection) {
   try {
     const regex = new RegExp(`^${prefix}`, "i");
@@ -150,5 +164,6 @@ module.exports = {
   findUsersByUserId,
   findUsersByPrefix,
   addTripToUsers,
-  joinUserToTrip
+  joinUserToTrip,
+  findUserByPhoneNumber
 };

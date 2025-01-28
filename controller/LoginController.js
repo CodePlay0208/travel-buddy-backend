@@ -85,8 +85,8 @@ const sendOtpHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
  
-    const { useremail } = req.body;
-    const token = await authService.sendOtp(useremail);
+    const { userKey } = req.body;
+    const token = await authService.sendOtp(userKey);
     res.status(200).json({ token });
    
     const endTime = Date.now();
@@ -143,8 +143,9 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${RESEND_OTP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { username, emailId, userId } = req.user;
-    await authService.resendOtp(username, emailId, userId);
+    const { username, userId } = req.user;
+    const {userKey} = req.body;
+    await authService.resendOtp(username, userKey, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(

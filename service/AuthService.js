@@ -1,58 +1,22 @@
-const bcrypt = require("bcrypt");
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
-const tempUserSignUpRepository = require("../repositories/TempUserSignUpRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
+const otpService = require("../service/OtpService");
 const otpRepository = require("../repositories/OtpRepository");
-const generateOtpEmail = require("../mailTemplates/otpMail/GenerateOtpEmail");
 const generateToken = require("../config/GenerateToken");
 const { v4: uuidv4 } = require("uuid");
 const authValidator = require("../validators/AuthValidator");
+const { isPhoneNumberOrEmail} = require("../Utils");
 
-function generateOTP() {
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  return otp;
-}
-
-async function sendOTPHelper(name, useremail, otp) {
-  try {
-    logger.info(`Sending otp to user with emailId=${useremail}`);
-    const otpString = `${otp}`;
-    const htmlContent = generateOtpEmail(name, otpString);
-    const subject = "Verify Otp";
-    const mailingData = {
-      sender: {
-        name: "travmigoz",
-        email: process.env.EMAIL_ADDRESS_FOR_SENDING_MAILS,
-      },
-      to: [
-        {
-          email: useremail,
-          name: name,
-        },
-      ],
-      subject: subject,
-      htmlContent: htmlContent,
-    };
-
-    const url = process.env.API_FOR_SENDING_MAILS;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "api-key": process.env.API_KEY_FOR_SENDING_MAILS,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(mailingData),
-    });
-
-    await response.json();
-    logger.info(`OTP sent successfully to user with emailId=${useremail}`);
-  } catch (error) {
-    logger.error(
-      `Error while sending OTP to user with emailId=${useremail}, error=${error}`
-    );
-    throw error;
+async function findUserByUserKey(userKey) {
+  const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+  let userInDatabase = null;
+  if (isPhoneNumber) {
+    userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
+  } else {
+    userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
   }
+  return {userInDatabase, isPhoneNumber};
 }
 
 async function getUserDataFromGoogle(accessToken) {
@@ -119,61 +83,55 @@ async function googleLogin(googleToken) {
 async function signUp(payload) {
   try {
     const userId = uuidv4();
-    const { useremail, username} = payload;
-    logger.info(
-      `Signing Up user with email=${useremail}, username=${username}`
-    );
+    const { userKey, username } = payload;
+    logger.info(`Signing Up user with email=${userKey}, username=${username}`);
     authValidator.validateSignUpRequest(payload);
-    const userInDatabase = await userProfileRepository.findUserWithEmailId(
-      useremail
-    );
-
+    const {userInDatabase, isPhoneNumber} = await findUserByUserKey(userKey);
     if (userInDatabase) {
-      logger.error("User already exists", { useremail });
+      logger.error("User already exists", { userKey });
       throw new ValidationError("User Already Exists");
     }
 
-    const user = {
-      username,
-      emailId: useremail,
-      userId
+    let user = null;
+
+    if(isPhoneNumber){
+      user = {
+        username,
+        userId,
+        phoneNumber: userKey
+      };
+    }
+    else{
+      user = {
+        username,
+        emailId: userKey,
+        userId,
+      };
     }
 
     const createdUser = await userProfileRepository.create(user);
 
-    const otp = generateOTP();
-    await sendOTPHelper(username, useremail, otp);
-
-    logger.info(
-      `Successfully sent otp=${otp} for user with userId=${userId}, emailId=${useremail}`
-    );
-    await otpRepository.create(userId, otp);
+    await otpService.sendOtp(username, userKey, userId);
     const token = generateToken(
       userId,
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
     );
     return token;
   } catch (error) {
-    logger.error(`Failed to update user profile with error=${error}`);
+    logger.error(`Failed to create user profile with error=${error}`);
     throw error;
   }
 }
 
-async function sendOtp(useremail) {
+async function sendOtp(userKey) {
   try {
-    const userInDatabase = await userProfileRepository.findUserWithEmailId(
-      useremail
-    );
+    const {userInDatabase, isPhoneNumber} = await findUserByUserKey(userKey);
     if (!userInDatabase) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
     const userId = userInDatabase.userId;
-    const otp = generateOTP();
-    await sendOTPHelper(userInDatabase.username, useremail, otp);
-    logger.info(
-      `Successfully sent otp=${otp} to user with emailId=${useremail}`
-    );
-    await otpRepository.create(userId, otp);
+    console
+    await otpService.sendOtp(userInDatabase.username, userKey, userId);
     const token = generateToken(
       userId,
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
@@ -181,7 +139,7 @@ async function sendOtp(useremail) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to send otp to user with emailId=${useremail}, error=${error}`
+      `Failed to send otp to user with emailId=${userKey}, error=${error}`
     );
     throw error;
   }
@@ -196,7 +154,10 @@ async function verifyOtp(user, userOtp) {
       throw new ValidationError("Otp Verification Failed");
     }
 
-    const token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_USER_LOGIN);
+    const token = generateToken(
+      userId,
+      process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+    );
     logger.info(`Successfully logged in user with userId=${userId}`);
     return token;
   } catch (error) {
@@ -207,14 +168,9 @@ async function verifyOtp(user, userOtp) {
   }
 }
 
-async function resendOtp(username, useremail, userId) {
+async function resendOtp(username, userKey, userId) {
   try {
-    const otp = generateOTP();
-    await sendOTPHelper(username, useremail, otp);
-    logger.info(
-      `Successfully sent otp=${otp} for user with userId=${userId}, emailId=${useremail}`
-    );
-    await otpRepository.create(userId, otp);
+    await otpService.sendOtp(username, userKey, userId);
   } catch (error) {
     logger.error(
       `Failed to resend otp to user with userId=${userId}, error=${error}`
