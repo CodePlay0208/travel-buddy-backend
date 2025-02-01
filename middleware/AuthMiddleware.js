@@ -16,16 +16,7 @@ const tokenProtect = (jwtSecretKey) => {
         token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, jwtSecretKey);
 
-        const user = await userProfileRepository.findUserByUserId(
-          decoded.id,
-          USER_PROFILE_PROJECTION
-        );
-
-        if (!user) {
-          logger.info(`User not found with userId=${decoded.id}`);
-          res.status(401).json();
-        }
-        req.user = user;
+        req.userId = decoded.id;
         logger.info(`Authorized User with userId=${decoded.id}`);
         next();
       } catch (error) {

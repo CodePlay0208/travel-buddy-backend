@@ -144,8 +144,7 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${RESEND_OTP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const userId = req.userId;
-    const { userKey } = req.body;
-    await authService.resendOtp(userKey, userId);
+    await authService.resendOtp(req.body, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(

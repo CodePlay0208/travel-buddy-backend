@@ -150,14 +150,26 @@ async function verifyOtp(userId, payload) {
       throw new ValidationError("Otp Verification Failed");
     }
 
+    if (isSignUpRequest == null || isSignUpRequest == undefined) {
+      logger.error(`isSignUpRequest param is null or undefined`);
+      throw new ValidationError("User not found", 400);
+    }
+
     if (isSignUpRequest) {
-      const user = await tempUserProfileRepository.findUserByUserId(userId);
-      if (!user) {
+      const tempUser = await tempUserProfileRepository.findUserByUserId(userId);
+      if (!tempUser) {
         logger.info(`temporary user not found with userId=${userId}`);
         throw new ValidationError("User not found", 404);
       }
-      const createdUser = userProfileRepository.create(user);
+      const user = tempUser.toObject();
+      delete user.id;
+      const createdUser = await userProfileRepository.create(user);
       logger.info(`Created user=${createdUser}`);
+    } else {
+      const user = await userProfileRepository.findUserByUserId(userId);
+      if (!user) {
+        throw new ValidationError(`User doesn't exists with userId=${userId}`);
+      }
     }
 
     const token = generateToken(
@@ -178,6 +190,12 @@ async function resendOtp(payload, userId) {
   try {
     const { userKey, isSignUpRequest } = payload;
     let user = null;
+
+    if (isSignUpRequest == null || isSignUpRequest == undefined) {
+      logger.error(`isSignUpRequest param is null or undefined`);
+      throw new ValidationError("User not found", 400);
+    }
+
     if (isSignUpRequest) {
       user = await tempUserProfileRepository.findUserByUserId(userId);
     } else {
