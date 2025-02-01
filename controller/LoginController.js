@@ -11,7 +11,7 @@ const {
   OTP_VERIFICATION,
   RESEND_OTP,
   LOGIN,
-  SIGN_UP
+  SIGN_UP,
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
@@ -77,18 +77,18 @@ const signUpHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const sendOtpHandler = asyncHandler(async (req, res) => {
+const loginHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
       `Request recieved for API_NAME=${LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
- 
+
     const { userKey } = req.body;
-    const token = await authService.sendOtp(userKey);
+    const token = await authService.login(userKey);
     res.status(200).json({ token });
-   
+
     const endTime = Date.now();
     logger.info(
       `API_NAME=${LOGIN}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -115,7 +115,7 @@ const verifyOtpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${OTP_VERIFICATION}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const token = await authService.verifyOtp(req.user, req.body.userOtp);
+    const token = await authService.verifyOtp(req.userId, req.body);
     res.status(200).json({ token });
     const endTime = Date.now();
     logger.info(
@@ -143,9 +143,9 @@ const resendOtpHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${RESEND_OTP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { username, userId } = req.user;
-    const {userKey} = req.body;
-    await authService.resendOtp(username, userKey, userId);
+    const userId = req.userId;
+    const { userKey } = req.body;
+    await authService.resendOtp(userKey, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(
@@ -165,6 +165,6 @@ module.exports = {
   googleLoginHandler,
   signUpHandler,
   verifyOtpHandler,
-  sendOtpHandler,
+  loginHandler,
   resendOtpHandler,
 };

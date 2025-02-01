@@ -9,12 +9,24 @@ const {
 } = require("../aws/S3");
 const {
   USER_PROFILE_PROJECTION_IN_SEARCH_BAR,
+  USER_PROFILE_PROJECTION
 } = require("../constants/Projections.js");
+const { ValidationError } = require("../exceptions/ValidationError.js");
 
-async function getUserProfile(user) {
+async function getUserProfile(userId) {
   try {
-    const userId = user.userId;
     logger.info(`Fetching user with userId=${userId}`);
+
+     const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError("User not found", 404);
+    }
+
     const userProfilePic = await getObjectsFromS3Bucket(
       "",
       user.profilePic,
@@ -31,9 +43,8 @@ async function getUserProfile(user) {
   }
 }
 
-async function updateUserProfile(user, updateData, newProfilePic) {
+async function updateUserProfile(userId, updateData, newProfilePic) {
   try {
-    const userId = user.userId;
     logger.info(`Updating user with userId=${userId}`);
     const sanitizedUpdateData = {};
 
@@ -76,14 +87,23 @@ async function updateUserProfile(user, updateData, newProfilePic) {
 
     return updatedUserProfile;
   } catch (error) {
-    logger.error(`Failed to update user=${user}, error=${error}`);
+    logger.error(`Failed to update user with userId=${userId}, error=${error}`);
     throw error;
   }
 }
 
-async function deleteUserProfile(user) {
+async function deleteUserProfile(userId) {
   try {
-    const { userId, username, emailId } = user;
+    const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+    
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError("User not found", 404);
+    }
+    const { username, emailId } = user;
     logger.info(`Deleting user profile with userId=${userId}`);
     const deletedUser = {
       userId,
@@ -112,7 +132,7 @@ async function deleteUserProfile(user) {
 async function findUserProfile(query) {
   try {
     const userKey = query.userKey;
-    logger.info(`Finding user with userId=${userId}`);
+    logger.info(`Finding user with userKey=${userKey}`);
     const users = await userProfileRepository.findUsersByPrefix(
       userKey,
       USER_PROFILE_PROJECTION_IN_SEARCH_BAR
@@ -122,7 +142,7 @@ async function findUserProfile(query) {
     );
     return users;
   } catch (error) {
-    logger.error(`Failed to find pusers with prefix=${prefix}, error=${error}`);
+    logger.error(`Failed to find users with prefix=${prefix}, error=${error}`);
     throw error;
   }
 }

@@ -49,8 +49,9 @@ async function populateChat(storedChat) {
   return populatedChat;
 }
 
-async function fetchOrCreateChats(receiverUserId, senderProfile) {
+async function fetchOrCreateChats(receiverUserId, senderUserId) {
   try {
+    
     const senderUserId = senderProfile.userId;
     const receiverProfile = await userProfileRepository.findUserByUserId(
       receiverUserId,

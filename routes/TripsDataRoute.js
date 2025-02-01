@@ -50,14 +50,6 @@ router
   );
 
 router
-  .route("/joinTrip")
-  .post(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    tripTokenProtect(process.env.SECRET_KEY_FOR_GENERATING_TRIP_LINK),
-    joinTripHandler
-  );
-
-router
   .route("/getWishlistedTrips")
   .get(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
@@ -78,12 +70,5 @@ router
     removeWishlistedTripHandler
   );
 
-router
-  .route("/addMembersToTrip")
-  .post(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    tripTokenProtect(process.env.SECRET_KEY_FOR_GENERATING_TRIP_LINK),
-    addMembersToTripHandler
-  );
 
 module.exports = router;

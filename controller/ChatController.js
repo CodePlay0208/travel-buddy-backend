@@ -21,7 +21,7 @@ const fetchOrCreateChatsHandler = asyncHandler(async (req, res) => {
     const { receiverUserId } = req.body;
     const fetchedChat = await chatService.fetchOrCreateChats(
       receiverUserId,
-      req.user
+      req.userId
     );
     res.status(200).json(fetchedChat);
     const endTime = Date.now();
@@ -49,7 +49,7 @@ const getChatsHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${GET_ALL_CHATS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const userId = req.user.userId;
+    const userId = req.userId;
     const fetchedChats = await chatService.getChats(userId);
     res.status(200).send(fetchedChats);
     const endTime = Date.now();

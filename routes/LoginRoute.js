@@ -8,13 +8,13 @@ const {
   signUpHandler,
   verifyOtpHandler,
   resendOtpHandler,
-  sendOtpHandler,
+  loginHandler,
 } = require("../controller/LoginController");
 const router = express.Router();
 
 router.route("/googleLogin").post(googleTokenProtect, googleLoginHandler);
 router.route("/signUp").post(signUpHandler);
-router.route("/login").post(sendOtpHandler);
+router.route("/login").post(loginHandler);
 router
   .route("/verifyOtp")
   .post(

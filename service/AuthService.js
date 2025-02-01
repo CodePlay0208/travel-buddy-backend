@@ -1,12 +1,13 @@
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository");
+const tempUserProfileRepository = require("../repositories/TempUserProfileRepository");
 const otpService = require("../service/OtpService");
 const otpRepository = require("../repositories/OtpRepository");
 const generateToken = require("../config/GenerateToken");
 const { v4: uuidv4 } = require("uuid");
 const authValidator = require("../validators/AuthValidator");
-const { isPhoneNumberOrEmail} = require("../Utils");
+const { isPhoneNumberOrEmail } = require("../Utils");
 
 async function findUserByUserKey(userKey) {
   const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
@@ -16,7 +17,7 @@ async function findUserByUserKey(userKey) {
   } else {
     userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
   }
-  return {userInDatabase, isPhoneNumber};
+  return { userInDatabase, isPhoneNumber };
 }
 
 async function getUserDataFromGoogle(accessToken) {
@@ -86,31 +87,26 @@ async function signUp(payload) {
     const { userKey, username } = payload;
     logger.info(`Signing Up user with email=${userKey}, username=${username}`);
     authValidator.validateSignUpRequest(payload);
-    const {userInDatabase, isPhoneNumber} = await findUserByUserKey(userKey);
+    const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
     if (userInDatabase) {
-      const updateData = {};
-      updateData.username = username;
-      userId = userInDatabase.userId;
-      const updatedUser = await userProfileRepository.updateUser(userId, updateData);
+      throw new ValidationError("User Already Exists", 400);
     }
-    else{
-      let user = null;
-      if(isPhoneNumber){
-        user = {
-          username,
-          userId,
-          phoneNumber: userKey
-        };
-      }
-      else{
-        user = {
-          username,
-          emailId: userKey,
-          userId,
-        };
-      }
-      const createdUser = await userProfileRepository.create(user);
+
+    let user = null;
+    if (isPhoneNumber) {
+      user = {
+        username,
+        userId,
+        phoneNumber: userKey,
+      };
+    } else {
+      user = {
+        username,
+        emailId: userKey,
+        userId,
+      };
     }
+    const createdUser = await tempUserProfileRepository.create(user);
     await otpService.sendOtp(username, userKey, userId);
     const token = generateToken(
       userId,
@@ -123,14 +119,14 @@ async function signUp(payload) {
   }
 }
 
-async function sendOtp(userKey) {
+async function login(userKey) {
   try {
-    const {userInDatabase, isPhoneNumber} = await findUserByUserKey(userKey);
+    const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
     if (!userInDatabase) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
     const userId = userInDatabase.userId;
-    console
+    console;
     await otpService.sendOtp(userInDatabase.username, userKey, userId);
     const token = generateToken(
       userId,
@@ -145,13 +141,23 @@ async function sendOtp(userKey) {
   }
 }
 
-async function verifyOtp(user, userOtp) {
+async function verifyOtp(userId, payload) {
   try {
-    const userId = user.userId;
+    const { userOtp, isSignUpRequest } = payload;
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
 
     if (!originalOtp || originalOtp.otp != userOtp) {
       throw new ValidationError("Otp Verification Failed");
+    }
+
+    if (isSignUpRequest) {
+      const user = await tempUserProfileRepository.findUserByUserId(userId);
+      if (!user) {
+        logger.info(`temporary user not found with userId=${userId}`);
+        throw new ValidationError("User not found", 404);
+      }
+      const createdUser = userProfileRepository.create(user);
+      logger.info(`Created user=${createdUser}`);
     }
 
     const token = generateToken(
@@ -168,9 +174,20 @@ async function verifyOtp(user, userOtp) {
   }
 }
 
-async function resendOtp(username, userKey, userId) {
+async function resendOtp(payload, userId) {
   try {
-    await otpService.sendOtp(username, userKey, userId);
+    const { userKey, isSignUpRequest } = payload;
+    let user = null;
+    if (isSignUpRequest) {
+      user = await tempUserProfileRepository.findUserByUserId(userId);
+    } else {
+      user = await userProfileRepository.findUserByUserId(userId);
+    }
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError("User not found", 404);
+    }
+    await otpService.sendOtp(user.username, userKey, userId);
   } catch (error) {
     logger.error(
       `Failed to resend otp to user with userId=${userId}, error=${error}`
@@ -181,7 +198,7 @@ async function resendOtp(username, userKey, userId) {
 
 module.exports = {
   signUp,
-  sendOtp,
+  login,
   resendOtp,
   verifyOtp,
   googleLogin,

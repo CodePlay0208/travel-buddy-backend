@@ -111,9 +111,18 @@ async function addCroppedDestinationImagesToTrips(trips, path) {
   return trips;
 }
 
-async function createTrip(payload, files, user) {
+async function createTrip(payload, files, userId) {
   try {
-    const userId = user.userId;
+    const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError("User not found", 404);
+    }
+
     const { uploadedObjectNames, allObjectsUploaded } =
       await uploadObjectsToS3Bucket(
         process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
@@ -419,31 +428,6 @@ async function generateTripLink(tripId, userId) {
   }
 }
 
-async function joinTrip(trip, user) {
-  try{
-    if (!user.requestingTrips.includes(trip.tripId)) {
-      throw new ValidationError(`User has not been requested to join this trip.`, 403);
-    }
-
-    const userInRequestedMembers = trip.requestedTripMembers.find(
-      (member) => member.userId === user.userId
-    );
-
-    if (!userInRequestedMembers) {
-      throw new ValidationError(`User is not in the requested members of the trip`, 403);
-    }
-
-    const updatedUser = await userProfileRepository.joinUserToTrip(user.userId, trip.tripId);
-
-    const updatedTrip = await tripRepository.joinMemberToTrip(trip.tripId, user);
-
-    return {updatedUser, updatedTrip};
-  }
-  catch(error){
-    logger.error(`Failed to join user with userId=${user.userId} to tripId=${trip.tripId}, error=${error}`);
-    throw error;
-  }
-}
 
 async function getWishlistedTrips(filter, userId) {
   try {
@@ -566,7 +550,6 @@ module.exports = {
   deleteTrip,
   getTripsByUser,
   generateTripLink,
-  joinTrip,
   getWishlistedTrips,
   addWishlistTrip,
   removeWishlistedTrip,
