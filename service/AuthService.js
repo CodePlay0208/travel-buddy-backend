@@ -168,7 +168,7 @@ async function verifyOtp(userId, payload) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to verify otp for user with user=${user}, error=${error}`
+      `Failed to verify otp for user with userId=${userId}, error=${error}`
     );
     throw error;
   }

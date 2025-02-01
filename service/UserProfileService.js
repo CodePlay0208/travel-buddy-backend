@@ -38,7 +38,7 @@ async function getUserProfile(userId) {
     );
     return user;
   } catch (error) {
-    logger.error(`Failed to find profile pic for user=${user}, error=${error}`);
+    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
     throw error;
   }
 }
@@ -124,7 +124,7 @@ async function deleteUserProfile(userId) {
       `User profile and related data deleted for user with userId=${userId}`
     );
   } catch (error) {
-    logger.error(`Error while deleting user=${user}, error=${error}`);
+    logger.error(`Error while deleting userId=${userId}, error=${error}`);
     throw error;
   }
 }

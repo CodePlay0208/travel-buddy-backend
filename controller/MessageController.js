@@ -12,7 +12,7 @@ const {
 } = require("../constants/ApiConstants");
 
 const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.userId;
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
@@ -47,7 +47,7 @@ const getAllMessagesForAChatHandler = asyncHandler(async (req, res) => {
 
 const createNewMessageHandler = asyncHandler(async (req, res) => {
   const { content, chatId } = req.body;
-  const userId = req.user.userId;
+  const userId = req.userId;
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
