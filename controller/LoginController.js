@@ -1,8 +1,5 @@
-const UserProfile = require("../models/UserProfileModel");
 const asyncHandler = require("express-async-handler");
-const generateToken = require("../config/GenerateToken");
 const logger = require("../logger");
-const { v4: uuidv4 } = require("uuid");
 const {
   GOOGLE_LOGIN,
   API_STARTED,

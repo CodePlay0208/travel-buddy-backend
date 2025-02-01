@@ -2,7 +2,6 @@ const express = require("express");
 const {
   tokenProtect,
   jwtTokenDecoder,
-  tripTokenProtect,
 } = require("../middleware/AuthMiddleware");
 const {
   createTripHandler,

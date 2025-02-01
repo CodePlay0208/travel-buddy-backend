@@ -121,7 +121,7 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${GET_TRIPS_WITH_FILTERS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const filter = req.query;
-    const userId = req?.user?.userId;
+    const userId = req?.userId;
 
     const { trips, newOffset } = await tripDataService.getTripsWithFilter(
       filter,

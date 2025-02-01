@@ -1,5 +1,5 @@
 const express = require("express");
-const { tokenProtect, tripTokenProtect } = require("../middleware/AuthMiddleware");
+const { tokenProtect } = require("../middleware/AuthMiddleware");
 const {
   getUserProfileHandler,
   editUserHandler,

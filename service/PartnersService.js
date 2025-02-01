@@ -53,9 +53,8 @@ async function sendOTPHelper(useremail, otp) {
   }
 }
 
-async function login(user, userOtp) {
+async function login(userId, userOtp) {
   try {
-    const userId = user.userId;
     const originalOtp = await partnersOtpRepository.findOtpWithUserId(userId);
 
     if (!originalOtp || originalOtp.otp != userOtp) {
@@ -69,7 +68,7 @@ async function login(user, userOtp) {
     return token;
   } catch (error) {
     logger.error(
-      `Failed to verify otp for user with userId=${user?.userId}, error=${error}`
+      `Failed to verify otp for user with userId=${userId}, error=${error}`
     );
     throw error;
   }

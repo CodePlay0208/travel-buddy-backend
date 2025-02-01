@@ -1,5 +1,5 @@
 const express = require("express");
-const { jwtTokenDecoder } = require("../middleware/PartnersAuthMiddleware");
+const { tokenProtect } = require("../middleware/AuthMiddleware");
 const {
   sendOtpHandler,
   loginHandler,
@@ -13,21 +13,21 @@ router.route("/sendOtp").post(sendOtpHandler);
 router
   .route("/login")
   .post(
-    jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
     loginHandler
   );
 
 router
   .route("/agentData")
   .get(
-    jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
     getAgentDataHandler
   );
 
 router
   .route("/agentData")
   .post(
-    jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
     setAgentDataHandler
   );
 

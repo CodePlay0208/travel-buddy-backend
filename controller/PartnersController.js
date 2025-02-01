@@ -52,8 +52,8 @@ const loginHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${PARTNER_LOGIN}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const { userotp } = req.body;
-    const user = req.user;
-    const token = await partnersService.login(user, userotp);
+    const userId = req.userId;
+    const token = await partnersService.login(userId, userotp);
     res.status(200).json({ token });
     const endTime = Date.now();
     logger.info(

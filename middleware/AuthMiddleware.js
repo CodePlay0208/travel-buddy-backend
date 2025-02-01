@@ -30,34 +30,6 @@ const tokenProtect = (jwtSecretKey) => {
   });
 };
 
-const tripTokenProtect = (jwtSecretKey) => {
-  return asyncHandler(async (req, res, next) => {
-    let token;
-    if (req.headers.triptoken && req.headers.triptoken.startsWith("Bearer")) {
-      try {
-        token = req.headers.triptoken.split(" ")[1];
-        const decoded = jwt.verify(token, jwtSecretKey);
-
-        const trip = await tripRepository.findTripWithTripId(decoded.id);
-
-        if (!trip) {
-          logger.info(`trip not found with tripId=${decoded.id}`);
-          res.status(404).json();
-        }
-
-        req.trip = trip;
-        next();
-      } catch (error) {
-        logger.error(`Error in trip authorization middleware, error=${error}`);
-        res.status(401).json();
-      }
-    } else {
-      logger.error(`No bearer token found in request headers`);
-      res.status(401).json();
-    }
-  });
-};
-
 const googleTokenProtect = asyncHandler(async (req, res, next) => {
   if (req.headers.googletoken && req.headers.googletoken.startsWith("Bearer")) {
     try {
@@ -89,17 +61,7 @@ const jwtTokenDecoder = (jwtSecretKey) => {
           jwtSecretKey
         );
 
-        const user = await userProfileRepository.findUserByUserId(
-          decoded.id,
-          USER_PROFILE_PROJECTION
-        );
-
-        if (!user) {
-          throw new Error(
-            `User not valid while decoding token with userId=${decoded.id}`
-          );
-        }
-        req.user = user;
+        req.userId = decoded.id;
         logger.info(`Token decoded successfully with userId=${decoded.id}`);
       } catch (error) {
         logger.error(`Error while decoding token, error=${error}`);
@@ -113,5 +75,4 @@ module.exports = {
   tokenProtect,
   googleTokenProtect,
   jwtTokenDecoder,
-  tripTokenProtect,
 };
