@@ -1,3 +1,5 @@
+const { profile } = require("winston");
+
 const LATEST_MESSAGE_PROJECTION_IN_CHAT = {
   senderId: 1,
   content: 1,
@@ -19,24 +21,23 @@ const USER_PROFILE_PROJECTION = {
   dateOfBirth: 1,
 };
 
-const USER_PROFILE_PROJECTION_IN_SEARCH_BAR = {
+const USER_PROFILE_PROJECTION_IN_SEARCH_CARD = {
   userId: 1,
-  username: 1,
   profilePic: 1,
-  emailId: 1,
 };
 
-const USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS = {
+const USER_PROFILE_PROJECTION_IN_TRIP_DETAILS = {
   userId: 1,
   username: 1,
   profilePic: 1,
-  emailId: 1,
+  gender: 1,
+  dateOfBirth: 1,
 };
 
 module.exports = {
   LATEST_MESSAGE_PROJECTION_IN_CHAT,
   USER_PROFILE_PROJECTION_IN_CHAT,
   USER_PROFILE_PROJECTION,
-  USER_PROFILE_PROJECTION_IN_SEARCH_BAR,
-  USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS
+  USER_PROFILE_PROJECTION_IN_SEARCH_CARD,
+  USER_PROFILE_PROJECTION_IN_TRIP_DETAILS,
 };

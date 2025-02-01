@@ -10,11 +10,11 @@ const {
   editTripHandler,
   deleteTripHandler,
   getTripsWithFilterHandler,
-  joinTripHandler,
+  joinRequestHandler,
   getWishlistedTripsHandler,
   addWishlistTripHandler,
   removeWishlistedTripHandler,
-  addMembersToTripHandler
+  addMemberToTripHandler
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -68,6 +68,21 @@ router
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     removeWishlistedTripHandler
   );
+
+router
+  .route("/requestJoinTrip")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    addMemberToTripHandler
+);
+
+router
+  .route("/joinTrip")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    joinRequestHandler
+);
+
 
 
 module.exports = router;

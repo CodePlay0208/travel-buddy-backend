@@ -1,6 +1,6 @@
 const logger = require("../logger");
 const tripRepository = require("../repositories/TripRepository.js");
-const userMetadataRepository = require("../repositories/UserMetadataRepository.js");
+const userTripsRepository = require("../repositories/UserTripsRepository.js");
 const userProfileRepository = require("../repositories/UserProfileRepository.js");
 const {
   uploadObjectsToS3Bucket,
@@ -14,8 +14,48 @@ const tripValidator = require("../validators/TripValidator.js");
 const generateToken = require("../config/GenerateToken.js");
 const { cropAndResizeImages } = require("../Utils.js");
 const {
-  USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS,
+  USER_PROFILE_PROJECTION_IN_TRIP_DETAILS,
+  USER_PROFILE_PROJECTION_IN_SEARCH_CARD,
+  USER_PROFILE_PROJECTION,
 } = require("../constants/Projections.js");
+
+async function addJoinedMembersProfilesToTrip(trip, projection) {
+  trip.joinedMembers = await userProfileRepository.findUsersByUserId(
+    trip.tripMembersIds
+  );
+}
+
+async function addRequestedMembersProfilesToTrip(trip, projection) {
+  trip.requestingMembers = await userProfileRepository.findUsersByUserId(
+    trip.requestingTripMembersIds
+  );
+}
+
+async function updateMembersProfilesInTrip(trip, projection) {
+  await addJoinedMembersProfilesToTrip(trip, projection);
+  await addRequestedMembersProfilesToTrip(trip, projection);
+
+  async function updateMemberProfiles(members) {
+    return Promise.all(
+      members.map(async (member) => {
+        member.profilePic = await getObjectsFromS3Bucket(
+          "",
+          member.profilePic,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+        );
+        return member;
+      })
+    );
+  }
+
+  const [updatedJoinedMembers, updatedRequestingMembers] = await Promise.all([
+    updateMemberProfiles(trip.joinedMembers),
+    updateMemberProfiles(trip.requestingMembers),
+  ]);
+
+  trip.joinedMembers = updatedJoinedMembers;
+  trip.requestingMembers = updatedRequestingMembers;
+}
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
@@ -147,7 +187,7 @@ async function createTrip(payload, files, userId) {
     const queryEndDate = dateFromDateString(endDate);
     payload.startDate = queryStartDate;
     payload.endDate = queryEndDate;
-    payload.tripMembers = [user];
+    payload.tripMembers = [userId];
     tripValidator.validateTripPayload(payload);
 
     const tripId = uuidv4();
@@ -179,7 +219,7 @@ async function createTrip(payload, files, userId) {
 
 async function getTripById(tripId) {
   try {
-    const trip = await tripRepository.findTripWithTripId(tripId);
+    let trip = await tripRepository.findTripWithTripId(tripId);
     if (!trip) {
       throw new ValidationError(`Trip not found for tripId=${tripId}`, 404);
     }
@@ -189,21 +229,14 @@ async function getTripById(tripId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    const updatedMembersPromises = await trip.tripMembers.map(
-      async (member) => {
-        member.profilePic = await getObjectsFromS3Bucket(
-          "",
-          member.profilePic,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-        );
-        return member;
-      }
+    const fetchedTrip = trip.toObject();
+    await updateMembersProfilesInTrip(
+      fetchedTrip,
+      USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    trip.tripMembers = await Promise.all(updatedMembersPromises);
-
     logger.info(`fetched trip with tripId=${tripId}, trip=${trip}`);
-    return trip;
+    return fetchedTrip;
   } catch (error) {
     logger.error(
       `Error while fetching trip with tripId=${tripId}, error=${error}`
@@ -314,10 +347,21 @@ async function getTripsByUser(filter, userId) {
       trips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
     );
+
+    const fetchedTrips = trips.map((trip) => trip.toObject());
+    await Promise.all(
+      fetchedTrips.map(async (trip) => {
+        await updateMembersProfilesInTrip(
+          trip,
+          USER_PROFILE_PROJECTION_IN_SEARCH_CARD
+        );
+      })
+    );
+
     logger.info(
       `Fetched trips with filter=${filter} for user with userId=${userId}, trips=${trips}`
     );
-    return { trips, newOffset };
+    return { trips: fetchedTrips, newOffset };
   } catch (error) {
     logger.error(
       `failed to fetch trips for user with userId=${userId}, filter=${filter}, error=${error}`
@@ -354,8 +398,19 @@ async function getTripsWithFilter(filter, userId) {
       trips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
     );
+
+    const fetchedTrips = trips.map((trip) => trip.toObject());
+
+    await Promise.all(
+      fetchedTrips.map(async (trip) => {
+        await updateMembersProfilesInTrip(
+          trip,
+          USER_PROFILE_PROJECTION_IN_SEARCH_CARD
+        );
+      })
+    );
     logger.info(`Fetched trips with filter=${filter}, trips=${trips}`);
-    return { trips, newOffset };
+    return { trips: fetchedTrips, newOffset };
   } catch (error) {
     logger.error(`failed to fetch trips with filter=${filter}, error=${error}`);
     throw error;
@@ -395,40 +450,6 @@ async function deleteTrip(tripId, userId) {
   }
 }
 
-async function generateTripLink(tripId, userId) {
-  try {
-    const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
-      tripId,
-      userId
-    );
-
-    if (!tripInDatabase) {
-      throw new ValidationError(
-        `Trip not found or user doesn't have permssion to generate trip link for trip with tripId=${tripId}, userId=${userId}`,
-        404
-      );
-    }
-
-    if (tripInDatabase.totalMembers >= 20) {
-      throw new ValidationError(
-        `Exceeded maximum members allowed per trip, tripId=${tripId}, userId=${userId}, totalMembers=${tripInDatabase.totalMembers}`,
-        403
-      );
-    }
-    return generateToken(
-      tripId,
-      process.env.SECRET_KEY_FOR_GENERATING_TRIP_LINK,
-      "2h"
-    );
-  } catch (error) {
-    logger.error(
-      `Error occurred while generating trip link for user, userId=${userId}, tripId=${tripId}`
-    );
-    throw error;
-  }
-}
-
-
 async function getWishlistedTrips(filter, userId) {
   try {
     const {
@@ -437,11 +458,10 @@ async function getWishlistedTrips(filter, userId) {
     } = filter;
     tripValidator.validateLimit(limit);
 
-    const userMetadata =
-      await userMetadataRepository.findWishlistedTripsByUserId(userId);
-    const { wishlistedTripIds } = userMetadata;
+    const userTrips = await userTripsRepository.findUserTripsUserId(userId);
+    const { wishlistedTripsIds } = userTrips;
 
-    if (!wishlistedTripIds || wishlistedTripIds.length == 0) {
+    if (!wishlistedTripsIds || wishlistedTripsIds.length == 0) {
       throw new ValidationError(
         `No wishlisted trips for userId=${userId}`,
         404
@@ -453,13 +473,16 @@ async function getWishlistedTrips(filter, userId) {
       null,
       userId,
       true,
-      wishlistedTripIds
+      wishlistedTripsIds
     );
 
-    var { trips: wishlistedTrips, newOffset } =
-      await getTripsUsingQueryWithLimitAndOffset(query, limit, offset);
+    var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
+      query,
+      limit,
+      offset
+    );
 
-    if (!wishlistedTrips || wishlistedTrips.length === 0) {
+    if (!trips || trips.length === 0) {
       throw new ValidationError(
         `No wishlisted trips found with the filter=${filter}, query=${query}`,
         404
@@ -467,14 +490,24 @@ async function getWishlistedTrips(filter, userId) {
     }
 
     await addCroppedDestinationImagesToTrips(
-      wishlistedTrips,
+      trips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
     );
 
-    logger.info(
-      `Fetched wishlisted trips with filter=${filter} for user with userId=${userId}, trips=${wishlistedTrips}`
+    const fetchedTrips = trips.map((trip) => trip.toObject());
+    await Promise.all(
+      fetchedTrips.map(async (trip) => {
+        await updateMembersProfilesInTrip(
+          trip,
+          USER_PROFILE_PROJECTION_IN_SEARCH_CARD
+        );
+      })
     );
-    return { trips: wishlistedTrips, newOffset };
+
+    logger.info(
+      `Fetched wishlisted trips with filter=${filter} for user with userId=${userId}, trips=${trips}`
+    );
+    return { trips: fetchedTrips, newOffset };
   } catch (error) {
     logger.error(
       `failed to fetch wishlisted trips for user with userId=${userId}, filter=${filter}, error=${error}`
@@ -486,13 +519,14 @@ async function getWishlistedTrips(filter, userId) {
 async function addWishlistTrip(tripId, userId) {
   try {
     const addedTrip =
-      await userMetadataRepository.addTripToWishlistedTripsByUserId(
+      await userTripsRepository.addTripToWishlistedTripsByUserId(
         userId,
         tripId
       );
     logger.info(
       `added tripId=${tripId} to wishlisted trips for user with userId=${userId} with result=${addedTrip}`
     );
+    return addedTrip;
   } catch (error) {
     logger.error(
       `failed to add tripId=${tripId} to wishlisted trips for user with userId=${userId}`
@@ -504,7 +538,7 @@ async function addWishlistTrip(tripId, userId) {
 async function removeWishlistedTrip(tripId, userId) {
   try {
     const addedTrip =
-      await userMetadataRepository.removeTripFromWishlistedTripsByUserId(
+      await userTripsRepository.removeTripFromWishlistedTripsByUserId(
         userId,
         tripId
       );
@@ -519,25 +553,44 @@ async function removeWishlistedTrip(tripId, userId) {
   }
 }
 
-async function addMembersToTrip(trip, user, userIds) {
+async function requestJoinTrip(payload, userId) {
   try {
-    if (trip.userId != user.userId) {
-      throw new ValidationError(`User not authorised to edit trip`, 401);
+    const { tripId } = payload;
+    const userTrip = await userTripsRepository.findUserTripsUserId(userId);
+    if(userTrip?.requestedTripsIds.includes(tripId) || userTrip?.joinedTripsIds.includes(tripId)){
+      throw new ValidationError("User already part of trip", 400);
     }
-    const users = await userProfileRepository.findUserByUserId(userIds, USER_PROFILE_PROJECTION_IN_TRIP_MEMBERS);
-
-    const membersToAdd = users.map((user) => ({
-      userId: user.userId,
-      username: user.username,
-      emailId: user.emailId,
-      profilePic: user.profilePic,
-    }));
-
-    const updatedTrip = await tripRepository.addMembersToTrip(trip.tripId, membersToAdd);
-    await userProfileRepository.addTripToUsers(userIds, trip.tripId);
-    return updatedTrip;
+    const updatedUser = await userTripsRepository.addTripToRequestedTrips(
+      tripId,
+      userId
+    );
+    const updatedTrip = await tripRepository.addMemberToTrip(tripId, userId);
+    return { updatedTrip, updatedUser };
   } catch (error) {
-    logger.error(`Error occured while adding members trip with tripId=${trip.tripId}, userIds=${userIds}, error=${error}`);
+    logger.error(
+      `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function joinMemberTrip(payload, userId) {
+  try {
+    const { tripId } = payload;
+    const userTrip = await userTripsRepository.findUserTripsUserId(userId);
+    if(userTrip.joinedTripsIds.includes(tripId)){
+      throw new ValidationError("User already part of trip", 400);
+    }
+    const updatedUser = await userTripsRepository.addTripToJoinedTrips(
+      tripId,
+      userId
+    );
+    const updatedTrip = await tripRepository.joinMemberToTrip(tripId, userId);
+    return { updatedTrip, updatedUser };
+  } catch (error) {
+    logger.error(
+      `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+    );
     throw error;
   }
 }
@@ -549,9 +602,9 @@ module.exports = {
   editTrip,
   deleteTrip,
   getTripsByUser,
-  generateTripLink,
   getWishlistedTrips,
   addWishlistTrip,
   removeWishlistedTrip,
-  addMembersToTrip,
+  requestJoinTrip,
+  joinMemberTrip,
 };

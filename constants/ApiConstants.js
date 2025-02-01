@@ -11,8 +11,6 @@ const EDIT_USER_PROFILE = "edit_user_profile";
 const DELETE_USER_PROFILE = "delete_user_profile";
 const OTP_VERIFICATION = "otp_verification";
 const RESEND_OTP = "resend_otp";
-const FORGOT_PASSWORD = "forgot_password";
-const RESET_PASSWORD = "reset_password";
 const DELETE_TRIP = "delete_trip";
 const CREATE_TRIP = "create_trip";
 const EDIT_TRIP = "edit_trip";
@@ -29,11 +27,12 @@ const GET_WISHLISTED_TRIPS = "get_wishlisted_trips";
 const ADD_WISHLIST_TRIP = "add_wishlist_trip";
 const REMOVE_WISHLIST_TRIP = "remove_wishlist_trip";
 const FIND_USER_PROFILE = "find_user_profile";
-const ADD_MEMBERS_TO_TRIP = "add_members_to_trip";
 const SEND_OTP_TO_PARTNERS = "send_otp_to_partners";
 const PARTNER_LOGIN = "partner_login";
 const SET_AGENT_DATA = "set_agent_data";
 const GET_AGENT_DATA = "get_agent_data";
+const REQUEST_JOIN_TRIP = "request_join_trip";
+const ADD_MEMBER_TO_TRIP = "add_member_to_trip";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -49,8 +48,6 @@ module.exports = {
   DELETE_USER_PROFILE,
   OTP_VERIFICATION,
   RESEND_OTP,
-  FORGOT_PASSWORD,
-  RESET_PASSWORD,
   DELETE_TRIP,
   CREATE_TRIP,
   GET_TRIP_BY_ID,
@@ -67,9 +64,10 @@ module.exports = {
   ADD_WISHLIST_TRIP,
   REMOVE_WISHLIST_TRIP,
   FIND_USER_PROFILE,
-  ADD_MEMBERS_TO_TRIP,
   SEND_OTP_TO_PARTNERS,
   PARTNER_LOGIN,
   SET_AGENT_DATA,
-  GET_AGENT_DATA
+  GET_AGENT_DATA,
+  REQUEST_JOIN_TRIP,
+  ADD_MEMBER_TO_TRIP,
 };
