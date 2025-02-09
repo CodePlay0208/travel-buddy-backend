@@ -56,6 +56,8 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
     if (updateData.profilePic)
       sanitizedUpdateData.profilePic = updateData.profilePic;
+    if(updateData.gender)
+      sanitizedUpdateData,gender = updateData.gender;
 
     if (newProfilePic && newProfilePic.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
