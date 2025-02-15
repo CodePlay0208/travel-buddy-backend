@@ -117,4 +117,11 @@ router
     leaveTripHandler
   );
 
+router
+  .route("/removeMemberAsHost")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    removeMemberAsHostHandler
+  );
+
 module.exports = router;

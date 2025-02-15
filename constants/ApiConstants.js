@@ -36,6 +36,7 @@ const ADD_MEMBER_TO_TRIP = "add_member_to_trip";
 const LEAVE_TRIP = "leave_trip";
 const GET_REQUESTED_TRIPS = "get_requested_trips";
 const GET_JOINED_TRIPS = "get_joined_trips";
+const REMOVE_MEMBER_AS_HOST = "remove_member_as_host";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -75,5 +76,6 @@ module.exports = {
   ADD_MEMBER_TO_TRIP,
   LEAVE_TRIP,
   GET_REQUESTED_TRIPS,
-  GET_JOINED_TRIPS
+  GET_JOINED_TRIPS,
+  REMOVE_MEMBER_AS_HOST
 };

@@ -687,7 +687,7 @@ async function addMemberTrip(payload, userId) {
 async function leaveTrip(payload, userId) {
   try {
     const { tripId } = payload;
-    const query = createQueryForUserTrips(userId, tripId, true, null, null);
+    const query = createQueryForUserTrips(userId, tripId, false, null, null);
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrip) {
       throw new ValidationError("User hasn't joined yet", 400);
@@ -842,6 +842,35 @@ async function getRequestedMembers(tripId) {
   }
 }
 
+async function removeMemberAsHost(payload, userId) {
+  try {
+    const { tripId, memberId } = payload;
+    const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
+      tripId,
+      userId
+    );
+    if (!tripInDatabase) {
+      throw new ValidationError(
+        "User not authorized to remove member from a trip",
+        401
+      );
+    }
+    const query = createQueryForUserTrips(memberId, tripId, false, null, null);
+    const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
+    if (!userTrip) {
+      throw new ValidationError("User hasn't joined yet", 400);
+    }
+
+    await userTripsRepository.updateJoinTripForUser(userId, tripId, false);
+  } catch (error) {
+    logger.error(
+      `Error occured while removing user=${payload.memberId} with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+
 module.exports = {
   createTrip,
   getTripById,
@@ -858,4 +887,5 @@ module.exports = {
   getRequestedTrips,
   getJoinedTrips,
   getRequestedMembers,
+  removeMemberAsHost
 };
