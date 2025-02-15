@@ -181,32 +181,34 @@ async function createTrip(payload, files, userId) {
 
     const destinationImages = uploadedObjectNames;
 
-    const { startDate, endDate } = payload;
-
-    const queryStartDate = dateFromDateString(startDate);
-    const queryEndDate = dateFromDateString(endDate);
-    payload.startDate = queryStartDate;
-    payload.endDate = queryEndDate;
-    payload.tripMembers = [userId];
-    tripValidator.validateTripPayload(payload);
-
-    const tripId = uuidv4();
-
-    const newTrip = {
-      ...payload,
-      destinationImages,
-      croppedDestinationImages,
-      userId,
-      tripId,
-    };
-
-    const createdTrip = await tripRepository.createTrip(newTrip);
-    logger.info(
-      `Trip with payload=${JSON.stringify(
-        payload
-      )}, tripId=${tripId} created successfully`
-    );
-    return { createdTrip, allObjectsUploaded };
+    const { tripDates} = payload;
+    tripDates.forEach( async (tripDate) => {
+      const { startDate, endDate} = tripDate;
+      const queryStartDate = dateFromDateString(startDate);
+      const queryEndDate = dateFromDateString(endDate);
+      payload.startDate = queryStartDate;
+      payload.endDate = queryEndDate;
+      payload.tripMembers = [userId];
+      tripValidator.validateTripPayload(payload);
+  
+      const tripId = uuidv4();
+  
+      const newTrip = {
+        ...payload,
+        destinationImages,
+        croppedDestinationImages,
+        userId,
+        tripId,
+      };
+  
+      const createdTrip = await tripRepository.createTrip(newTrip);
+      logger.info(
+        `Trip with payload=${JSON.stringify(
+          payload
+        )}, tripId=${tripId} created successfully`
+      );
+    })
+    return ;
   } catch (error) {
     logger.error(
       `Error creating trip with payload=${JSON.stringify(

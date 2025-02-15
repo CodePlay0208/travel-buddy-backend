@@ -32,9 +32,8 @@ const createTripHandler = asyncHandler(async (req, res) => {
     const { files } = req;
     const payload = req.body;
 
-    const { createdTrip, allObjectsUploaded } =
-      await tripDataService.createTrip(payload, files, user);
-    res.status(201).json({ createdTrip, allFilesUploaded: allObjectsUploaded });
+    await tripDataService.createTrip(payload, files, user);
+    res.status(201).json();
     const endTime = Date.now();
     logger.info(
       `API_NAME=${CREATE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
