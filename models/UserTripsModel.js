@@ -28,4 +28,19 @@ UserTrips.index(
   { name: "userId_tripId_composite_index" }
 );
 
+UserTrips.index(
+  { tripId: 1, isWishlisted: 1},
+  { name: "tripId_isWishlited_composite_index" }
+);
+
+UserTrips.index(
+  { tripId: 1, isJoined: 1},
+  { name: "tripId_isJoined_composite_index" }
+);
+
+UserTrips.index(
+  { tripId: 1, isRequested: 1},
+  { name: "tripId_isRequested_composite_index" }
+);
+
 module.exports = mongoose.model("UserTrips", UserTrips);

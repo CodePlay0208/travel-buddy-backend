@@ -16,6 +16,8 @@ const {
   ADD_WISHLIST_TRIP,
   REMOVE_WISHLIST_TRIP,
   ADD_MEMBER_TO_TRIP,
+  LEAVE_TRIP,
+  GET_REQUESTED_TRIPS,
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
@@ -33,7 +35,7 @@ const createTripHandler = asyncHandler(async (req, res) => {
     const payload = req.body;
 
     const tripId = await tripDataService.createTrip(payload, files, user);
-    res.status(201).json({tripId});
+    res.status(201).json({ tripId });
     const endTime = Date.now();
     logger.info(
       `API_NAME=${CREATE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -60,7 +62,8 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${GET_TRIP_BY_ID}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const { tripId } = req.params;
-    const trip = await tripDataService.getTripById(tripId);
+    const userId = req.userId;
+    const trip = await tripDataService.getTripById(tripId, userId);
     res.status(200).json(trip);
     const endTime = Date.now();
     logger.info(
@@ -255,8 +258,8 @@ const addWishlistTripHandler = asyncHandler(async (req, res) => {
     const tripId = req.params.tripId;
     const userId = req.userId;
 
-    const updatedUserTrips = await tripDataService.addWishlistTrip(tripId, userId);
-    res.status(200).json({updatedUserTrips});
+    await tripDataService.addWishlistTrip(tripId, userId);
+    res.status(200).json();
 
     const endTime = Date.now();
     logger.info(
@@ -316,8 +319,8 @@ const addMemberToTripHandler = asyncHandler(async (req, res) => {
     );
     const userId = req.userId;
 
-    const {updatedTrip, updatedUser} = await tripDataService.requestJoinTrip(req.body, userId);
-    res.status(200).json({ updatedTrip, updatedUser });
+    await tripDataService.addMemberTrip(req.body, userId);
+    res.status(200).json();
 
     const endTime = Date.now();
     logger.info(
@@ -346,8 +349,8 @@ const joinRequestHandler = asyncHandler(async (req, res) => {
     );
     const userId = req.userId;
 
-    const {updatedTrip, updatedUser} = await tripDataService.joinMemberTrip(req.body, userId);
-    res.status(200).json({ updatedTrip, updatedUser });
+    await tripDataService.requestJoinTrip(req.body, userId);
+    res.status(200).json();
 
     const endTime = Date.now();
     logger.info(
@@ -358,6 +361,100 @@ const joinRequestHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error(
       `API_NAME=${REQUEST_JOIN_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const leaveTripHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${LEAVE_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+
+    await tripDataService.leaveTrip(req.body, userId);
+    res.status(200).json();
+
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${LEAVE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${LEAVE_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const getRequestedTripsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_REQUESTED_TRIPS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+    const filter = req.query;
+    const { trips, newOffset } = await tripDataService.getRequestedTrips(
+      filter,
+      userId
+    );
+    res.status(200).json({ trips, offset: newOffset });
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_REQUESTED_TRIPS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GET_REQUESTED_TRIPS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const getJoinedTripsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_JOINED_TRIPS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+    const filter = req.query;
+    const { trips, newOffset } = await tripDataService.getJoinedTrips(
+      filter,
+      userId
+    );
+    res.status(200).json({ trips, offset: newOffset });
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_JOINED_TRIPS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GET_JOINED_TRIPS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -379,4 +476,7 @@ module.exports = {
   removeWishlistedTripHandler,
   joinRequestHandler,
   addMemberToTripHandler,
+  leaveTripHandler,
+  getRequestedTripsHandler,
+  getJoinedTripsHandler
 };

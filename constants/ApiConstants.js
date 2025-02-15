@@ -33,6 +33,9 @@ const SET_AGENT_DATA = "set_agent_data";
 const GET_AGENT_DATA = "get_agent_data";
 const REQUEST_JOIN_TRIP = "request_join_trip";
 const ADD_MEMBER_TO_TRIP = "add_member_to_trip";
+const LEAVE_TRIP = "leave_trip";
+const GET_REQUESTED_TRIPS = "get_requested_trips";
+const GET_JOINED_TRIPS = "get_joined_trips";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -70,4 +73,7 @@ module.exports = {
   GET_AGENT_DATA,
   REQUEST_JOIN_TRIP,
   ADD_MEMBER_TO_TRIP,
+  LEAVE_TRIP,
+  GET_REQUESTED_TRIPS,
+  GET_JOINED_TRIPS
 };

@@ -2,25 +2,15 @@ const UserTrips = require("../models/UserTripsModel");
 const logger = require("../logger");
 const { ValidationError } = require("../exceptions/ValidationError");
 
-async function findUserTripsUserId(userId) {
-  try {
-    const userTrips = await UserTrips.findOne({ userId });
-    return userTrips;
-  } catch (error) {
-    logger.error(
-      `Error occurred while fetching user trips for user with userId=${userId}, error=${error}`
-    );
-    throw new Error(
-      `Error occurred while fetching user trips for user with userId=${userId}, error=${error}`
-    );
-  }
-}
-
-async function addTripToWishlistedTripsByUserId(userId, tripId) {
+async function updateWishlistTripForUser(userId, tripId, isWishlisted) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId },
-      { $addToSet: { wishlistedTripsIds: tripId } },
+      { userId, tripId },
+      {
+        $set: {
+          isWishlisted,
+        },
+      },
       { new: true, upsert: true }
     );
     return result;
@@ -34,54 +24,16 @@ async function addTripToWishlistedTripsByUserId(userId, tripId) {
   }
 }
 
-async function removeTripFromWishlistedTripsByUserId(userId, tripId) {
+async function updateJoinTripForUser(userId, tripId, isJoined) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId },
-      { $pull: { wishlistedTripsIds: tripId } },
-      { new: true }
-    );
-
-    if (!result) {
-      throw new ValidationError(`user with userId=${userId} not found`, 400);
-    }
-  } catch (error) {
-    logger.error(
-      `Error occurred while removing tripId=${tripId} from wishlisted trips for user with userId=${userId}, error=${error}`
-    );
-    throw new Error(
-      `Error occurred while removing tripId=${tripId} from wishlisted trips for user with userId=${userId}, error=${error}`
-    );
-  }
-}
-
-async function addTripToRequestedTrips(tripId, userId) {
-  try {
-    const result = await UserTrips.findOneAndUpdate(
-      { userId },
-      { $addToSet: { requestedTripsIds: tripId } },
-      { new: true, upsert: true}
-    );
-    return result;
-  } catch (error) {
-    logger.error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
-    );
-    throw new Error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
-    );
-  }
-}
-
-async function addTripToJoinedTrips(tripId, userId) {
-  try {
-    const result = await UserTrips.findOneAndUpdate(
-      { userId },
+      { userId, tripId },
       {
-        $pull: { requestedTripsIds: tripId },
-        $addToSet: { joinedTripsIds: tripId },
+        $set: {
+          isJoined
+        },
       },
-      { new: true, upsert: true}
+      { new: true, upsert: true }
     );
     return result;
   } catch (error) {
@@ -90,14 +42,59 @@ async function addTripToJoinedTrips(tripId, userId) {
     );
     throw new Error(
       `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+    );
+  }
+}
+
+async function updateRequestTripForUser(userId, tripId, isRequested) {
+  try {
+    const result = await UserTrips.findOneAndUpdate(
+      { userId, tripId },
+      {
+        $set: {
+          isRequested
+        },
+      },
+      { new: true, upsert: true }
+    );
+    return result;
+  } catch (error) {
+    logger.error(
+      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+    );
+  }
+}
+
+async function getUserTripsUsingQuery(
+  query,
+  skip = 0,
+  limitNumber = process.env.LIMIT_FOR_SENDING_WISHLISTED_TRIPS
+) {
+  try {
+    const usersInTrip = await UserTrips.findOne(query)
+      .skip(skip)
+      .limit(limitNumber);
+    return usersInTrip;
+  } catch (error) {
+    logger.error(
+      `Error occurred while getting data for user trip with query=${JSON.stringify(
+        query
+      )}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while getting data for user trip with query=${JSON.stringify(
+        query
+      )}, error=${error}`
     );
   }
 }
 
 module.exports = {
-  findUserTripsUserId,
-  addTripToWishlistedTripsByUserId,
-  removeTripFromWishlistedTripsByUserId,
-  addTripToRequestedTrips,
-  addTripToJoinedTrips,
+  getUserTripsUsingQuery,
+  updateWishlistTripForUser,
+  updateJoinTripForUser,
+  updateRequestTripForUser,
 };
