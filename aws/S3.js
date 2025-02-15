@@ -7,14 +7,13 @@ const {
 } = require("@aws-sdk/client-s3");
 const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { randomFileName } = require("../Utils");
 const logger = require("../logger");
 
 const uploadObjectToS3Bucket = asyncHandler(
   async (path = "", object, s3Bucket) => {
     try {
       logger.info(`Uploading object to s3bucket=${s3Bucket} at path=${path}`);
-      const uploadedObjectName = randomFileName(object.originalname);
+      const uploadedObjectName = object.originalname;
       const params = {
         Bucket: s3Bucket,
         Key: path + uploadedObjectName,
@@ -105,7 +104,7 @@ const getObjectsFromS3Bucket = asyncHandler(
             s3Bucket
           );
           if (uploadedFile != null) {
-            uploadedObjectUrls.push(uploadedFile);
+            uploadedObjectUrls.push({"object" : object, "preSignedUrl": uploadedFile});
           }
         })
       );
@@ -114,7 +113,6 @@ const getObjectsFromS3Bucket = asyncHandler(
         `Error while fetching objects from s3bucket=${s3Bucket}, error=${error}`
       );
     }
-
     return uploadedObjectUrls;
   }
 );
