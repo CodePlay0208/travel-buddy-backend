@@ -19,6 +19,8 @@ const {
   LEAVE_TRIP,
   GET_REQUESTED_TRIPS,
   REMOVE_MEMBER_AS_HOST,
+  GET_JOINED_TRIPS,
+  GET_REQUESTED_MEMBERS
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
@@ -473,12 +475,12 @@ const removeMemberAsHostHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${REMOVE_MEMBER_AS_HOST}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const userId = req.userId;
-    const filter = req.query;
-    const { trips, newOffset } = await tripDataService.removeMemberAsHost(
+    const filter = req.body;
+    await tripDataService.removeMemberAsHost(
       filter,
       userId
     );
-    res.status(200).json({ trips, offset: newOffset });
+    res.status(200).json();
     const endTime = Date.now();
     logger.info(
       `API_NAME=${REMOVE_MEMBER_AS_HOST}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -488,6 +490,36 @@ const removeMemberAsHostHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error(
       `API_NAME=${REMOVE_MEMBER_AS_HOST}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const getRequestedMembersHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_REQUESTED_MEMBERS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const {tripId} = req.body;
+    const trip = await tripDataService.getRequestedMembers(
+      tripId
+    );
+    res.status(200).json(trip);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_REQUESTED_MEMBERS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GET_REQUESTED_MEMBERS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -512,5 +544,6 @@ module.exports = {
   leaveTripHandler,
   getRequestedTripsHandler,
   getJoinedTripsHandler,
-  removeMemberAsHostHandler
+  removeMemberAsHostHandler,
+  getRequestedMembersHandler
 };

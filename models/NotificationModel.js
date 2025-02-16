@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
+const NotificationEvents = require("../enums/notificationEvents");
 
 const NotificationModel = new mongoose.Schema({
-  NotificationId: {type: String, required: true, unique:true},
+  notificationId: {type: String, required: true, unique:true},
   senderId: { type: String, required: true },
   tripId: { type: String, required: true },
   receiverId: {type: String, required: true},
-  content: {type: String, required: true},
+  event: { type: String, enum: Object.values(NotificationEvents) },
   createdAt: { type: Date, default: Date.now},
 });
 

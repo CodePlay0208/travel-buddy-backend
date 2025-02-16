@@ -18,6 +18,8 @@ const {
   leaveTripHandler,
   getRequestedTripsHandler,
   getJoinedTripsHandler,
+  removeMemberAsHostHandler,
+  getRequestedMembersHandler,
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -69,20 +71,6 @@ router
   );
 
 router
-  .route("/getRequestedTrips")
-  .get(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    getRequestedTripsHandler
-  );
-
-router
-  .route("/getJoinedTrips")
-  .get(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    getJoinedTripsHandler
-  );
-
-router
   .route("/addWishlistTrip/:tripId")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
@@ -97,17 +85,31 @@ router
   );
 
 router
+  .route("/getRequestedTrips")
+  .get(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    getRequestedTripsHandler
+  );
+
+router
+  .route("/getJoinedTrips")
+  .get(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    getJoinedTripsHandler
+  );
+
+router
   .route("/requestJoinTrip")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    addMemberToTripHandler
+    joinRequestHandler
   );
 
 router
   .route("/addMemberTrip")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    joinRequestHandler
+    addMemberToTripHandler
   );
 
 router
@@ -123,5 +125,7 @@ router
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     removeMemberAsHostHandler
   );
+
+router.route("/getRequestedMembers").post(getRequestedMembersHandler);
 
 module.exports = router;

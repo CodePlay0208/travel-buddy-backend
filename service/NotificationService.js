@@ -1,12 +1,20 @@
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
 const notificationRepository = require("../repositories/NotificationRepository");
+const userProfileRepository = require("../repositories/UserProfileRepository");
 const newsletterValidator = require("../validators/NewsletterValidator");
 
 async function getNotification(userId) {
   try {
-    const notifications =
+    const fetchedNotifications =
       await notificationRepository.getNotificationsByReceiverId(userId);
+     const notifications = Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
+      let notification = fetchedNotification.toObject();
+       const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
+        notification.username = userProfile.username;
+        notification.profilePic = userProfile.profilePic;
+        return notification;
+    }));
     logger.info(
       `Successfully sent notifications=${JSON.stringify(
         notifications

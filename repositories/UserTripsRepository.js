@@ -74,7 +74,7 @@ async function getUserTripsUsingQuery(
   limitNumber = process.env.LIMIT_FOR_SENDING_WISHLISTED_TRIPS
 ) {
   try {
-    const usersInTrip = await UserTrips.findOne(query)
+    const usersInTrip = await UserTrips.find(query)
       .skip(skip)
       .limit(limitNumber);
     return usersInTrip;
