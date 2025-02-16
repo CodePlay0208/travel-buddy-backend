@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const UserTrips = new mongoose.Schema({
   userId: { type: String, required: true },
-  tripId: { type: Boolean, required: true },
+  tripId: { type: String, required: true },
   isWishlisted: {type: Boolean, required: true},
   isJoined: {type: Boolean, required: true},
   isRequested: {type: Boolean, required: true}

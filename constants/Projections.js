@@ -10,6 +10,13 @@ const USER_PROFILE_PROJECTION_IN_CHAT = {
   username: 1,
   profilePic: 1,
 };
+
+const USER_PROFILE_PROJECTION_IN_NOTIFICATION = {
+  userId: 1,
+  username: 1,
+  profilePic: 1,
+};
+
 const USER_PROFILE_PROJECTION = {
   userId: 1,
   username: 1,
@@ -40,4 +47,5 @@ module.exports = {
   USER_PROFILE_PROJECTION,
   USER_PROFILE_PROJECTION_IN_SEARCH_CARD,
   USER_PROFILE_PROJECTION_IN_TRIP_DETAILS,
+  USER_PROFILE_PROJECTION_IN_NOTIFICATION,
 };

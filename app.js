@@ -11,6 +11,7 @@ const messageRoute = require("./routes/MessageRoute");
 const miscRoute = require("./routes/MiscRoute");
 const locationRoute = require("./routes/LocationRoute");
 const partnersRoute = require("./routes/PartnersRoute");
+const notificationRoute = require("./routes/NotificationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
@@ -51,6 +52,7 @@ try {
   app.use("/location", locationRoute);
   app.use("/misc", miscRoute);
   app.use("/partners", partnersRoute);
+  app.use("/notification", notificationRoute);
   app.get('/health/status', (req, res) => {
     logger.info(`Responding to Health Check Status`)
     res.status(200).send('OK'); 
