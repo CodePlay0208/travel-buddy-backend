@@ -58,7 +58,7 @@ async function getNotificationsByNotificationId(
 
 async function deleteNotificationById(notificationId) {
     try {
-      await Notification.deleteMany({ notificationId });
+      await Notifications.deleteMany({ notificationId });
     } catch (error) {
       logger.error(
         `Error occurred while deleting notification with id=${notificationId}, error=${error}`
