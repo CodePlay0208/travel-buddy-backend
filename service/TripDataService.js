@@ -220,11 +220,12 @@ async function createTrip(payload, files, userId) {
     let tripIds = [];
 
     const { tripDates } = payload;
-    tripDates.forEach(async (tripDate) => {
-      files.forEach((file) => {
-        file.originalname = randomFileName(file.originalname);
-      });
-  
+    tripDates?.forEach(async (tripDate) => {
+      if(files){
+        files?.forEach((file) => {
+          file.originalname = randomFileName(file.originalname);
+        });
+      }
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
           process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
