@@ -348,12 +348,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
       );
     }
 
-    newDestinationImages.forEach((newDestinationImage) => {
-      newDestinationImage.originalname = randomFileName(
-        newDestinationImage.originalname
-      );
-    });
-
+  
     const queryStartDate = dateFromDateString(newPayload.startDate);
     const queryEndDate = dateFromDateString(newPayload.endDate);
 
@@ -379,6 +374,12 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
       (image) => !removedImages.includes(image)
     );
     if (newDestinationImages && newDestinationImages.length > 0) {
+      newDestinationImages.forEach((newDestinationImage) => {
+        newDestinationImage.originalname = randomFileName(
+          newDestinationImage.originalname
+        );
+      });
+  
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
           process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
