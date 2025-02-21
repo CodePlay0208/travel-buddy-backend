@@ -63,13 +63,6 @@ const tripValidator = {
       );
     }
   },
-
-  validateTripPayload: (payload) => {
-    const { startDate, endDate, totalMembers, age, gender, description } =
-      payload;
-
-    tripValidator.validateStartEndDateAndEndDate(startDate, endDate);
-  },
 };
 
 module.exports = tripValidator;
