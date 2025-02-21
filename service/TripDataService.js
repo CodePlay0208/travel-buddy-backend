@@ -249,7 +249,6 @@ async function createTrip(payload, files, userId) {
       const queryEndDate = dateFromDateString(endDate);
       payload.startDate = queryStartDate;
       payload.endDate = queryEndDate;
-      tripValidator.validateTripPayload(payload);
 
       const tripId = uuidv4();
       tripIds.push(tripId);
