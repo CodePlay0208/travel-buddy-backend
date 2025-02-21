@@ -219,7 +219,8 @@ async function createTrip(payload, files, userId) {
 
     let tripIds = [];
 
-    const { tripDates } = payload;
+    const { tripDates: strTripDates } = payload;
+    const tripDates = Array.from(strTripDates);
     tripDates?.forEach(async (tripDate) => {
       if(files){
         files?.forEach((file) => {

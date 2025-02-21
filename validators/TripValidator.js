@@ -53,30 +53,6 @@ const tripValidator = {
     tripValidator.validateDate(endDate);
   },
 
-  validateTotalMembers: (totalMembers) => {
-    totalMembers = Number(totalMembers);
-    if (
-      totalMembers < 0 ||
-      totalMembers > parseInt(process.env.LIMIT_FOR_TOTAL_MEMBERS_IN_A_TRIP,10)
-    ) {
-      throw new ValidationError(`Invalid Total Members=${totalMembers}`);
-    }
-  },
-
-  validateAge: (age) => {
-    age = Number(age);
-    if (age < 0 || age > parseInt(process.env.MAXIMUM_ALLOWED_AGE_OF_A_PERSON, 10)) {
-      throw new ValidationError(`Invalid Age=${age}`);
-    }
-  },
-
-  validateGender: (gender) => {
-    const validGenders = Object.values(Gender);
-    if (!validGenders.includes(gender)) {
-      throw new ValidationError(`Invalid Gender=${gender}`);
-    }
-  },
-
   validateDescription: (description) => {
     if (
       description &&
@@ -93,9 +69,6 @@ const tripValidator = {
       payload;
 
     tripValidator.validateStartEndDateAndEndDate(startDate, endDate);
-    tripValidator.validateTotalMembers(totalMembers);
-    tripValidator.validateAge(age);
-    tripValidator.validateGender(gender);
   },
 };
 
