@@ -117,8 +117,7 @@ function addDestinationToQuery(query, destination) {
 function addDateToQuery(query, queryDate) {
   if (queryDate) {
     if (!isNaN(queryDate)) {
-      query.startDate = { $lte: queryDate };
-      query.endDate = { $gte: queryDate };
+      query.startDate = { $eq: queryDate };
     } else {
       logger.error("Invalid date passed in query");
       throw new ValidationError("Invalid Date Passed");
@@ -608,12 +607,12 @@ async function getTripsWithFilter(filter, userId) {
 
     if (trips.length === 0) {
       throw new ValidationError(
-        `No trips found with the filter=${filter}, query=${query}`,
+        `No trips found with the filter=${JSON.stringify(filter)}, query=${JSON.stringify(query)}`,
         404
       );
     }
 
-    const fetchedTrips = trips.map((trip) => trip.toObject());
+    let fetchedTrips = trips.map((trip) => trip.toObject());
 
     fetchedTrips = await Promise.all(
       fetchedTrips.map(async (trip) => {
