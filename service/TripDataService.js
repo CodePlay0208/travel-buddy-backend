@@ -337,9 +337,9 @@ async function getTripById(tripId, userId) {
     fetchedTrip.isRequested = false;
 
     if(userBasedTrips && userBasedTrips.length > 0){
-      fetchedTrip.isJoined = userBasedTrips.isJoined;
-      fetchedTrip.isWishlisted = userBasedTrips.isWishlisted;
-      fetchedTrip.isRequested = userBasedTrips.isRequested;
+      fetchedTrip.isJoined = userBasedTrips[0].isJoined;
+      fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
+      fetchedTrip.isRequested = userBasedTrips[0].isRequested;
     }
     
     await updateJoinedMembersProfilesInTrip(
