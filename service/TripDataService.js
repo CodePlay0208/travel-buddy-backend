@@ -813,7 +813,7 @@ async function addMemberTrip(payload, userId) {
     }
     const query = createQueryForUserTrips(memberId, tripId, null, true, null);
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
-    if (!userTrip || !userTrip.isRequested || userTrip.isJoined) {
+    if (!userTrip || userTrip.length == 0 || !userTrip[0].isRequested || userTrip[0].isJoined) {
       throw new ValidationError(
         "User hasn't requested or has already joined",
         400
