@@ -226,27 +226,31 @@ async function createTrip(payload, userId) {
       const { startDate, endDate } = tripDate;
       const queryStartDate = dateFromDateString(startDate);
       const queryEndDate = dateFromDateString(endDate);
-      
+
       payload.startDate = queryStartDate;
       payload.endDate = queryEndDate;
-    
+
       const tripId = uuidv4();
       tripIds.push(tripId);
-    
+
       const newTrip = {
         ...payload,
         userId,
         tripId,
       };
-    
+
       try {
         const createdTrip = await tripRepository.createTrip(newTrip);
         logger.info(
-          `Trip with payload=${JSON.stringify(payload)}, tripId=${tripId} created successfully`
+          `Trip with payload=${JSON.stringify(
+            payload
+          )}, tripId=${tripId} created successfully`
         );
         return tripId;
       } catch (error) {
-        logger.error(`Error creating trip with tripId=${tripId}, error=${error}`);
+        logger.error(
+          `Error creating trip with tripId=${tripId}, error=${error}`
+        );
       }
     });
 
@@ -378,7 +382,8 @@ async function editTripImages(
     let uploadedCroppedImagesNames =
       tripInDatabase.croppedDestinationImages || [];
     let removedImages = [];
-    if(newPayload.removedDestinationImages) removedImages = Array.from(newPayload.removedDestinationImages);
+    if (newPayload.removedDestinationImages)
+      removedImages = Array.from(newPayload.removedDestinationImages);
 
     uploadedDestinationImages = uploadedDestinationImages.filter(
       (image) => !removedImages.includes(image)
@@ -446,7 +451,6 @@ async function editTripImages(
 }
 
 async function createTripsImages(newPayload, newDestinationImages, userId) {
-  
   const tripIds = Array.from(newPayload.tripIds);
   tripIds.forEach(async (tripId) => {
     try {
@@ -460,6 +464,13 @@ async function createTripsImages(newPayload, newDestinationImages, userId) {
           `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
           403
         );
+      }
+
+      if (
+        tripInDatabase.destinationImages &&
+        tripInDatabase.destinationImages.length > 0
+      ) {
+        throw new ValidationError(`Images already created for this trip`, 400);
       }
 
       if (newDestinationImages && newDestinationImages.length > 0) {
@@ -486,19 +497,6 @@ async function createTripsImages(newPayload, newDestinationImages, userId) {
           newDestinationImages,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
         );
-
-        deleteObjectsFromS3Bucket(
-          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-          newPayload.removedDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-
-        deleteObjectsFromS3Bucket(
-          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-          newPayload.removedDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-
         tripInDatabase.destinationImages = uploadedObjectNames;
         tripInDatabase.croppedDestinationImages = croppedImagesNames;
         allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
@@ -1029,5 +1027,5 @@ module.exports = {
   getRequestedMembers,
   removeMemberAsHost,
   editTripImages,
-  createTripsImages
+  createTripsImages,
 };
