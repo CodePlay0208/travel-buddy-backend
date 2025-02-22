@@ -86,25 +86,26 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
     joinedUsers.push(fetchedUserTrip.userId);
   });
 
-
-
   const fetchedTrips = await tripRepository.findTripsWithQuery({
     tripId: { $in: fetchedUserTripsIds },
   });
-  fetchedTrips.tripMembersIds = await addCroppedDestinationImagesToTrips(
-    fetchedTrips,
+
+  let fetchedTripsObj = fetchedTrips.map((trip) => trip.toObject());
+
+  fetchedTripsObj = await addCroppedDestinationImagesToTrips(
+    fetchedTripsObj,
     process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
   );
 
   await Promise.all(
-    fetchedTrips.map(async (trip) => {
+    fetchedTripsObj.map(async (trip) => {
       await updateJoinedMembersProfilesInTrip(
         trip,
         USER_PROFILE_PROJECTION_IN_SEARCH_CARD
       );
     })
   );
-  return fetchedTrips;
+  return fetchedTripsObj;
 }
 
 function addDestinationToQuery(query, destination) {
@@ -205,7 +206,7 @@ async function addCroppedDestinationImagesToTrips(trips, path) {
   return trips;
 }
 
-async function createTrip(payload, files, userId) {
+async function createTrip(payload, userId) {
   try {
     const user = await userProfileRepository.findUserByUserId(
       userId,
@@ -222,28 +223,6 @@ async function createTrip(payload, files, userId) {
     const { tripDates: strTripDates } = payload;
     const tripDates = Array.from(strTripDates);
     tripDates?.forEach(async (tripDate) => {
-      if(files){
-        files?.forEach((file) => {
-          file.originalname = randomFileName(file.originalname);
-        });
-      }
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-          files,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-  
-      files = await cropAndResizeImages(files);
-  
-      const { uploadedObjectNames: croppedDestinationImages } =
-        await uploadObjectsToS3Bucket(
-          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-          files,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-  
-      const destinationImages = uploadedObjectNames;
       const { startDate, endDate } = tripDate;
       const queryStartDate = dateFromDateString(startDate);
       const queryEndDate = dateFromDateString(endDate);
@@ -255,8 +234,6 @@ async function createTrip(payload, files, userId) {
 
       const newTrip = {
         ...payload,
-        destinationImages,
-        croppedDestinationImages,
         userId,
         tripId,
       };
@@ -303,8 +280,6 @@ async function getTripById(tripId, userId) {
       joinedUsers.push(userTrip.userId);
     });
 
-
-
     fetchedTrip.tripMembersIds = joinedUsers;
 
     const wishlistedQuery = createQueryForUserTrips(
@@ -334,7 +309,7 @@ async function getTripById(tripId, userId) {
   }
 }
 
-async function editTrip(tripId, userId, newPayload, newDestinationImages) {
+async function editTrip(tripId, userId, newPayload) {
   try {
     const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
     if (!tripInDatabase) {
@@ -348,7 +323,6 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
       );
     }
 
-  
     const queryStartDate = dateFromDateString(newPayload.startDate);
     const queryEndDate = dateFromDateString(newPayload.endDate);
 
@@ -362,10 +336,45 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
       }
     });
 
+    const updatedTrip = await tripRepository.updateTrip(tripInDatabase);
+    logger.info(`Trip with tripId=${tripId} updated successfully`);
+
+    return { updatedTrip, allFilesUploaded };
+  } catch (error) {
+    logger.error(
+      `Error editing trip with newPayload=${JSON.stringify(
+        newPayload
+      )}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function editTripImages(
+  tripId,
+  userId,
+  newPayload,
+  newDestinationImages
+) {
+  try {
+    const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
+    if (!tripInDatabase) {
+      throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
+    }
+
+    if (!tripInDatabase.userId == userId) {
+      throw new ValidationError(
+        `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
+        403
+      );
+    }
+
     var allFilesUploaded = true;
-    let uploadedDestinationImages = tripInDatabase.destinationImages;
-    let uploadedCroppedImagesNames = tripInDatabase.croppedDestinationImages;
-    const removedImages = newPayload.removedDestinationImages;
+    let uploadedDestinationImages = tripInDatabase.destinationImages || [];
+    let uploadedCroppedImagesNames =
+      tripInDatabase.croppedDestinationImages || [];
+    let removedImages = [];
+    if(newPayload.removedDestinationImages) removedImages = Array.from(newPayload.removedDestinationImages);
 
     uploadedDestinationImages = uploadedDestinationImages.filter(
       (image) => !removedImages.includes(image)
@@ -379,7 +388,7 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
           newDestinationImage.originalname
         );
       });
-  
+
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
           process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
@@ -430,6 +439,74 @@ async function editTrip(tripId, userId, newPayload, newDestinationImages) {
     );
     throw error;
   }
+}
+
+async function createTripsImages(tripIds, newDestinationImages, userId) {
+  tripIds = Array.from(tripIds);
+  tripIds.forEach(async (tripId) => {
+    try {
+      const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
+      if (!tripInDatabase) {
+        throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
+      }
+
+      if (!tripInDatabase.userId == userId) {
+        throw new ValidationError(
+          `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
+          403
+        );
+      }
+
+      if (newDestinationImages && newDestinationImages.length > 0) {
+        newDestinationImages.forEach((newDestinationImage) => {
+          newDestinationImage.originalname = randomFileName(
+            newDestinationImage.originalname
+          );
+        });
+
+        const { uploadedObjectNames, allObjectsUploaded } =
+          await uploadObjectsToS3Bucket(
+            process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+            newDestinationImages,
+            process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+          );
+
+        newDestinationImages = await cropAndResizeImages(newDestinationImages);
+
+        const {
+          uploadedObjectNames: croppedImagesNames,
+          allObjectsUploaded: allCroppedImagesUploaded,
+        } = await uploadObjectsToS3Bucket(
+          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+          newDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
+
+        deleteObjectsFromS3Bucket(
+          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+          newPayload.removedDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
+
+        deleteObjectsFromS3Bucket(
+          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+          newPayload.removedDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
+
+        tripInDatabase.destinationImages = uploadedObjectNames;
+        tripInDatabase.croppedDestinationImages = croppedImagesNames;
+        allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
+        const updatedTrip = await tripRepository.updateTrip(tripInDatabase);
+      }
+      logger.info(`created images for Trip with tripId=${tripId}`);
+    } catch (error) {
+      logger.error(
+        `Error creating images for tripId=${tripId}, error=${error}`
+      );
+      throw error;
+    }
+  });
 }
 
 async function getTripsByUser(filter, userId) {
@@ -627,7 +704,6 @@ async function getWishlistedTrips(filter, userId) {
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
 
-
     const wishlistedQuery = createQueryForUserTrips(
       userId,
       null,
@@ -641,7 +717,6 @@ async function getWishlistedTrips(filter, userId) {
       skip,
       limitNumber
     );
-
 
     logger.info(
       `Fetched wishlisted trips for user with userId=${userId}, trips=${fetchedTrips}`
@@ -703,16 +778,16 @@ async function requestJoinTrip(payload, userId) {
       );
     }
     await userTripsRepository.updateRequestTripForUser(userId, tripId, true);
-    tripRepository.findTripWithTripId(tripId).then(async (trip)=>{
+    tripRepository.findTripWithTripId(tripId).then(async (trip) => {
       const notification = {
         notificationId: uuidv4(),
         senderId: userId,
         receiverId: trip.userId,
         tripId: tripId,
-        event: NotificationEvents.USER_REQUEST_TO_JOIN
-      }
+        event: NotificationEvents.USER_REQUEST_TO_JOIN,
+      };
       notificationRepository.createNotification(notification);
-    })
+    });
   } catch (error) {
     logger.error(
       `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
@@ -736,8 +811,11 @@ async function addMemberTrip(payload, userId) {
     }
     const query = createQueryForUserTrips(memberId, tripId, null, null, null);
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
-    if (!userTrip || !userTrip.isRequested ||  userTrip.isJoined) {
-      throw new ValidationError("User hasn't requested or has already joined", 400);
+    if (!userTrip || !userTrip.isRequested || userTrip.isJoined) {
+      throw new ValidationError(
+        "User hasn't requested or has already joined",
+        400
+      );
     }
 
     await userTripsRepository.updateJoinTripForUser(memberId, tripId, true);
@@ -746,8 +824,8 @@ async function addMemberTrip(payload, userId) {
       senderId: userId,
       receiverId: memberId,
       tripId,
-      event: NotificationEvents.ADD_MEMBER_TO_TRIP
-    }
+      event: NotificationEvents.ADD_MEMBER_TO_TRIP,
+    };
     notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
@@ -767,17 +845,16 @@ async function leaveTrip(payload, userId) {
     }
 
     await userTripsRepository.updateJoinTripForUser(userId, tripId, false);
-    tripRepository.findTripWithTripId(tripId).then(async (trip)=>{
+    tripRepository.findTripWithTripId(tripId).then(async (trip) => {
       const notification = {
         notificationId: uuidv4(),
         senderId: userId,
         receiverId: trip.userId,
         tripId: tripId,
-        event: NotificationEvents.LEAVE_TRIP
-      }
+        event: NotificationEvents.LEAVE_TRIP,
+      };
       notificationRepository.createNotification(notification);
-    })
-    
+    });
   } catch (error) {
     logger.error(
       `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
@@ -918,8 +995,8 @@ async function removeMemberAsHost(payload, userId) {
       senderId: userId,
       receiverId: memberId,
       tripId: tripId,
-      event: NotificationEvents.REMOVE_MEMBER_FROM_TRIP_AS_HOST
-    }
+      event: NotificationEvents.REMOVE_MEMBER_FROM_TRIP_AS_HOST,
+    };
     notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
@@ -946,4 +1023,6 @@ module.exports = {
   getJoinedTrips,
   getRequestedMembers,
   removeMemberAsHost,
+  editTripImages,
+  createTripsImages
 };

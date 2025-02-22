@@ -20,12 +20,13 @@ const {
   GET_REQUESTED_TRIPS,
   REMOVE_MEMBER_AS_HOST,
   GET_JOINED_TRIPS,
-  GET_REQUESTED_MEMBERS
+  GET_REQUESTED_MEMBERS,
+  CREATE_TRIPS_IMAGES
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
 
-const createTripHandler = asyncHandler(async (req, res) => {
+const createTripsHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
@@ -34,10 +35,9 @@ const createTripHandler = asyncHandler(async (req, res) => {
     );
 
     const user = req.userId;
-    const { files } = req;
     const payload = req.body;
 
-    const tripId = await tripDataService.createTrip(payload, files, user);
+    const tripId = await tripDataService.createTrip(payload, user);
     res.status(201).json({ tripId });
     const endTime = Date.now();
     logger.info(
@@ -48,6 +48,38 @@ const createTripHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error(
       `API_NAME=${CREATE_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(400).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const createTripsImagesHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${CREATE_TRIPS_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+
+    const userId = req.userId;
+    const { files } = req;
+    const {tripIds} = req.body;
+
+    await tripDataService.createTripsImages(tripIds, files, userId);
+    res.status(201).json();
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${CREATE_TRIPS_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${CREATE_TRIPS_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(400).json();
@@ -180,6 +212,43 @@ const editTripHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error(
       `API_NAME=${EDIT_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const editTripImagesHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const { tripId } = req.params;
+    const userId = req.userId;
+    const newPayload = req.body;
+    const newDestinationImages = req.files;
+    const { updatedTrip, allObjectsUploaded } = await tripDataService.editTrip(
+      tripId,
+      userId,
+      newPayload,
+      newDestinationImages
+    );
+
+    res.status(200).json({ updatedTrip, allFilesUploaded: allObjectsUploaded });
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -530,7 +599,7 @@ const getRequestedMembersHandler = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  createTripHandler,
+  createTripsHandler,
   getTripByIdHandler,
   getTripsByUserHandler,
   editTripHandler,
@@ -545,5 +614,7 @@ module.exports = {
   getRequestedTripsHandler,
   getJoinedTripsHandler,
   removeMemberAsHostHandler,
-  getRequestedMembersHandler
+  getRequestedMembersHandler,
+  editTripImagesHandler,
+  createTripsImagesHandler
 };

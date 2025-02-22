@@ -4,7 +4,7 @@ const {
   jwtTokenDecoder,
 } = require("../middleware/AuthMiddleware");
 const {
-  createTripHandler,
+  createTripsHandler,
   getTripByIdHandler,
   getTripsByUserHandler,
   editTripHandler,
@@ -20,16 +20,25 @@ const {
   getJoinedTripsHandler,
   removeMemberAsHostHandler,
   getRequestedMembersHandler,
+  createTripsImagesHandler,
+  editTripImagesHandler,
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
 
 router
-  .route("/createTrip")
+  .route("/createTrips")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    createTripsHandler
+  );
+
+router
+  .route("/createTripsImages")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     uploadMiddlewareForImages.array("destinationImages"),
-    createTripHandler
+    createTripsImagesHandler
   );
 router
   .route("/getTripById/:tripId")
@@ -53,9 +62,17 @@ router
   .route("/editTrip/:tripId")
   .put(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    uploadMiddlewareForImages.array("destinationImages"),
     editTripHandler
   );
+
+router
+  .route("/editTripImages/:tripId")
+  .put(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    uploadMiddlewareForImages.array("destinationImages"),
+    editTripImagesHandler
+  );
+
 router
   .route("/deleteTrip/:tripId")
   .delete(

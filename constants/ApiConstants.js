@@ -40,6 +40,8 @@ const GET_JOINED_TRIPS = "get_joined_trips";
 const GET_NOTIFICATION = "get_notification";
 const DELETE_NOTIFICATION = "delete_notification";
 const GET_REQUESTED_MEMBERS = "get_requested_members";
+const EDIT_TRIP_IMAGES = "edit_trip_images";
+const CREATE_TRIPS_IMAGES = "create_trips_images";
 
 
 module.exports = {
@@ -84,5 +86,7 @@ module.exports = {
   REMOVE_MEMBER_AS_HOST,
   GET_NOTIFICATION,
   DELETE_NOTIFICATION,
-  GET_REQUESTED_MEMBERS
+  GET_REQUESTED_MEMBERS,
+  EDIT_TRIP_IMAGES,
+  CREATE_TRIPS_IMAGES
 };
