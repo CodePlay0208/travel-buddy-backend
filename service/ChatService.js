@@ -52,12 +52,12 @@ async function populateChat(storedChat) {
 async function fetchOrCreateChats(receiverUserId, senderUserId) {
   try {
     
-    const senderUserId = senderProfile.userId;
     const receiverProfile = await userProfileRepository.findUserByUserId(
       receiverUserId,
       USER_PROFILE_PROJECTION
     );
-    chatValidator.validateReceiverProfile(receiverProfile);
+
+    console.log(receiverUserId, senderUserId);
 
     let chatInDatabase = await chatRepository.findChatByUsers(
       senderUserId,
