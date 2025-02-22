@@ -574,7 +574,7 @@ async function getTripsByUser(filter, userId) {
       );
     }
 
-    const fetchedTrips = trips.map((trip) => trip.toObject());
+    let fetchedTrips = trips.map((trip) => trip.toObject());
 
     fetchedTrips = await Promise.all(
       fetchedTrips.map(async (trip) => {
