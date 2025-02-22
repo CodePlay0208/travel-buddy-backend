@@ -173,6 +173,40 @@ function createQueryForUserTrips(
   return query;
 }
 
+function createQueryForUserTripsWithORCondition(
+  userId,
+  tripId,
+  isJoined,
+  isRequested,
+  isWishlisted
+) {
+  let query = {};
+
+  const conditions = [];
+
+  if (userId) {
+    conditions.push({ userId: userId });
+  }
+  if (tripId) {
+    conditions.push({ tripId: tripId });
+  }
+  if (isJoined != null) {
+    conditions.push({ isJoined: isJoined });
+  }
+  if (isWishlisted != null) {
+    conditions.push({ isWishlisted: isWishlisted });
+  }
+  if (isRequested != null) {
+    conditions.push({ isRequested: isRequested });
+  }
+
+  if (conditions.length > 0) {
+    query.$or = conditions;
+  }
+
+  return query;
+}
+
 async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   const { skip, limitNumber, newOffset } = parseLimitAndOffset(
     limit,
@@ -277,7 +311,7 @@ async function getTripById(tripId, userId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    const query = createQueryForUserTrips(null, tripId, true, null, null);
+    const query = createQueryForUserTripsWithORCondition(null, tripId, true, true, null);
 
     const joinedTrips = await userTripsRepository.getUserTripsUsingQuery(query);
 
@@ -287,20 +321,27 @@ async function getTripById(tripId, userId) {
       joinedUsers.push(userTrip.userId);
     });
 
-    fetchedTrip.tripMembersIds = joinedUsers;
-
-    const wishlistedQuery = createQueryForUserTrips(
+    const userQuery = createQueryForUserTrips(
       userId,
       tripId,
       null,
       null,
-      true
+      null
     );
-    const wishlistedTrips = await userTripsRepository.getUserTripsUsingQuery(
-      wishlistedQuery
+    const userBasedTrips = await userTripsRepository.getUserTripsUsingQuery(
+      userQuery
     );
-    fetchedTrip.isWishlisted = wishlistedTrips != 0;
 
+    fetchedTrip.isJoined = false;
+    fetchedTrip.isWishlisted = false;
+    fetchedTrip.isRequested = false;
+
+    if(userBasedTrips && userBasedTrips.length > 0){
+      fetchedTrip.isJoined = userBasedTrips.isJoined;
+      fetchedTrip.isWishlisted = userBasedTrips.isWishlisted;
+      fetchedTrip.isRequested = userBasedTrips.isRequested;
+    }
+    
     await updateJoinedMembersProfilesInTrip(
       fetchedTrip,
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
