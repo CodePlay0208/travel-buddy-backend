@@ -811,7 +811,7 @@ async function addMemberTrip(payload, userId) {
         400
       );
     }
-    const query = createQueryForUserTrips(memberId, tripId, null, null, null);
+    const query = createQueryForUserTrips(memberId, tripId, null, true, null);
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrip || !userTrip.isRequested || userTrip.isJoined) {
       throw new ValidationError(
