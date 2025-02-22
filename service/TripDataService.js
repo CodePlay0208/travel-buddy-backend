@@ -218,35 +218,39 @@ async function createTrip(payload, userId) {
       throw new ValidationError("User not found", 404);
     }
 
-    let tripIds = [];
-
     const { tripDates: strTripDates } = payload;
     const tripDates = Array.from(strTripDates);
-    tripDates?.forEach(async (tripDate) => {
+    const tripIds = [];
+
+    const tripCreationPromises = tripDates.map(async (tripDate) => {
       const { startDate, endDate } = tripDate;
       const queryStartDate = dateFromDateString(startDate);
       const queryEndDate = dateFromDateString(endDate);
+      
       payload.startDate = queryStartDate;
       payload.endDate = queryEndDate;
-
+    
       const tripId = uuidv4();
       tripIds.push(tripId);
-
+    
       const newTrip = {
         ...payload,
         userId,
         tripId,
       };
-
-      const createdTrip = await tripRepository.createTrip(newTrip);
-      logger.info(
-        `Trip with payload=${JSON.stringify(
-          payload
-        )}, tripId=${tripId} created successfully`
-      );
+    
+      try {
+        const createdTrip = await tripRepository.createTrip(newTrip);
+        logger.info(
+          `Trip with payload=${JSON.stringify(payload)}, tripId=${tripId} created successfully`
+        );
+        return tripId;
+      } catch (error) {
+        logger.error(`Error creating trip with tripId=${tripId}, error=${error}`);
+      }
     });
 
-    return tripIds;
+    return await Promise.all(tripCreationPromises);
   } catch (error) {
     logger.error(
       `Error creating trip with payload=${JSON.stringify(
@@ -441,8 +445,9 @@ async function editTripImages(
   }
 }
 
-async function createTripsImages(tripIds, newDestinationImages, userId) {
-  tripIds = Array.from(tripIds);
+async function createTripsImages(newPayload, newDestinationImages, userId) {
+  
+  const tripIds = Array.from(newPayload.tripIds);
   tripIds.forEach(async (tripId) => {
     try {
       const tripInDatabase = await tripRepository.findTripWithTripId(tripId);

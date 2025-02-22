@@ -67,9 +67,9 @@ const createTripsImagesHandler = asyncHandler(async (req, res) => {
 
     const userId = req.userId;
     const { files } = req;
-    const {tripIds} = req.body;
+    const newPayload = req.body;
 
-    await tripDataService.createTripsImages(tripIds, files, userId);
+    await tripDataService.createTripsImages(newPayload, files, userId);
     res.status(201).json();
     const endTime = Date.now();
     logger.info(
