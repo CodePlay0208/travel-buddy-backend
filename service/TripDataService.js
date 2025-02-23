@@ -376,7 +376,6 @@ async function editTrip(tripId, userId, newPayload) {
 
     newPayload.startDate = queryStartDate;
     newPayload.endDate = queryEndDate;
-    tripValidator.validateTripPayload(newPayload);
 
     Object.entries(newPayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
