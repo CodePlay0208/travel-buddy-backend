@@ -1032,6 +1032,13 @@ async function removeMemberAsHost(payload, userId) {
       );
     }
 
+    if(tripInDatabase.userId == memberId){
+      throw new ValidationError(
+        "Publisher can't be removed",
+        400
+      );
+    }
+
     const query = createQueryForUserTrips(memberId, tripId, true, null, null);
     const userTrips = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrips || userTrips.length == 0) {
