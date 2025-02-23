@@ -1049,6 +1049,36 @@ async function removeMemberAsHost(payload, userId) {
   }
 }
 
+async function declineRequestInvitation(payload, userId) {
+  try {
+    const { tripId, memberId } = payload;
+    const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
+      tripId,
+      userId
+    );
+
+    if (!tripInDatabase || tripInDatabase.userId != userId) {
+      throw new ValidationError(
+        "User not authorized to remove member from a trip",
+        401
+      );
+    }
+
+    const query = createQueryForUserTrips(memberId, tripId, null, true, null);
+    const userTrips = await userTripsRepository.getUserTripsUsingQuery(query);
+    if (!userTrips || userTrips.length == 0) {
+      throw new ValidationError("User hasn't requested yet", 400);
+    }
+    await userTripsRepository.updateRequestTripForUser(userId, tripId, false);
+  } catch (error) {
+    logger.error(
+      `Error occured while declining invitation user=${payload.memberId} with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+
 module.exports = {
   createTrip,
   getTripById,
@@ -1068,4 +1098,5 @@ module.exports = {
   removeMemberAsHost,
   editTripImages,
   createTripsImages,
+  declineRequestInvitation
 };

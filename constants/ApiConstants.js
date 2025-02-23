@@ -42,6 +42,7 @@ const DELETE_NOTIFICATION = "delete_notification";
 const GET_REQUESTED_MEMBERS = "get_requested_members";
 const EDIT_TRIP_IMAGES = "edit_trip_images";
 const CREATE_TRIPS_IMAGES = "create_trips_images";
+const DECLINE_REQUEST_INVITATION = "decline_request_invitation";
 
 
 module.exports = {
@@ -88,5 +89,6 @@ module.exports = {
   DELETE_NOTIFICATION,
   GET_REQUESTED_MEMBERS,
   EDIT_TRIP_IMAGES,
-  CREATE_TRIPS_IMAGES
+  CREATE_TRIPS_IMAGES,
+  DECLINE_REQUEST_INVITATION
 };

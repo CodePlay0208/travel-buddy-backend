@@ -22,6 +22,7 @@ const {
   getRequestedMembersHandler,
   createTripsImagesHandler,
   editTripImagesHandler,
+  declineRequestInvitationHandler
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -141,6 +142,13 @@ router
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     removeMemberAsHostHandler
+  );
+
+  router
+  .route("/declineRequest")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    declineRequestInvitationHandler
   );
 
 router.route("/getRequestedMembers").post(getRequestedMembersHandler);
