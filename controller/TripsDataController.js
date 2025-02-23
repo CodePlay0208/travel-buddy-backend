@@ -195,14 +195,14 @@ const editTripHandler = asyncHandler(async (req, res) => {
     const userId = req.userId;
     const newPayload = req.body;
     const newDestinationImages = req.files;
-    const { updatedTrip, allObjectsUploaded } = await tripDataService.editTrip(
+    const updatedTrip  = await tripDataService.editTrip(
       tripId,
       userId,
       newPayload,
       newDestinationImages
     );
 
-    res.status(200).json({ updatedTrip, allFilesUploaded: allObjectsUploaded });
+    res.status(200).json(updatedTrip);
     const endTime = Date.now();
     logger.info(
       `API_NAME=${EDIT_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${

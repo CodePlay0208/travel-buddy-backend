@@ -386,7 +386,7 @@ async function editTrip(tripId, userId, newPayload) {
     const updatedTrip = await tripRepository.updateTrip(tripInDatabase);
     logger.info(`Trip with tripId=${tripId} updated successfully`);
 
-    return { updatedTrip, allFilesUploaded };
+    return updatedTrip;
   } catch (error) {
     logger.error(
       `Error editing trip with newPayload=${JSON.stringify(
