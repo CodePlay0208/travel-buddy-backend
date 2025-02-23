@@ -1027,7 +1027,7 @@ async function removeMemberAsHost(payload, userId) {
       );
     }
 
-    const query = createQueryForUserTrips(memberId, tripId, false, null, null);
+    const query = createQueryForUserTrips(memberId, tripId, true, null, null);
     const userTrips = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't joined yet", 400);
