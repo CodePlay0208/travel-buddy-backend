@@ -279,8 +279,7 @@ async function createTrip(payload, userId) {
             payload
           )}, tripId=${tripId} created successfully`
         );
-        const joinedQuery = createQueryForUserTrips(userId, tripId, true, null ,null);
-        const userTrips = await userTripsRepository.updateJoinTripForUser(true);
+        const userTrips = await userTripsRepository.updateJoinTripForUser(userId, tripId, true);
         return tripId;
       } catch (error) {
         logger.error(
@@ -313,9 +312,11 @@ async function getTripById(tripId, userId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    const query = createQueryForUserTripsWithORCondition(null, tripId, true, true, null);
+    const query = createQueryForUserTrips(null, tripId, true, null, null);
 
     const joinedTrips = await userTripsRepository.getUserTripsUsingQuery(query);
+
+    console.log(joinedTrips);
 
     let joinedUsers = [];
 
