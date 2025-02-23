@@ -279,6 +279,8 @@ async function createTrip(payload, userId) {
             payload
           )}, tripId=${tripId} created successfully`
         );
+        const joinedQuery = createQueryForUserTrips(userId, tripId, true, null ,null);
+        const userTrips = await userTripsRepository.updateJoinTripForUser(true);
         return tripId;
       } catch (error) {
         logger.error(
