@@ -1037,7 +1037,7 @@ async function removeMemberAsHost(payload, userId) {
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't joined yet", 400);
     }
-    await userTripsRepository.updateJoinTripForUser(userId, tripId, false);
+    await userTripsRepository.updateJoinTripForUser(memberId, tripId, false);
     const notification = {
       notificationId: uuidv4(),
       senderId: userId,
@@ -1074,7 +1074,7 @@ async function declineRequestInvitation(payload, userId) {
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't requested yet", 400);
     }
-    await userTripsRepository.updateRequestTripForUser(userId, tripId, false);
+    await userTripsRepository.updateRequestTripForUser(memberId, tripId, false);
   } catch (error) {
     logger.error(
       `Error occured while declining invitation user=${payload.memberId} with tripId=${payload.tripId}, userId=${userId}, error=${error}`
