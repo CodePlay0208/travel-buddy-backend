@@ -21,7 +21,8 @@ const {
   REMOVE_MEMBER_AS_HOST,
   GET_JOINED_TRIPS,
   GET_REQUESTED_MEMBERS,
-  CREATE_TRIPS_IMAGES
+  CREATE_TRIPS_IMAGES,
+  DECLINE_REQUEST_INVITATION
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");

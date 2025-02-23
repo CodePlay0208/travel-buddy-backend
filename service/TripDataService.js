@@ -71,10 +71,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
   );
 
   if (!userTrips || userTrips.length === 0) {
-    throw new ValidationError(
-      `No requested trips found with the query=${query}`,
-      404
-    );
+       return [];
   }
 
   const fetchedUserTrips = userTrips.map((trip) => trip.toObject());
@@ -248,7 +245,7 @@ async function createTrip(payload, userId) {
 
     if (!user) {
       logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError("User not found", 404);
+      throw new ValidationError("User not found", 400);
     }
 
     const { tripDates: strTripDates } = payload;
@@ -303,7 +300,7 @@ async function getTripById(tripId, userId) {
   try {
     let trip = await tripRepository.findTripWithTripId(tripId);
     if (!trip) {
-      throw new ValidationError(`Trip not found for tripId=${tripId}`, 404);
+      throw new ValidationError(`Trip not found for tripId=${tripId}`, 400);
     }
     const fetchedTrip = trip.toObject();
     fetchedTrip.destinationImages = await getObjectsFromS3Bucket(
@@ -366,7 +363,7 @@ async function editTrip(tripId, userId, newPayload) {
   try {
     const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
     if (!tripInDatabase) {
-      throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
+      throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
     }
 
     if (!tripInDatabase.userId == userId) {
@@ -411,7 +408,7 @@ async function editTripImages(
   try {
     const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
     if (!tripInDatabase) {
-      throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
+      throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
     }
 
     if (!tripInDatabase.userId == userId) {
@@ -500,7 +497,7 @@ async function createTripsImages(newPayload, newDestinationImages, userId) {
     try {
       const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
       if (!tripInDatabase) {
-        throw new ValidationError(`Trip with tripId=${tripId} not found`, 404);
+        throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
       }
 
       if (!tripInDatabase.userId == userId) {
@@ -572,10 +569,7 @@ async function getTripsByUser(filter, userId) {
     );
 
     if (trips.length === 0) {
-      throw new ValidationError(
-        `No trips found with the filter=${filter}, query=${query}`,
-        404
-      );
+      return [];
     }
 
     let fetchedTrips = trips.map((trip) => trip.toObject());
@@ -651,10 +645,7 @@ async function getTripsWithFilter(filter, userId) {
     );
 
     if (trips.length === 0) {
-      throw new ValidationError(
-        `No trips found with the filter=${JSON.stringify(filter)}, query=${JSON.stringify(query)}`,
-        404
-      );
+     return [];
     }
 
     let fetchedTrips = trips.map((trip) => trip.toObject());
@@ -714,7 +705,7 @@ async function deleteTrip(tripId, userId) {
     if (!tripInDatabase) {
       throw new ValidationError(
         `Trip not found or user doesn't have permssion to delete trip with tripId=${tripId}, userId=${userId}`,
-        404
+        400
       );
     }
     deleteObjectsFromS3Bucket(

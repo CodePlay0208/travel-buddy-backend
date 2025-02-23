@@ -24,7 +24,7 @@ async function getUserProfile(userId) {
 
     if (!user) {
       logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError("User not found", 404);
+      throw new ValidationError(`User not present in the database`, 400);
     }
 
     const userProfilePic = await getObjectsFromS3Bucket(
@@ -52,8 +52,6 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     if (updateData.dateOfBirth)
       sanitizedUpdateData.dateOfBirth = updateData.dateOfBirth;
     if (updateData.persona) sanitizedUpdateData.persona = updateData.persona;
-    if (updateData.phoneNumber)
-      sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
     if (updateData.profilePic)
       sanitizedUpdateData.profilePic = updateData.profilePic;
     if(updateData.gender)
@@ -103,7 +101,7 @@ async function deleteUserProfile(userId) {
     
     if (!user) {
       logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError("User not found", 404);
+      throw new ValidationError("User not found", 400);
     }
     const { username, emailId } = user;
     logger.info(`Deleting user profile with userId=${userId}`);
