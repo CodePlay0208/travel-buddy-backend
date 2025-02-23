@@ -863,6 +863,7 @@ async function addMemberTrip(payload, userId) {
     }
 
     await userTripsRepository.updateJoinTripForUser(memberId, tripId, true);
+    await userTripsRepository.updateRequestTripForUser(memberId, tripId, false);
     const notification = {
       notificationId: uuidv4(),
       senderId: userId,
