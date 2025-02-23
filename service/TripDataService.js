@@ -343,6 +343,8 @@ async function getTripById(tripId, userId) {
       fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
       fetchedTrip.isRequested = userBasedTrips[0].isRequested;
     }
+
+    fetchedTrip.tripMembersIds = joinedUsers;
     
     await updateJoinedMembersProfilesInTrip(
       fetchedTrip,
