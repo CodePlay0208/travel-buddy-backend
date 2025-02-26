@@ -26,6 +26,8 @@ const USER_PROFILE_PROJECTION = {
   gender: 1,
   phoneNumber: 1,
   dateOfBirth: 1,
+  isEmailPrivate: 1,
+  isPhoneNumberPrivate: 1
 };
 
 const USER_PROFILE_PROJECTION_IN_SEARCH_CARD = {

@@ -6,8 +6,7 @@ const userProfileRepository = require("../repositories/UserProfileRepository");
 const { v4: uuidv4 } = require("uuid");
 const {
   LATEST_MESSAGE_PROJECTION_IN_CHAT,
-  USER_PROFILE_PROJECTION_IN_CHAT,
-  USER_PROFILE_PROJECTION
+  USER_PROFILE_PROJECTION_IN_CHAT
 } = require("../constants/Projections");
 const chatValidator = require("../validators/ChatValidator");
 const {
@@ -52,13 +51,6 @@ async function populateChat(storedChat) {
 async function fetchOrCreateChats(receiverUserId, senderUserId) {
   try {
     
-    const receiverProfile = await userProfileRepository.findUserByUserId(
-      receiverUserId,
-      USER_PROFILE_PROJECTION
-    );
-
-    console.log(receiverUserId, senderUserId);
-
     let chatInDatabase = await chatRepository.findChatByUsers(
       senderUserId,
       receiverUserId

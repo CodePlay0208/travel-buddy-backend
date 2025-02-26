@@ -27,16 +27,25 @@ async function getUserProfile(userId) {
       throw new ValidationError(`User not present in the database`, 400);
     }
 
+    const userObj = user.toObject();
+
+    if(userObj.isEmailPrivate){
+      delete userObj.emailId;
+    }
+    if(userObj.isPhoneNumberPrivate){
+      delete userObj.phoneNumber;
+    }
+
     const userProfilePic = await getObjectsFromS3Bucket(
       "",
-      user.profilePic,
+      userObj.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-    user.profilePic = userProfilePic;
+    userObj.profilePic = userProfilePic;
     logger.info(
-      `Fetched user profile with userId=${userId}, userProfile=${user}`
+      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
     );
-    return user;
+    return userObj;
   } catch (error) {
     logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
     throw error;
@@ -56,6 +65,11 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       sanitizedUpdateData.profilePic = updateData.profilePic;
     if(updateData.gender)
       sanitizedUpdateData.gender = updateData.gender;
+    if(updateData.isEmailPrivate)
+      sanitizedUpdateData.isEmailPrivate = updateData.isEmailPrivate;
+    if(updateData.isPhoneNumberPrivate)
+      sanitizedUpdateData.isPhoneNumberPrivate = updateData.isPhoneNumberPrivate;
+
 
     if (newProfilePic && newProfilePic.length > 0) {
       const { uploadedObjectNames, allObjectsUploaded } =
@@ -85,7 +99,16 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
 
-    return updatedUserProfile;
+    const updatedUserProfileObj = updatedUserProfile.toObject();
+
+    if(updatedUserProfileObj.isEmailPrivate){
+      delete updatedUserProfileObj.emailId;
+    }
+    if(updatedUserProfileObj.isPhoneNumberPrivate){
+      delete updatedUserProfileObj.phoneNumber;
+    }
+
+    return updatedUserProfileObj;
   } catch (error) {
     logger.error(`Failed to update user with userId=${userId}, error=${error}`);
     throw error;
