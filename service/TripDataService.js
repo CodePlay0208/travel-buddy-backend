@@ -424,7 +424,7 @@ async function editTripImages(
       tripInDatabase.croppedDestinationImages || [];
     let removedImages = [];
     if (newPayload.removedDestinationImages)
-      removedImages = Array.from(newPayload.removedDestinationImages);
+      removedImages = JSON.parse(newPayload.removedDestinationImages);
 
     uploadedDestinationImages = uploadedDestinationImages.filter(
       (image) => !removedImages.includes(image)
@@ -492,7 +492,7 @@ async function editTripImages(
 }
 
 async function createTripsImages(newPayload, newDestinationImages, userId) {
-  const tripIds = Array.from(newPayload.tripIds);
+  const tripIds = JSON.parse(newPayload.tripIds);
   tripIds.forEach(async (tripId) => {
     try {
       const tripInDatabase = await tripRepository.findTripWithTripId(tripId);
