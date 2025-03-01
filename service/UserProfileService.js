@@ -29,10 +29,10 @@ async function getUserProfile(userId) {
 
     const userObj = user.toObject();
 
-    if(userObj.isEmailPrivate){
+    if(userObj.isEmailPrivate && userObj.userId === userId){
       delete userObj.emailId;
     }
-    if(userObj.isPhoneNumberPrivate){
+    if(userObj.isPhoneNumberPrivate && userObj.userId === userId){
       delete userObj.phoneNumber;
     }
 

@@ -1,5 +1,5 @@
 const express = require("express");
-const { tokenProtect } = require("../middleware/AuthMiddleware");
+const { tokenProtect, jwtTokenDecoder } = require("../middleware/AuthMiddleware");
 const {
   getUserProfileHandler,
   editUserHandler,
@@ -12,7 +12,7 @@ const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
 router
   .route("/getUserProfile")
   .get(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     getUserProfileHandler
   );
 router
