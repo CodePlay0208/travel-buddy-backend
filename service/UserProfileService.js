@@ -99,16 +99,15 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       userId,
       sanitizedUpdateData
     );
+    const updatedUserProfileObj = updatedUserProfile.toObject();
     logger.info(
       `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
     );
-    updatedUserProfile.profilePic = await getObjectsFromS3Bucket(
+    updatedUserProfileObj.profilePic = await getObjectsFromS3Bucket(
       "",
-      updatedUserProfile.profilePic,
+      updatedUserProfileObj.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-
-    const updatedUserProfileObj = updatedUserProfile.toObject();
 
     return updatedUserProfileObj;
   } catch (error) {
