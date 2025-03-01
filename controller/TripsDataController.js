@@ -234,7 +234,7 @@ const editTripImagesHandler = asyncHandler(async (req, res) => {
     const userId = req.userId;
     const newPayload = req.body;
     const newDestinationImages = req.files;
-    const { updatedTrip, allObjectsUploaded } = await tripDataService.editTrip(
+    const { updatedTrip, allObjectsUploaded } = await tripDataService.editTripImages(
       tripId,
       userId,
       newPayload,
