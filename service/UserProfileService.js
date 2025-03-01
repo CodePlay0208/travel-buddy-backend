@@ -12,6 +12,7 @@ const {
   USER_PROFILE_PROJECTION
 } = require("../constants/Projections.js");
 const { ValidationError } = require("../exceptions/ValidationError.js");
+const UserProfileModel = require("../models/UserProfileModel.js");
 
 async function getUserProfile(userId) {
   try {
@@ -56,6 +57,8 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
   try {
     logger.info(`Updating user with userId=${userId}`);
     const sanitizedUpdateData = {};
+
+    const user = await userProfileRepository.findUserByUserId(userId);
 
     if (updateData.username) sanitizedUpdateData.username = updateData.username;
     if (updateData.dateOfBirth)
