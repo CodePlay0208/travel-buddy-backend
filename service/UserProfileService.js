@@ -13,6 +13,7 @@ const {
 } = require("../constants/Projections.js");
 const { ValidationError } = require("../exceptions/ValidationError.js");
 const UserProfileModel = require("../models/UserProfileModel.js");
+const { randomFileName } = require("../Utils.js");
 
 async function getUserProfile(userId) {
   try {
@@ -75,6 +76,7 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
 
 
     if (newProfilePic && newProfilePic.length > 0) {
+      newProfilePic.originalname = randomFileName(newProfilePic.originalname)
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
           "",
