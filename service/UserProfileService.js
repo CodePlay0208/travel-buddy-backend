@@ -76,7 +76,11 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
 
 
     if (newProfilePic && newProfilePic.length > 0) {
-      newProfilePic.originalname = randomFileName(newProfilePic.originalname)
+      newProfilePic.forEach((profilePic) => {
+        profilePic.originalname = randomFileName(
+          profilePic.originalname
+        );
+      });
       const { uploadedObjectNames, allObjectsUploaded } =
         await uploadObjectsToS3Bucket(
           "",
