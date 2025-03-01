@@ -104,13 +104,6 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
 
     const updatedUserProfileObj = updatedUserProfile.toObject();
 
-    if(updatedUserProfileObj.isEmailPrivate){
-      delete updatedUserProfileObj.emailId;
-    }
-    if(updatedUserProfileObj.isPhoneNumberPrivate){
-      delete updatedUserProfileObj.phoneNumber;
-    }
-
     return updatedUserProfileObj;
   } catch (error) {
     logger.error(`Failed to update user with userId=${userId}, error=${error}`);
