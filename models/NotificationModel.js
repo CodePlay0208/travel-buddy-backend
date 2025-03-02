@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const NotificationEvents = require("../enums/notificationEvents");
+const NotificationEvents = require("../enums/NotificationEvents");
 
 const NotificationModel = new mongoose.Schema({
   notificationId: {type: String, required: true, unique:true},

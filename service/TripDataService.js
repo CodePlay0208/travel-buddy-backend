@@ -20,7 +20,7 @@ const {
   USER_PROFILE_PROJECTION,
 } = require("../constants/Projections.js");
 const { randomFileName } = require("../Utils");
-const NotificationEvents = require("../enums/notificationEvents.js");
+const NotificationEvents = require("../enums/NotificationEvents.js");
 
 async function addJoinedMembersProfilesToTrip(trip, projection) {
   trip.joinedMembers = await userProfileRepository.findUsersByUserId(
