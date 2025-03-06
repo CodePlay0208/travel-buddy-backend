@@ -7,6 +7,7 @@ const SIGN_UP = "sign_up";
 const NEWSLETTER_SUBSCRIPTION = "newsletter_subscription";
 const LOCATIONS_FROM_GOOGLE = "locations_from_google";
 const GET_USER_PROFILE = "get_user_profile";
+const GET_OTHER_USER_PROFILE = "get_other_user_profile";
 const EDIT_USER_PROFILE = "edit_user_profile";
 const DELETE_USER_PROFILE = "delete_user_profile";
 const OTP_VERIFICATION = "otp_verification";
@@ -90,5 +91,6 @@ module.exports = {
   GET_REQUESTED_MEMBERS,
   EDIT_TRIP_IMAGES,
   CREATE_TRIPS_IMAGES,
-  DECLINE_REQUEST_INVITATION
+  DECLINE_REQUEST_INVITATION,
+  GET_OTHER_USER_PROFILE
 };

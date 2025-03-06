@@ -54,6 +54,45 @@ async function getUserProfile(userId) {
   }
 }
 
+async function getOtherUserProfile(userId) {
+  try {
+    logger.info(`Fetching user with userId=${userId}`);
+
+     const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError(`User not present in the database`, 400);
+    }
+
+    const userObj = user.toObject();
+
+    if(userObj.isEmailPrivate && userObj.userId !== userId){
+      delete userObj.emailId;
+    }
+    if(userObj.isPhoneNumberPrivate && userObj.userId !== userId){
+      delete userObj.phoneNumber;
+    }
+
+    const userProfilePic = await getObjectsFromS3Bucket(
+      "",
+      userObj.profilePic,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+    );
+    userObj.profilePic = userProfilePic;
+    logger.info(
+      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
+    );
+    return userObj;
+  } catch (error) {
+    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
+    throw error;
+  }
+}
+
 async function updateUserProfile(userId, updateData, newProfilePic) {
   try {
     logger.info(`Updating user with userId=${userId}`);
@@ -171,9 +210,49 @@ async function findUserProfile(query) {
   }
 }
 
+async function getOtherUserProfile(userId) {
+  try {
+    logger.info(`Fetching other user with userId=${userId}`);
+
+     const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError(`User not present in the database`, 400);
+    }
+
+    const userObj = user.toObject();
+
+    if(userObj.isEmailPrivate && userObj.userId !== userId){
+      delete userObj.emailId;
+    }
+    if(userObj.isPhoneNumberPrivate && userObj.userId !== userId){
+      delete userObj.phoneNumber;
+    }
+
+    const userProfilePic = await getObjectsFromS3Bucket(
+      "",
+      userObj.profilePic,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+    );
+    userObj.profilePic = userProfilePic;
+    logger.info(
+      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
+    );
+    return userObj;
+  } catch (error) {
+    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
+    throw error;
+  }
+}
+
 module.exports = {
   updateUserProfile,
   deleteUserProfile,
   getUserProfile,
   findUserProfile,
+  getOtherUserProfile
 };

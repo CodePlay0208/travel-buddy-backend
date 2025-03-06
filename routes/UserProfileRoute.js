@@ -4,7 +4,8 @@ const {
   getUserProfileHandler,
   editUserHandler,
   deleteUserHandler,
-  findUserHandler
+  findUserHandler,
+  getOtherUserProfileHandler
 } = require("../controller/UserProfileController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -33,6 +34,12 @@ router
   .route("/findUserProfile")
   .get(
     findUserHandler
+  );
+
+  router
+  .route("/getOtherUserProfile")
+  .post(
+    getOtherUserProfileHandler
   );
 
 module.exports = router;
