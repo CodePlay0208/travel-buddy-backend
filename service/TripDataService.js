@@ -296,7 +296,7 @@ async function createTrip(payload, userId) {
   }
 }
 
-async function getTripById(tripId, userId) {
+async function  getTripById(tripId, userId) {
   try {
     let trip = await tripRepository.findTripWithTripId(tripId);
     if (!trip) {
@@ -321,27 +321,30 @@ async function getTripById(tripId, userId) {
       joinedUsers.push(userTrip.userId);
     });
 
-    const userQuery = createQueryForUserTrips(
-      userId,
-      tripId,
-      null,
-      null,
-      null
-    );
-    const userBasedTrips = await userTripsRepository.getUserTripsUsingQuery(
-      userQuery
-    );
-
     fetchedTrip.isJoined = false;
     fetchedTrip.isWishlisted = false;
     fetchedTrip.isRequested = false;
 
-    if(userBasedTrips && userBasedTrips.length > 0){
-      fetchedTrip.isJoined = userBasedTrips[0].isJoined;
-      fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
-      fetchedTrip.isRequested = userBasedTrips[0].isRequested;
+    if(userId){
+      const userQuery = createQueryForUserTrips(
+        userId,
+        tripId,
+        null,
+        null,
+        null
+      );
+  
+      const userBasedTrips = await userTripsRepository.getUserTripsUsingQuery(
+        userQuery
+      );
+  
+      if(userBasedTrips && userBasedTrips.length > 0){
+        fetchedTrip.isJoined = userBasedTrips[0].isJoined;
+        fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
+        fetchedTrip.isRequested = userBasedTrips[0].isRequested;
+      }
     }
-
+    
     fetchedTrip.tripMembersIds = joinedUsers;
     
     await updateJoinedMembersProfilesInTrip(
