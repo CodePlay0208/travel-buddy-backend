@@ -3,6 +3,17 @@ const logger = require("../logger");
 const notificationRepository = require("../repositories/NotificationRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const newsletterValidator = require("../validators/NewsletterValidator");
+const {getObjectsFromS3Bucket} = require("../aws/S3");
+
+
+async function updateMemberProfiles(member) {
+      member.profilePic = await getObjectsFromS3Bucket(
+        "",
+        member.profilePic,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      return member;
+}
 
 async function getNotification(userId) {
   try {
@@ -11,7 +22,12 @@ async function getNotification(userId) {
      const notifications = Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
       let notification = fetchedNotification.toObject();
        const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
+       const fetchedUserProfile = userProfile.toObject();
         notification.username = userProfile.username;
+        notification.profilePic = await Promise.all([
+          updateMemberProfiles(fetchedUserProfile),
+        ]).profilePic;
+        trip.joinedMembers = updatedJoinedMembers;
         notification.profilePic = userProfile.profilePic;
         return notification;
     }));

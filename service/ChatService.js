@@ -15,6 +15,7 @@ const {
 
 async function populateChat(storedChat) {
   let populatedChat = { chatId: storedChat.chatId };
+  populatedChat = populatedChat.map((chat) => chat.toObject());
 
   const messagePromise = messageRepository.findMessageByMessageId(
     storedChat.messageId,

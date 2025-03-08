@@ -78,4 +78,4 @@ const deleteNotificationHandler = asyncHandler(async (req, res) => {
     }
   });
 
-module.exports = { deleteNotificationHandler, getNotificationsHandler };
+module.exports = { deleteNotificationHandler, get };
