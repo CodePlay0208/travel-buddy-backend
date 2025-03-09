@@ -7,12 +7,11 @@ const {getObjectsFromS3Bucket} = require("../aws/S3");
 
 
 async function updateMemberProfiles(member) {
-      member.profilePic = await getObjectsFromS3Bucket(
+      return await getObjectsFromS3Bucket(
         "",
         member.profilePic,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
       );
-      return member;
 }
 
 async function getNotification(userId) {
@@ -24,9 +23,7 @@ async function getNotification(userId) {
        const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
        const fetchedUserProfile = userProfile.toObject();
         notification.username = userProfile.username;
-        notification.profilePic = await Promise.all([
-          updateMemberProfiles(fetchedUserProfile),
-        ]).profilePic;
+        notification.profilePic = await updateMemberProfiles(fetchedUserProfile);
         return notification;
     }));
     logger.info(
