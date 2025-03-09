@@ -27,7 +27,6 @@ async function getNotification(userId) {
         notification.profilePic = await Promise.all([
           updateMemberProfiles(fetchedUserProfile),
         ]).profilePic;
-        notification.profilePic = userProfile.profilePic;
         return notification;
     }));
     logger.info(
