@@ -14,6 +14,8 @@ const {
 const { ValidationError } = require("../exceptions/ValidationError.js");
 const UserProfileModel = require("../models/UserProfileModel.js");
 const { randomFileName } = require("../Utils.js");
+const otpService = require("../service/OtpService");
+const otpRepository = require("../repositories/OtpRepository");
 
 async function getUserProfile(userId) {
   try {
@@ -113,6 +115,14 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     if(updateData.isPhoneNumberPrivate)
       sanitizedUpdateData.isPhoneNumberPrivate = updateData.isPhoneNumberPrivate;
 
+    if((user.isLoginWithEmail && updateData.emailId) || (!user.isLoginWithEmail && updateData.phoneNumber)){
+      const userOtp = await otpRepository.findOtpWithUserId(userId);
+      if(userOtp.otp == updateData.otp){
+        if(updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
+        if(updateData.phoneNumber) sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
+      }
+    }
+
 
     if (newProfilePic && newProfilePic.length > 0) {
       newProfilePic.forEach((profilePic) => {
@@ -210,6 +220,24 @@ async function findUserProfile(query) {
   }
 }
 
+async function editSecondaryKey(userId, newPayload) {
+  try {
+    const userInDatabase = await userProfileRepository.findUserByUserId(userId);
+    if(!userInDatabase){
+      throw new ValidationError(`User doesn't exists`, 400);
+    }
+
+    if((userInDatabase.isLoginWithEmail && newPayload.emailId) || (!userInDatabase.isLoginWithEmail && newPayload.phoneNumber)){
+      throw new ValidationError(`Can't update primary key`, 400);
+    }
+
+    await otpService.sendOtp(userInDatabase.username, newPayload.emailId? newPayload.emailId : newPayload.phoneNumber , userId);
+  } catch (error) {
+    logger.error(`Failed to send otp to update secondary key of userId=${userId}, error=${error}`);
+    throw error;
+  }
+}
+
 async function getOtherUserProfile(userId) {
   try {
     logger.info(`Fetching other user with userId=${userId}`);
@@ -254,5 +282,6 @@ module.exports = {
   deleteUserProfile,
   getUserProfile,
   findUserProfile,
-  getOtherUserProfile
+  getOtherUserProfile,
+  editSecondaryKey
 };

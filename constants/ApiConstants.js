@@ -44,6 +44,7 @@ const GET_REQUESTED_MEMBERS = "get_requested_members";
 const EDIT_TRIP_IMAGES = "edit_trip_images";
 const CREATE_TRIPS_IMAGES = "create_trips_images";
 const DECLINE_REQUEST_INVITATION = "decline_request_invitation";
+const EDIT_SECONDARY_KEY = "edit_secondary_key";
 
 
 module.exports = {
@@ -92,5 +93,6 @@ module.exports = {
   EDIT_TRIP_IMAGES,
   CREATE_TRIPS_IMAGES,
   DECLINE_REQUEST_INVITATION,
-  GET_OTHER_USER_PROFILE
+  GET_OTHER_USER_PROFILE,
+  EDIT_SECONDARY_KEY
 };

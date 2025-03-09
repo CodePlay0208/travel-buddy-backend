@@ -17,7 +17,8 @@ const userProfileSchema = new mongoose.Schema({
   profilePic: [{ type: String }],
   userId: { type: String, required: true, unique: true },
   isEmailPrivate: { type: Boolean, default: false },
-  isPhoneNumberPrivate: { type: Boolean, default: false }
+  isPhoneNumberPrivate: { type: Boolean, default: false },
+  isLoginWithEmail: { type: Boolean, default: true },
 });
 
 userProfileSchema.index({ phoneNumber: 1 }, { name: "phoneNumber_single_index" });

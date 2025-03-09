@@ -2,6 +2,7 @@ const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
 const notificationRepository = require("../repositories/NotificationRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
+const tripRepository = require("../repositories/TripRepository");
 const newsletterValidator = require("../validators/NewsletterValidator");
 const {getObjectsFromS3Bucket} = require("../aws/S3");
 
@@ -24,6 +25,7 @@ async function getNotification(userId) {
        const fetchedUserProfile = userProfile.toObject();
         notification.username = userProfile.username;
         notification.profilePic = await updateMemberProfiles(fetchedUserProfile);
+        notification.trip = await tripRepository.findTripWithTripId(notification.tripId);
         return notification;
     }));
     logger.info(

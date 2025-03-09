@@ -98,12 +98,14 @@ async function signUp(payload) {
         username,
         userId,
         phoneNumber: userKey,
+        isLoginWithEmail: false
       };
     } else {
       user = {
         username,
         emailId: userKey,
         userId,
+        isLoginWithEmail: true
       };
     }
     const createdUser = await tempUserProfileRepository.create(user);
@@ -122,6 +124,7 @@ async function signUp(payload) {
 async function login(userKey) {
   try {
     const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
+
     if (!userInDatabase) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
