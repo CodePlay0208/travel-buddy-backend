@@ -19,7 +19,7 @@ async function getNotification(userId) {
   try {
     const fetchedNotifications =
       await notificationRepository.getNotificationsByReceiverId(userId);
-     const notifications = Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
+     const notifications = await Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
       let notification = fetchedNotification.toObject();
        const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
        const fetchedUserProfile = userProfile.toObject();

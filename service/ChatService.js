@@ -15,7 +15,6 @@ const {
 
 async function populateChat(storedChat) {
   let populatedChat = { chatId: storedChat.chatId };
-  populatedChat = populatedChat.toObject();
 
   const messagePromise = messageRepository.findMessageByMessageId(
     storedChat.messageId,
@@ -32,20 +31,21 @@ async function populateChat(storedChat) {
     userProfilePromise,
   ]);
 
-  await Promise.all(
-    userProfiles.map(async (user) => {
+  const fetchedUserProfiles = userProfiles.map(user => user.toObject());
+
+  populatedChat.users = await Promise.all(
+    fetchedUserProfiles.map(async (user) => {
       const userProfilePic = await getObjectsFromS3Bucket(
         "",
         user.profilePic,
         process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
       );
       user.profilePic = userProfilePic;
+      return user
     })
   );
 
   populatedChat.latestMessage = latestMessage;
-  populatedChat.users = userProfiles;
-
   return populatedChat;
 }
 
