@@ -6,6 +6,7 @@ const tempUserProfileSchema = new mongoose.Schema({
   emailId: { type: String },
   createdAt: { type: Date, default: Date.now },
   userId: { type: String, required: true, unique: true },
+  isLoginWithEmail: { type: Boolean, default: true },
 });
 
 tempUserProfileSchema.index({ phoneNumber: 1 }, { name: "phoneNumber_single_index" });

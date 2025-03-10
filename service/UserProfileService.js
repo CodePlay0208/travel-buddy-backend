@@ -190,7 +190,7 @@ async function deleteUserProfile(userId) {
       user.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-    userProfileRepository.deleteUserByUserId(userId);
+    await userProfileRepository.deleteUserByUserId(userId);
     deletedUserRepository.create(deletedUser);
 
     logger.info(
