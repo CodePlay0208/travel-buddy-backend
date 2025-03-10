@@ -22,11 +22,13 @@ async function getNotification(userId) {
      const notifications = await Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
       let notification = fetchedNotification.toObject();
        const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
-       const fetchedUserProfile = userProfile.toObject();
+       if(userProfile){
+        const fetchedUserProfile = userProfile.toObject();
         notification.username = userProfile.username;
         notification.profilePic = await updateMemberProfiles(fetchedUserProfile);
         notification.trip = await tripRepository.findTripWithTripId(notification.tripId);
         return notification;
+       }
     }));
     logger.info(
       `Successfully sent notifications=${JSON.stringify(
