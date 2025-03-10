@@ -21,7 +21,7 @@ async function updateUser(userId, updateData) {
 
 async function deleteUserByUserId(userId) {
   try {
-    await UserProfile.findOneAndDelete(userId);
+    await UserProfile.findOneAndDelete({userId});
   } catch (error) {
     logger.error(
       `Error occured while deleting user with userId=${userId}, error=${error}`
