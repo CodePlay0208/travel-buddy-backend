@@ -174,4 +174,4 @@ const getOtherUserProfileHandler = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getUserProfileHandler, editUserHandler, deleteUserHandler, findUserHandler, getOtherUserProfileHandler };
+module.exports = { getUserProfileHandler, editUserHandler, deleteUserHandler, findUserHandler, getOtherUserProfileHandler,editSecondaryKeyHandler };
