@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const TripDataModel = require("../models/TripDataModel");
-const TempUserSignUpModel = require("../models/TempUserSignUpModel");
+const TempUserProfileModel = require("../models/TempUserProfileModel");
 const OtpModel = require("../models/OtpModel");
 const logger = require("../logger");
 
@@ -51,7 +51,7 @@ const connectDB = async () => {
 const createIndexes = async () => {
   try {
     await TripDataModel.createIndexes();
-    await TempUserSignUpModel.createIndexes();
+    await TempUserProfileModel.createIndexes();
     await OtpModel.createIndexes();
     logger.info(`Created indexes in the database`);
   } catch (error) {
