@@ -4,38 +4,54 @@ const notificationRepository = require("../repositories/NotificationRepository")
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tripRepository = require("../repositories/TripRepository");
 const newsletterValidator = require("../validators/NewsletterValidator");
-const {getObjectsFromS3Bucket} = require("../aws/S3");
-
+const { getObjectsFromS3Bucket } = require("../aws/S3");
 
 async function updateMemberProfiles(member) {
-      return await getObjectsFromS3Bucket(
-        "",
-        member.profilePic,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-      );
+  return await getObjectsFromS3Bucket(
+    "",
+    member.profilePic,
+    process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+  );
 }
 
 async function getNotification(userId) {
   try {
     const fetchedNotifications =
       await notificationRepository.getNotificationsByReceiverId(userId);
-     const notifications = await Promise.all(fetchedNotifications.map(async (fetchedNotification)=>{
-      let notification = fetchedNotification.toObject();
-       const userProfile = await userProfileRepository.findUserByUserId(notification.senderId);
-       if(userProfile){
-        const fetchedUserProfile = userProfile.toObject();
-        notification.username = userProfile.username;
-        notification.profilePic = await updateMemberProfiles(fetchedUserProfile);
-        notification.trip = await tripRepository.findTripWithTripId(notification.tripId);
-        return notification;
-       }
-    }));
+      if(!fetchedNotifications) return [];
+
+    const notifications = await Promise.all(
+      fetchedNotifications.map(async (fetchedNotification) => {
+        let notification = fetchedNotification.toObject();
+        const userProfile = await userProfileRepository.findUserByUserId(
+          notification.senderId
+        );
+        if (userProfile) {
+          const fetchedUserProfile = userProfile.toObject();
+          notification.username = userProfile.username;
+          notification.profilePic = await updateMemberProfiles(
+            fetchedUserProfile
+          );
+          notification.trip = await tripRepository.findTripWithTripId(
+            notification.tripId
+          );
+          return notification;
+        }
+        logger.info(`Sender deleted for notificationId=${notification.notificationId}, senderId=${notification.senderId}`)
+        return null;
+      })
+    );
+    const filteredNotifications = notifications.filter(
+      (notification) => notification !== null && notification !== undefined
+    );
+
     logger.info(
       `Successfully sent notifications=${JSON.stringify(
-        notifications
+        filteredNotifications
       )} for user with userId=${userId}`
     );
-    return notifications;
+
+    return filteredNotifications;
   } catch (error) {
     logger.error(
       `Failed to send notifications to user with userId=${userId}, error=${error}`
