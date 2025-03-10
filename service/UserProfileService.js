@@ -117,7 +117,7 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
 
     if((user.isLoginWithEmail && updateData.emailId) || (!user.isLoginWithEmail && updateData.phoneNumber)){
       const userOtp = await otpRepository.findOtpWithUserId(userId);
-      if(userOtp.otp == updateData.otp){
+      if(userOtp && userOtp.otp == updateData.otp){
         if(updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
         if(updateData.phoneNumber) sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
       }
