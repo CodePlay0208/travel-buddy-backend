@@ -34,7 +34,11 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
     logger.error(
       `API_NAME=${GET_USER_PROFILE}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
-    res.status(500).json();
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
   }
 });
 
