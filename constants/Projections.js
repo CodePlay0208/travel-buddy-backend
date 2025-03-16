@@ -28,7 +28,7 @@ const USER_PROFILE_PROJECTION = {
   dateOfBirth: 1,
   isEmailPrivate: 1,
   isPhoneNumberPrivate: 1,
-  isLoginWithEmail: 1
+  isSignupWithEmail: 1
 };
 
 const USER_PROFILE_PROJECTION_IN_SEARCH_CARD = {

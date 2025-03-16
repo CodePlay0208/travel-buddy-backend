@@ -98,14 +98,14 @@ async function signUp(payload) {
         username,
         userId,
         phoneNumber: userKey,
-        isLoginWithEmail: false
+        isSignupWithEmail: false
       };
     } else {
       user = {
         username,
         emailId: userKey,
         userId,
-        isLoginWithEmail: true
+        isSignupWithEmail: true
       };
     }
     const createdUser = await tempUserProfileRepository.create(user);

@@ -115,7 +115,7 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     if(updateData.isPhoneNumberPrivate)
       sanitizedUpdateData.isPhoneNumberPrivate = updateData.isPhoneNumberPrivate;
 
-    if((user.isLoginWithEmail && updateData.emailId) || (!user.isLoginWithEmail && updateData.phoneNumber)){
+    if((user.isSignupWithEmail && updateData.emailId) || (!user.isSignupWithEmail && updateData.phoneNumber)){
       const userOtp = await otpRepository.findOtpWithUserId(userId);
       if(userOtp && userOtp.otp == updateData.otp){
         if(updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
@@ -227,7 +227,7 @@ async function editSecondaryKey(userId, newPayload) {
       throw new ValidationError(`User doesn't exists`, 400);
     }
 
-    if((userInDatabase.isLoginWithEmail && newPayload.emailId) || (!userInDatabase.isLoginWithEmail && newPayload.phoneNumber)){
+    if((userInDatabase.isSignupWithEmail && newPayload.emailId) || (!userInDatabase.isSignupWithEmail && newPayload.phoneNumber)){
       throw new ValidationError(`Can't update primary key`, 400);
     }
 
