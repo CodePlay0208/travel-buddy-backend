@@ -68,6 +68,28 @@ async function updateRequestTripForUser(userId, tripId, isRequested) {
   }
 }
 
+async function updatePublishTripForUser(userId, tripId, isPublished) {
+  try {
+    const result = await UserTrips.findOneAndUpdate(
+      { userId, tripId },
+      {
+        $set: {
+          isPublished
+        },
+      },
+      { new: true, upsert: true }
+    );
+    return result;
+  } catch (error) {
+    logger.error(
+      `Error occurred while adding tripId=${tripId} to published trips for user with userId=${userId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while adding tripId=${tripId} to published trips for user with userId=${userId}, error=${error}`
+    );
+  }
+}
+
 async function getUserTripsUsingQuery(
   query,
   skip = 0,
@@ -97,4 +119,5 @@ module.exports = {
   updateWishlistTripForUser,
   updateJoinTripForUser,
   updateRequestTripForUser,
+  updatePublishTripForUser
 };

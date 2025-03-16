@@ -280,6 +280,7 @@ async function createTrip(payload, userId) {
 
       try {
         const createdTrip = await tripRepository.createTrip(newTrip);
+        const createdUserTrip = await userTripsRepository.updatePublishTripForUser(userId, tripId, true);
         logger.info(
           `Trip with payload=${JSON.stringify(
             payload
