@@ -5,7 +5,8 @@ const UserTrips = new mongoose.Schema({
   tripId: { type: String, required: true },
   isWishlisted: {type: Boolean, required: true},
   isJoined: {type: Boolean, required: true},
-  isRequested: {type: Boolean, required: true}
+  isRequested: {type: Boolean, required: true},
+  isPublished: {type: Boolean, required: true}
 });
 
 UserTrips.index(
@@ -21,6 +22,11 @@ UserTrips.index(
 UserTrips.index(
   { userId: 1, isRequested: 1},
   { name: "userId_isRequested_composite_index" }
+);
+
+UserTrips.index(
+  { userId: 1, isPublished: 1},
+  { name: "userId_isPublished_composite_index" }
 );
 
 UserTrips.index(
@@ -42,5 +48,11 @@ UserTrips.index(
   { tripId: 1, isRequested: 1},
   { name: "tripId_isRequested_composite_index" }
 );
+
+UserTrips.index(
+  { tripId: 1, isPublished: 1},
+  { name: "tripId_isPublished_composite_index" }
+);
+
 
 module.exports = mongoose.model("UserTrips", UserTrips);
