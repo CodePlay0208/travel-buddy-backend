@@ -98,7 +98,8 @@ async function getUserTripsUsingQuery(
   try {
     const usersInTrip = await UserTrips.find(query)
       .skip(skip)
-      .limit(limitNumber);
+      .limit(limitNumber)
+      .sort({ createdAt: -1 });
     return usersInTrip;
   } catch (error) {
     logger.error(

@@ -8,7 +8,8 @@ const tripValidator = {
   validateLimit: (limit) => {
     limit = Number(limit);
     if (isNaN(limit) || limit < 0 || limit > 100) {
-      throw new ValidationError(`Set a valid limit`);
+      limit = process.env.LIMIT_FOR_SENDING_TRIPS;
+      logger.warn(`Invalid Limit`, limit);
     }
   },
 
