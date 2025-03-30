@@ -637,8 +637,8 @@ async function getTripsWithFilter(filter, userId) {
           null,
           trip.tripId,
           true,
-          false,
-          false,
+          null,
+          null,
           null
         );
         let joinedUsers = [];
