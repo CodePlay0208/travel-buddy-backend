@@ -36,7 +36,8 @@ async function addRequestedMembersProfilesToTrip(trip, projection) {
 
 async function updateMemberProfiles(members) {
   return Promise.all(
-    members.map(async (member) => {
+    members.map(async (originaMember) => {
+      let member = originaMember.toObject();
       member.profilePic = await getObjectsFromS3Bucket(
         "",
         member.profilePic,
@@ -361,7 +362,7 @@ async function  getTripById(tripId, userId) {
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    logger.info(`fetched trip with tripId=${tripId}, trip=${trip}`);
+    logger.info(`fetched trip with tripId=${tripId}, trip=${JSON.stringify(fetchedTrip)}`);
     return fetchedTrip;
   } catch (error) {
     logger.error(
