@@ -72,7 +72,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
   );
 
   if (!userTrips || userTrips.length === 0) {
-       return [];
+    return [];
   }
 
   const fetchedUserTrips = userTrips.map((trip) => trip.toObject());
@@ -120,10 +120,9 @@ function addDateToQuery(query, queryDate) {
       logger.error("Invalid date passed in query");
       throw new ValidationError("Invalid Date Passed");
     }
-  }
-  else{
+  } else {
     const todayDate = new Date();
-    todayDate.setUTCHours(0,0,0,0);
+    todayDate.setUTCHours(0, 0, 0, 0);
     query.startDate = { $gte: todayDate };
   }
 }
@@ -281,13 +280,22 @@ async function createTrip(payload, userId) {
 
       try {
         const createdTrip = await tripRepository.createTrip(newTrip);
-        const createdUserTrip = await userTripsRepository.updatePublishTripForUser(userId, tripId, true);
+        const createdUserTrip =
+          await userTripsRepository.updatePublishTripForUser(
+            userId,
+            tripId,
+            true
+          );
         logger.info(
           `Trip with payload=${JSON.stringify(
             payload
           )}, tripId=${tripId} created successfully`
         );
-        const userTrips = await userTripsRepository.updateJoinTripForUser(userId, tripId, true);
+        const userTrips = await userTripsRepository.updateJoinTripForUser(
+          userId,
+          tripId,
+          true
+        );
         return tripId;
       } catch (error) {
         logger.error(
@@ -307,7 +315,7 @@ async function createTrip(payload, userId) {
   }
 }
 
-async function  getTripById(tripId, userId) {
+async function getTripById(tripId, userId) {
   try {
     let trip = await tripRepository.findTripWithTripId(tripId);
     if (!trip) {
@@ -334,7 +342,7 @@ async function  getTripById(tripId, userId) {
     fetchedTrip.isWishlisted = false;
     fetchedTrip.isRequested = false;
 
-    if(userId){
+    if (userId) {
       const userQuery = createQueryForUserTrips(
         userId,
         tripId,
@@ -343,26 +351,28 @@ async function  getTripById(tripId, userId) {
         null,
         null
       );
-  
+
       const userBasedTrips = await userTripsRepository.getUserTripsUsingQuery(
         userQuery
       );
-  
-      if(userBasedTrips && userBasedTrips.length > 0){
+
+      if (userBasedTrips && userBasedTrips.length > 0) {
         fetchedTrip.isJoined = userBasedTrips[0].isJoined;
         fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
         fetchedTrip.isRequested = userBasedTrips[0].isRequested;
       }
     }
-    
+
     fetchedTrip.tripMembersIds = joinedUsers;
-    
+
     await updateJoinedMembersProfilesInTrip(
       fetchedTrip,
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    logger.info(`fetched trip with tripId=${tripId}, trip=${JSON.stringify(fetchedTrip)}`);
+    logger.info(
+      `fetched trip with tripId=${tripId}, trip=${JSON.stringify(fetchedTrip)}`
+    );
     return fetchedTrip;
   } catch (error) {
     logger.error(
@@ -626,7 +636,7 @@ async function getTripsWithFilter(filter, userId) {
     );
 
     if (trips.length === 0) {
-     return [];
+      return [];
     }
 
     let fetchedTrips = trips.map((trip) => trip.toObject());
@@ -717,6 +727,9 @@ async function getWishlistedTrips(filter, userId) {
       limit = parseInt(process.env.LIMIT_FOR_SENDING_WISHLISTED_TRIPS, 10),
     } = filter;
     tripValidator.validateLimit(limit);
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
 
     const { skip, limitNumber, newOffset } = parseLimitAndOffset(
       limit,
@@ -753,6 +766,12 @@ async function getWishlistedTrips(filter, userId) {
 
 async function addWishlistTrip(tripId, userId) {
   try {
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
     const addedTrip = await userTripsRepository.updateWishlistTripForUser(
       userId,
       tripId,
@@ -771,6 +790,12 @@ async function addWishlistTrip(tripId, userId) {
 
 async function removeWishlistedTrip(tripId, userId) {
   try {
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
     const trip = await userTripsRepository.updateWishlistTripForUser(
       userId,
       tripId,
@@ -790,7 +815,20 @@ async function removeWishlistedTrip(tripId, userId) {
 async function requestJoinTrip(payload, userId) {
   try {
     const { tripId } = payload;
-    const query = createQueryForUserTrips(userId, tripId, null, null, null, null);
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
+    const query = createQueryForUserTrips(
+      userId,
+      tripId,
+      null,
+      null,
+      null,
+      null
+    );
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
     if (userTrip && (userTrip.isJoined || userTrip.isRequested)) {
       throw new ValidationError(
@@ -820,6 +858,18 @@ async function requestJoinTrip(payload, userId) {
 async function addMemberTrip(payload, userId) {
   try {
     const { tripId, memberId } = payload;
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
+    if (!memberId) {
+      throw new ValidationError(
+        `memberId Id not valid, memberId=${memberId}`,
+        400
+      );
+    }
     const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
       tripId,
       userId
@@ -830,9 +880,21 @@ async function addMemberTrip(payload, userId) {
         400
       );
     }
-    const query = createQueryForUserTrips(memberId, tripId, null, true, null, null);
+    const query = createQueryForUserTrips(
+      memberId,
+      tripId,
+      null,
+      true,
+      null,
+      null
+    );
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
-    if (!userTrip || userTrip.length == 0 || !userTrip[0].isRequested || userTrip[0].isJoined) {
+    if (
+      !userTrip ||
+      userTrip.length == 0 ||
+      !userTrip[0].isRequested ||
+      userTrip[0].isJoined
+    ) {
       throw new ValidationError(
         "User hasn't requested or has already joined",
         400
@@ -860,7 +922,20 @@ async function addMemberTrip(payload, userId) {
 async function leaveTrip(payload, userId) {
   try {
     const { tripId } = payload;
-    const query = createQueryForUserTrips(userId, tripId, false, null, null, null);
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
+    const query = createQueryForUserTrips(
+      userId,
+      tripId,
+      false,
+      null,
+      null,
+      null
+    );
     const userTrip = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrip) {
       throw new ValidationError("User hasn't joined yet", 400);
@@ -887,6 +962,9 @@ async function leaveTrip(payload, userId) {
 
 async function getRequestedTrips(filter, userId) {
   try {
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
     const {
       offset = 0,
       limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
@@ -928,6 +1006,10 @@ async function getRequestedTrips(filter, userId) {
 
 async function getJoinedTrips(filter, userId) {
   try {
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+
     const {
       offset = 0,
       limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
@@ -940,7 +1022,14 @@ async function getJoinedTrips(filter, userId) {
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
 
-    const joinedQuery = createQueryForUserTrips(userId, null, true, null, null, null);
+    const joinedQuery = createQueryForUserTrips(
+      userId,
+      null,
+      true,
+      null,
+      null,
+      null
+    );
     const fetchedTrips = await populateTripsUsingUserTripsQuery(
       joinedQuery,
       skip,
@@ -961,6 +1050,9 @@ async function getJoinedTrips(filter, userId) {
 
 async function getRequestedMembers(tripId) {
   try {
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
     const query = createQueryForUserTrips(null, tripId, null, true, null, null);
 
     let pendingUsers = [];
@@ -995,6 +1087,18 @@ async function getRequestedMembers(tripId) {
 async function removeMemberAsHost(payload, userId) {
   try {
     const { tripId, memberId } = payload;
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
+    if (!memberId) {
+      throw new ValidationError(
+        `memberId Id not valid, memberId=${memberId}`,
+        400
+      );
+    }
     const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
       tripId,
       userId
@@ -1007,14 +1111,18 @@ async function removeMemberAsHost(payload, userId) {
       );
     }
 
-    if(tripInDatabase.userId == memberId){
-      throw new ValidationError(
-        "Publisher can't be removed",
-        400
-      );
+    if (tripInDatabase.userId == memberId) {
+      throw new ValidationError("Publisher can't be removed", 400);
     }
 
-    const query = createQueryForUserTrips(memberId, tripId, true, null, null, null);
+    const query = createQueryForUserTrips(
+      memberId,
+      tripId,
+      true,
+      null,
+      null,
+      null
+    );
     const userTrips = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't joined yet", 400);
@@ -1039,6 +1147,18 @@ async function removeMemberAsHost(payload, userId) {
 async function declineRequestInvitation(payload, userId) {
   try {
     const { tripId, memberId } = payload;
+    if (!userId) {
+      throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
+    }
+    if (!tripId) {
+      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    }
+    if (!memberId) {
+      throw new ValidationError(
+        `memberId Id not valid, memberId=${memberId}`,
+        400
+      );
+    }
     const tripInDatabase = await tripRepository.findTripWithTripIdAndUserId(
       tripId,
       userId
@@ -1051,7 +1171,14 @@ async function declineRequestInvitation(payload, userId) {
       );
     }
 
-    const query = createQueryForUserTrips(memberId, tripId, null, true, null, null);
+    const query = createQueryForUserTrips(
+      memberId,
+      tripId,
+      null,
+      true,
+      null,
+      null
+    );
     const userTrips = await userTripsRepository.getUserTripsUsingQuery(query);
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't requested yet", 400);
@@ -1064,7 +1191,6 @@ async function declineRequestInvitation(payload, userId) {
     throw error;
   }
 }
-
 
 module.exports = {
   createTrip,
@@ -1085,5 +1211,5 @@ module.exports = {
   removeMemberAsHost,
   editTripImages,
   createTripsImages,
-  declineRequestInvitation
+  declineRequestInvitation,
 };
