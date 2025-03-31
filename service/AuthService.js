@@ -196,7 +196,7 @@ async function resendOtp(payload, userId) {
 
     if (isSignUpRequest == null || isSignUpRequest == undefined) {
       logger.error(`isSignUpRequest param is null or undefined`);
-      throw new ValidationError("User not found", 400);
+      throw new ValidationError("isSignUpRequest param is null or undefined", 400);
     }
 
     if (isSignUpRequest) {
