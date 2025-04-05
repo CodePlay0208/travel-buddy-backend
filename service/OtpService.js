@@ -74,7 +74,7 @@ async function sendOtp(username, userKey, userId) {
     logger.info(
       `Successfully sent otp=${otp} for user with userId=${userId}, userKey=${userKey}`
     );
-    await otpRepository.create(userId, otp);
+    await otpRepository.create(userId, otp, userKey);
   } catch (error) {
     logger.error(
       `Failed to send otp to user with userId=${userId}, error=${error}`

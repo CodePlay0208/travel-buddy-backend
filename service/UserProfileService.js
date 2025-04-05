@@ -118,8 +118,8 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     if((user.isSignupWithEmail && updateData.emailId) || (!user.isSignupWithEmail && updateData.phoneNumber)){
       const userOtp = await otpRepository.findOtpWithUserId(userId);
       if(userOtp && userOtp.otp == updateData.otp){
-        if(updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
-        if(updateData.phoneNumber) sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
+        if(updateData.emailId && userOtp.userKey == updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
+        if(updateData.phoneNumber && userOtp.userKey == updateData.phoneNumber) sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
       }
     }
 

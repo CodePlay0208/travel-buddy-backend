@@ -1,11 +1,12 @@
 const logger = require("../logger");
 const OtpSchema = require("../models/OtpModel");
 
-async function create(userId, otp) {
+async function create(userId, otp, userKey) {
   try {
     const newOTP = new OtpSchema({
       userId,
       otp,
+      userKey
     });
     await newOTP.save();
   } catch (error) {
