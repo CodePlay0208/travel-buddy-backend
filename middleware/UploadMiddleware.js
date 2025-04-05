@@ -5,8 +5,7 @@ const { ValidationError } = require("../exceptions/ValidationError");
 const uploadMiddlewareForImages = multer({
   storage: multerStorage,
   limits: {
-    fileSize: Number(process.env.LIMIT_ON_SIZE_OF_DESTINATION_IMAGES),
-    fieldSize: 25 * 1024 * 1024 //25MB
+    fileSize: 25 * 1024 * 1024 
   },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = process.env.ALLOWED_IMAGE_TYPES.split(",");
