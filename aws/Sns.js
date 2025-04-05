@@ -5,7 +5,7 @@ const logger = require("../logger");
 async function sendTextMessagesToPhoneNumber(phoneNumber, otp, username) {
   const params = {
     Message: `Hi ${username} your otp for signing up at travmigoz is ${otp}. This code is valid for 5 minutes. Please don't share it with anyone`,
-    PhoneNumber: `${phoneNumber}`,
+    PhoneNumber: `+91${phoneNumber}`,
   };
 
   try {
