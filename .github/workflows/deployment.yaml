@@ -13,7 +13,7 @@ env:
   ELASTIC_BEANSTALK_NAME_PROD: "Travmigoz"
   ELASTIC_BEANSTALK_ENV_NAME_PROD: "Travmigoz-env-1"
   ELASTIC_BEANSTALK_NAME_NON_PROD: "Travmigoz"
-  ELASTIC_BEANSTALK_ENV_NAME_NON_PROD: "Travmigoz-nonprod"
+  ELASTIC_BEANSTALK_ENV_NAME_NON_PROD: "Travmigoz-nonprod-env"
 
 jobs:
   build:
