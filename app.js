@@ -65,7 +65,7 @@ try {
     logger.info(`Server is running on http://localhost:${port}`);
   });
 
-  handleSocketIO(server);
+  // handleSocketIO(server);
 } catch (error) {
   logger.error(`Error while running the app: ${error.message}`, {
     stack: error.stack,
