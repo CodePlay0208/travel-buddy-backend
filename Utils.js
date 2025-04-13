@@ -70,7 +70,7 @@ async function cropAndResizeImages(files) {
   }
   return Promise.all(
     files.map(async (file) => {
-      const image = sharp(file.buffer);
+      const image = sharp(file.buffer).rotate();
 
       const metadata = await image.metadata();
       let width = metadata.width;
