@@ -7,13 +7,21 @@ const tripDataSchema = new mongoose.Schema({
   endDate: { type: Date, required: true },
   startLocation: { type: String, required: true },
   minBudget: { type: Number },
-  maxBudget: {type: Number},
+  maxBudget: { type: Number },
   description: { type: String, required: true },
   destinationImages: [{ type: String }],
   croppedDestinationImages: [{ type: String }],
   userId: { type: String, required: true },
   tripId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
+  dayTabs: [
+    { 
+      dayTabId: { type: String, required: true },
+      dayTitle: { type: String, required: true },
+      dayDescription: [{ type: String, required: true }],
+    },
+
+  ],
 });
 
 tripDataSchema.index({ destination: 1 }, { name: "destination_single_index" });
