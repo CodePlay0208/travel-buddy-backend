@@ -15,12 +15,11 @@ const tripDataSchema = new mongoose.Schema({
   tripId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
   dayTabs: [
-    { 
-      dayTabId: { type: String, required: true },
-      dayTitle: { type: String, required: true },
-      dayDescription: [{ type: String, required: true }],
+    {
+      dayTabId: { type: String },
+      dayTitle: { type: String },
+      dayDescription: [{ type: String }],
     },
-
   ],
 });
 
