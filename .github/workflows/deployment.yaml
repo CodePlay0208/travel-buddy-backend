@@ -33,9 +33,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # Conditionally copy the config file based on the environment
       - name: Add Environment Configs
         run: |
-          cp .ebextensions/preprod-env.config .ebextensions/environmentVariables.config
+          if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
+            cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config
+          else
+            cp .ebextensions/preprod-env.config .ebextensions/environmentVariables.config
+          fi
 
       - name: Generate Deployment Package
         run: zip -r ${{ github.run_id }}.zip .
@@ -49,7 +54,7 @@ jobs:
 
   deploy-non-prod:
     runs-on: ubuntu-latest
-    needs: build
+    if: ${{ github.event.inputs.environment == 'non-prod' }} # Only runs when environment is non-prod
     steps:
       - uses: actions/download-artifact@v4.1.7
 
@@ -90,8 +95,7 @@ jobs:
 
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: deploy-non-prod
-    if: ${{ github.event.inputs.environment == 'prod' }}
+    if: ${{ github.event.inputs.environment == 'prod' }} # Only runs when environment is prod
     steps:
       - uses: actions/download-artifact@v4.1.7
 
@@ -101,13 +105,6 @@ jobs:
           aws-region: ap-south-1
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Unzip Package
-        run: unzip ${{ github.run_id }}.zip
-
-      - name: Add Prod Environment Config
-        run: cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config
-
 
       - name: Deploy to Production
         run: |
