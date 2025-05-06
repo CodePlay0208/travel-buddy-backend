@@ -130,7 +130,7 @@ jobs:
           aws elasticbeanstalk update-environment \
             --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} \
             --environment-name ${{ env.ELASTIC_BEANSTALK_ENV_NAME_PROD }} \
-            --version-label ${{ github.run_id }}
+            --version-label ${{ github.run_id }}-prod
 
           aws elasticbeanstalk wait environment-updated \
             --application-name ${{ env.ELASTIC_BEANSTALK_NAME_PROD }} \
