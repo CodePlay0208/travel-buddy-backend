@@ -33,7 +33,7 @@ const dropAllIndexes = async () => {
 
 const connectDB = async () => {
   try {
-    logger.info("Connecting to database...");
+    logger.info("Connecting to database..." + process.env.DATABASE_NAME);
     const conn = await mongoose.connect(
       process.env.URL_FOR_MONGODB + process.env.DATABASE_NAME,
       {
