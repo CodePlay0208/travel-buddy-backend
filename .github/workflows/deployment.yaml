@@ -36,7 +36,6 @@ jobs:
       - name: Add Environment Configs
         run: |
           cp .ebextensions/preprod-env.config .ebextensions/environmentVariables.config
-          cp .ebextensions/prod-env.config .ebextensions/prod-env.config
 
       - name: Generate Deployment Package
         run: zip -r ${{ github.run_id }}.zip .
@@ -102,6 +101,13 @@ jobs:
           aws-region: ap-south-1
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Unzip Package
+        run: unzip ${{ github.run_id }}.zip
+
+      - name: Add Prod Environment Config
+        run: cp .ebextensions/prod-env.config .ebextensions/environmentVariables.config
+
 
       - name: Deploy to Production
         run: |
