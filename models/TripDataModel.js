@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const Gender = require("../enums/Gender");
 
 const tripDataSchema = new mongoose.Schema({
-  destination: { type: String, required: true },
+  destination: [{ type: String, required: true }],
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
-  startLocation: { type: String, required: true },
+  startLocation: [{ type: String, required: true }],
   minBudget: { type: Number },
   maxBudget: { type: Number },
   description: { type: String, required: true },

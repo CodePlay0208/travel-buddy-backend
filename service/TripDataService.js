@@ -108,7 +108,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
-    query.destination = destination;
+    query.destination = { $in: destination };
   }
 }
 

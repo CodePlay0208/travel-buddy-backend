@@ -85,6 +85,8 @@ async function signUp(payload) {
   try {
     let userId = uuidv4();
     const { userKey, username } = payload;
+    userKey = userKey.trim();
+    username.trim();
     logger.info(`Signing Up user with email=${userKey}, username=${username}`);
     authValidator.validateSignUpRequest(payload);
     const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
@@ -98,14 +100,14 @@ async function signUp(payload) {
         username,
         userId,
         phoneNumber: userKey,
-        isSignupWithEmail: false
+        isSignupWithEmail: false,
       };
     } else {
       user = {
         username,
         emailId: userKey,
         userId,
-        isSignupWithEmail: true
+        isSignupWithEmail: true,
       };
     }
     const createdUser = await tempUserProfileRepository.create(user);
@@ -123,6 +125,7 @@ async function signUp(payload) {
 
 async function login(userKey) {
   try {
+    userKey = userKey.trim();
     const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
 
     if (!userInDatabase) {
@@ -148,7 +151,7 @@ async function verifyOtp(userId, payload) {
   try {
     const { userOtp, isSignUpRequest } = payload;
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
-    if(originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587"){
+    if (originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587") {
       const token = generateToken(
         userId,
         process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
@@ -201,10 +204,13 @@ async function resendOtp(payload, userId) {
   try {
     const { userKey, isSignUpRequest } = payload;
     let user = null;
-
+    userKey = userKey.trim();
     if (isSignUpRequest == null || isSignUpRequest == undefined) {
       logger.error(`isSignUpRequest param is null or undefined`);
-      throw new ValidationError("isSignUpRequest param is null or undefined", 400);
+      throw new ValidationError(
+        "isSignUpRequest param is null or undefined",
+        400
+      );
     }
 
     if (isSignUpRequest) {
