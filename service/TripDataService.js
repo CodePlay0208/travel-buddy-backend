@@ -108,7 +108,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
-    query.destination = { $in: destination };
+    query.destination = { $in: [destination] };
   }
 }
 
@@ -640,6 +640,8 @@ async function getTripsWithFilter(filter, userId) {
     }
 
     let fetchedTrips = trips.map((trip) => trip.toObject());
+
+    console.log('fetchedTrips', fetchedTrips);
 
     fetchedTrips = await Promise.all(
       fetchedTrips.map(async (trip) => {
