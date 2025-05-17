@@ -1,7 +1,7 @@
 const Gender = require("../enums/Gender");
 const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
-const { getMaxListeners } = require("../models/TripDataModel");
+const { getMaxListeners } = require("../models/BaseTripModel");
 const { dateFromDateString } = require("../Utils");
 
 const tripValidator = {

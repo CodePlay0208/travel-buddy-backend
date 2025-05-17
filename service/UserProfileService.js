@@ -1,7 +1,8 @@
 const logger = require("../logger");
 const userProfileRepository = require("../repositories/UserProfileRepository.js");
-const tripRepository = require("../repositories/TripRepository.js");
+const baseTripRepository = require("../repositories/BaseTripRepository.js");
 const deletedUserRepository = require("../repositories/DeletedUserRepository.js");
+const tripInstanceRepository = require("../repositories/TripInstanceRepository.js");
 const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
@@ -184,7 +185,8 @@ async function deleteUserProfile(userId) {
       emailId,
     };
 
-    tripRepository.deleteTripsByUserId(userId);
+    baseTripRepository.deleteTripsByUserId(userId);
+    tripInstanceRepository.deleteTripsByUserId(userId);
     deleteObjectsFromS3Bucket(
       "",
       user.profilePic,

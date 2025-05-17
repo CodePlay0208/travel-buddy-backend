@@ -33,8 +33,7 @@ const uploadObjectToS3Bucket = asyncHandler(
   }
 );
 
-const uploadObjectsToS3Bucket = asyncHandler(
-  async (path, objects, s3Bucket) => {
+const uploadObjectsToS3Bucket = async (path, objects, s3Bucket) => {
     var uploadedObjectNames = [];
     var allObjectsUploaded = true;
     if (!objects) {
@@ -63,10 +62,9 @@ const uploadObjectsToS3Bucket = asyncHandler(
 
     return { uploadedObjectNames, allObjectsUploaded };
   }
-);
 
-const getObjectFromS3Bucket = asyncHandler(
-  async (path, uploadedObjectName, s3Bucket) => {
+
+const getObjectFromS3Bucket = async (path, uploadedObjectName, s3Bucket) => {
     try {
       logger.info(`Fetching object from s3bucket=${s3Bucket}, path=${path}`);
       const getObjectParams = {
@@ -86,13 +84,12 @@ const getObjectFromS3Bucket = asyncHandler(
 
     return null;
   }
-);
 
-const getObjectsFromS3Bucket = asyncHandler(
-  async (path, uploadedObjectNames, s3Bucket) => {
+
+const getObjectsFromS3Bucket =  async (path, uploadedObjectNames, s3Bucket) => {
     var uploadedObjectUrls = [];
     if (!uploadedObjectNames) {
-      return { uploadedObjectUrls, allObjectsUploaded };
+      return uploadedObjectUrls;
     }
     try {
       logger.info(`Fetching objects from s3bucket=${s3Bucket}`);
@@ -115,10 +112,9 @@ const getObjectsFromS3Bucket = asyncHandler(
     }
     return uploadedObjectUrls;
   }
-);
 
-const deleteObjectFromS3Bucket = asyncHandler(
-  async (path, uploadedObjectName, s3Bucket) => {
+
+const deleteObjectFromS3Bucket = async (path, uploadedObjectName, s3Bucket) => {
     try {
       logger.info(`Deleting object from s3bucket=${s3Bucket}, path${path}`);
 
@@ -138,10 +134,9 @@ const deleteObjectFromS3Bucket = asyncHandler(
 
     return false;
   }
-);
 
-const deleteObjectsFromS3Bucket = asyncHandler(
-  async (path, uploadedObjectNames, s3Bucket) => {
+
+const deleteObjectsFromS3Bucket =  async (path, uploadedObjectNames, s3Bucket) => {
     var allObjectsDeleted = true;
     if (!uploadedObjectNames) {
       return { allObjectsDeleted };
@@ -168,7 +163,7 @@ const deleteObjectsFromS3Bucket = asyncHandler(
 
     return allObjectsDeleted;
   }
-);
+
 
 module.exports = {
   uploadObjectsToS3Bucket,

@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const logger = require("../logger");
-const userProfileRepository = require("../repositories/UserProfileRepository");
-const tripRepository = require("../repositories/TripRepository");
+
 
 const tokenProtect = (jwtSecretKey) => {
   return asyncHandler(async (req, res, next) => {

@@ -30,7 +30,7 @@ async function updateJoinTripForUser(userId, tripId, isJoined) {
       { userId, tripId },
       {
         $set: {
-          isJoined
+          isJoined,
         },
       },
       { new: true, upsert: true }
@@ -52,7 +52,7 @@ async function updateRequestTripForUser(userId, tripId, isRequested) {
       { userId, tripId },
       {
         $set: {
-          isRequested
+          isRequested,
         },
       },
       { new: true, upsert: true }
@@ -74,7 +74,7 @@ async function updatePublishTripForUser(userId, tripId, isPublished) {
       { userId, tripId },
       {
         $set: {
-          isPublished
+          isPublished,
         },
       },
       { new: true, upsert: true }
@@ -115,10 +115,35 @@ async function getUserTripsUsingQuery(
   }
 }
 
+async function updateTripInstances(
+  hostId,
+  tripIds,
+  isPublished,
+  isJoined,
+  isRequested,
+  isWishlisted
+) {
+  try {
+    const result = await UserTrips.updateMany(
+      { hostId, tripId: { $in: tripIds } },
+      { $set: { isPublished, isJoined, isWishlisted, isRequested } }
+    );
+    return result;
+  } catch (error) {
+    logger.error(
+      `Error occurred while updating trip instances for userId=${hostId} and tripIds=${tripIds}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while updating trip instances for userId=${hostId} and tripIds=${tripIds}, error=${error}`
+    );
+  }
+}
+
 module.exports = {
   getUserTripsUsingQuery,
   updateWishlistTripForUser,
   updateJoinTripForUser,
   updateRequestTripForUser,
-  updatePublishTripForUser
+  updatePublishTripForUser,
+  updateTripInstances
 };
