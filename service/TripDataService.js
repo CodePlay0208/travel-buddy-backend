@@ -72,12 +72,12 @@ async function getRelatedDatesToBaseTrip(fetchedTrips) {
       const tripInstances = await tripInstancesRepository.getTripsByBaseTripId(
         baseTripId
       );
-      trip.relatedDates = tripInstances.map((trip) => {
+      trip.relatedTrips = tripInstances.map((trip) => {
         const startDate = trip.startDate;
         const endDate = trip.endDate;
-        return { startDate, endDate };
+        const tripInstanceId = trip.tripInstanceId;
+        return { startDate, endDate, tripInstanceId };
       });
-      trip.tripInstances = tripInstances.map((trip) => trip.tripInstanceId);
       return trip;
     })
   );
