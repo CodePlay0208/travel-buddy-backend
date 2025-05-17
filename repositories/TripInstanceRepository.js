@@ -66,23 +66,21 @@ async function updateTrip(trip) {
   }
 }
 
-async function findTripsWithQueryUsingAggregation(fetchedUserTripsIds, limit, offset) {
+async function findTripsWithQueryUsingAggregation(query, limit, offset) {
   try {
     const trips = await TripInstance.aggregate([
       {
-        $match: {
-          tripId: { $in: fetchedUserTripsIds }
-        }
+        $match: query
       },
       {
         $lookup: {
-          from: "basetrips",              // collection name for BaseTrip
-          localField: "baseTripId",       // field in TripInstance
-          foreignField: "tripId",         // field in BaseTrip
+          from: "basetripdataschemas",             
+          localField: "baseTripId",      
+          foreignField: "tripId",   
           as: "baseTripData"
         }
       },
-      { $unwind: "$baseTripData" },
+      { $unwind: "$baseTripData" } ,
       {
         $replaceRoot: {
           newRoot: {
@@ -99,7 +97,6 @@ async function findTripsWithQueryUsingAggregation(fetchedUserTripsIds, limit, of
       { $skip: offset },
       { $limit: limit }
     ]);
-    
     return trips;
   } catch (error) {
     logger.error(
@@ -137,6 +134,20 @@ async function deleteTripsByBaseTripId(baseTripId) {
   }
 }
 
+async function getTripsByBaseTripId(baseTripId) {
+  try {
+    const trips = await TripInstance.find({ baseTripId });
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while deleting trips for trip with baseTripId=${baseTripId}, error=${error}`
+    );
+    throw new Error(
+      `Error deleting trips for trip with baseTripId=${baseTripId}, error=${error}`
+    );
+  }
+}
+
 
 
 module.exports = {
@@ -144,5 +155,7 @@ module.exports = {
   findTripWithTripId,
   updateTrip,
   findTripsWithQueryUsingAggregation,
-  deleteTripsByUserId
+  deleteTripsByUserId,
+  deleteTripsByBaseTripId,
+  getTripsByBaseTripId
 };
