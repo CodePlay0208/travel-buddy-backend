@@ -68,7 +68,7 @@ async function updateRequestedMembersProfilesInTrip(trip, projection) {
 async function getRelatedDatesToBaseTrip(fetchedTrips) {
   return await Promise.all(
     fetchedTrips.map(async (trip) => {
-      const baseTripId = trip.tripId;
+      const baseTripId = trip.baseTripId;
       const tripInstances = await tripInstancesRepository.getTripsByBaseTripId(
         baseTripId
       );
@@ -96,19 +96,23 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
 
   const fetchedUserTrips = userTrips.map((trip) => trip.toObject());
 
-  let fetchedUserTripsIds = [];
+  var fetchedUserTripsIds = [];
+
   fetchedUserTrips.forEach((fetchedUserTrip) => {
-    fetchedUserTripsIds.push(fetchedUserTrip.baseTripId);
+    fetchedUserTripsIds.push(fetchedUserTrip.tripInstanceId);
   });
 
   const fetchedTrips =
     await tripInstancesRepository.findTripsWithQueryUsingAggregation(
       {
-        tripId: { $in: fetchedUserTripsIds }
-      }
+        tripInstanceId: { $in: fetchedUserTripsIds },
+      },
+      limitNumber,
+      skip
     );
 
-  let fetchedTripsObj = fetchedTrips.map((trip) => trip.toObject());
+
+  let fetchedTripsObj = fetchedTrips;
 
   fetchedTripsObj = await addCroppedDestinationImagesToTrips(
     fetchedTripsObj,
@@ -155,20 +159,20 @@ function addUserIdToQuery(query, userId) {
   }
 }
 
-function addTripIdToQuery(query, tripId) {
-  if (tripId) {
-    query.tripId = tripId;
+function addTripIdToQuery(query, tripInstanceId) {
+  if (tripInstanceId) {
+    query.tripInstanceId = tripInstanceId;
   }
 }
 
-function createQuery(destination, date, userId, includeUser, tripId) {
+function createQuery(destination, date, userId, includeUser, tripInstanceId) {
   let query = {};
   addDestinationToQuery(query, destination);
   addDateToQuery(query, date);
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
-  addTripIdToQuery(query, tripId);
+  addTripIdToQuery(query, tripInstanceId);
   return query;
 }
 
@@ -217,17 +221,22 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
   return { trips, newOffset };
 }
 
-async function getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset) {
+async function getTripInstancesUsingQueryWithLimitAndOffset(
+  query,
+  limit,
+  offset
+) {
   const { skip, limitNumber, newOffset } = parseLimitAndOffset(
     limit,
     offset,
     parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
   );
-  const trips = await tripInstancesRepository.findTripsWithQueryUsingAggregation(
-    query,
-    limitNumber,
-    skip
-  );
+  const trips =
+    await tripInstancesRepository.findTripsWithQueryUsingAggregation(
+      query,
+      limitNumber,
+      skip
+    );
 
   return { trips, newOffset };
 }
@@ -250,14 +259,14 @@ async function addCroppedDestinationImagesToTrips(trips, path) {
 
 async function createTrip(payload, userId) {
   try {
-    const tripId = uuidv4();
+    const baseTripId = uuidv4();
     const baseTrip = {
       minBudget: payload.minBudget,
       maxBudget: payload.maxBudget,
       title: payload.title,
       description: payload.description,
       dayTabs: payload.dayTabs,
-      tripId,
+      baseTripId,
       hostId: userId,
     };
 
@@ -272,7 +281,7 @@ async function createTrip(payload, userId) {
       const tripInstanceId = uuidv4();
       const tripInstance = {
         tripInstanceId,
-        baseTripId: tripId,
+        baseTripId,
         hostId: userId,
         destination: payload.destination,
         startLocation: payload.startLocation,
@@ -285,18 +294,19 @@ async function createTrip(payload, userId) {
     const createdTripInstances = await tripInstancesRepository.createInstances(
       tripInstances
     );
-    const tripIds = tripInstances.map(
-      (tripInstances) => tripInstances.tripInstanceId
-    );
-    const userTrips = await userTripsRepository.updateTripInstances(
-      userId,
-      tripIds,
-      true,
-      true,
-      false,
-      false
-    );
-    return tripId;
+
+    tripInstances.forEach(async (tripInstance) => {
+      const userTrips = await userTripsRepository.updateUserTrips(
+        userId,
+        tripInstance.tripInstanceId,
+        true,
+        true,
+        false,
+        false
+      );
+    });
+
+    return baseTripId;
   } catch (error) {
     logger.error(
       `Error creating trip with payload=${JSON.stringify(
@@ -307,12 +317,14 @@ async function createTrip(payload, userId) {
   }
 }
 
-async function getTripById(tripId, userId) {
+async function getTripById(tripInstanceId, userId) {
   try {
-    let trip = await tripInstancesRepository.findTripWithTripId(tripId);
-    console.log(trip, tripId);
+    let trip = await tripInstancesRepository.findTripWithTripId(tripInstanceId);
     if (!trip || trip.length == 0) {
-      throw new ValidationError(`Trip not found for tripId=${tripId}`, 400);
+      throw new ValidationError(
+        `Trip not found for tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
 
     let fetchedTrip = trip[0];
@@ -323,7 +335,14 @@ async function getTripById(tripId, userId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    const query = createQueryForUserTrips(null, tripId, true, null, null, null);
+    const query = createQueryForUserTrips(
+      null,
+      tripInstanceId,
+      true,
+      null,
+      null,
+      null
+    );
 
     const joinedTrips = await userTripsRepository.getUserTripsUsingQuery(query);
 
@@ -340,7 +359,7 @@ async function getTripById(tripId, userId) {
     if (userId) {
       const userQuery = createQueryForUserTrips(
         userId,
-        tripId,
+        tripInstanceId,
         null,
         null,
         null,
@@ -366,30 +385,37 @@ async function getTripById(tripId, userId) {
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    fetchedTrip = await getRelatedDatesToBaseTrip(Array.of(fetchedTrip))
+    fetchedTrip = await getRelatedDatesToBaseTrip(Array.of(fetchedTrip));
 
     logger.info(
-      `fetched trip with tripId=${tripId}, trip=${JSON.stringify(fetchedTrip)}`
+      `fetched trip with tripInstanceId=${tripInstanceId}, trip=${JSON.stringify(
+        fetchedTrip
+      )}`
     );
     return fetchedTrip;
   } catch (error) {
     logger.error(
-      `Error while fetching trip with tripId=${tripId}, error=${error}`
+      `Error while fetching trip with tripInstanceId=${tripInstanceId}, error=${error}`
     );
     throw error;
   }
 }
 
-async function editTrip(tripId, userId, newPayload) {
+async function editTrip(baseTripId, userId, newPayload) {
   try {
-    const tripInDatabase = await baseTripRepository.findTripWithTripId(tripId);
+    const tripInDatabase = await baseTripRepository.findTripWithTripId(
+      baseTripId
+    );
     if (!tripInDatabase) {
-      throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
+      throw new ValidationError(
+        `Trip with baseTripId=${baseTripId} not found`,
+        400
+      );
     }
 
     if (!tripInDatabase.hostId == userId) {
       throw new ValidationError(
-        `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
+        `User with userId=${userId} not authorized to edit trip with baseTripId=${baseTripId}`,
         403
       );
     }
@@ -408,7 +434,7 @@ async function editTrip(tripId, userId, newPayload) {
     });
 
     const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
-    logger.info(`Trip with tripId=${tripId} updated successfully`);
+    logger.info(`Trip with baseTripId=${baseTripId} updated successfully`);
 
     return updatedTrip;
   } catch (error) {
@@ -422,20 +448,25 @@ async function editTrip(tripId, userId, newPayload) {
 }
 
 async function editTripImages(
-  tripId,
+  baseTripId,
   userId,
   newPayload,
   newDestinationImages
 ) {
   try {
-    const tripInDatabase = await baseTripRepository.findTripWithTripId(tripId);
+    const tripInDatabase = await baseTripRepository.findTripWithTripId(
+      tripbaseTripIdId
+    );
     if (!tripInDatabase) {
-      throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
+      throw new ValidationError(
+        `Trip with baseTripId=${baseTripId} not found`,
+        400
+      );
     }
 
-    if (!tripInDatabase.userId == userId) {
+    if (!tripInDatabase.hostId == userId) {
       throw new ValidationError(
-        `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
+        `User with userId=${userId} not authorized to edit trip with baseTripId=${baseTripId}`,
         403
       );
     }
@@ -500,7 +531,7 @@ async function editTripImages(
     tripInDatabase.croppedDestinationImages = uploadedCroppedImagesNames;
 
     const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
-    logger.info(`Trip with tripId=${tripId} updated successfully`);
+    logger.info(`Trip with baseTripId=${baseTripId} updated successfully`);
 
     return { updatedTrip, allFilesUploaded };
   } catch (error) {
@@ -514,16 +545,21 @@ async function editTripImages(
 }
 
 async function createTripsImages(newPayload, newDestinationImages, userId) {
-  const tripId = newPayload.tripId;
+  const baseTripId = newPayload.baseTripId;
   try {
-    const tripInDatabase = await baseTripRepository.findTripWithTripId(tripId);
+    const tripInDatabase = await baseTripRepository.findTripWithTripId(
+      baseTripId
+    );
     if (!tripInDatabase) {
-      throw new ValidationError(`Trip with tripId=${tripId} not found`, 400);
+      throw new ValidationError(
+        `Trip with baseTripId=${baseTripId} not found`,
+        400
+      );
     }
 
-    if (!tripInDatabase.userId == userId) {
+    if (!tripInDatabase.hostId == userId) {
       throw new ValidationError(
-        `User with userId=${userId} not authorized to edit trip with tripId=${tripId}`,
+        `User with userId=${userId} not authorized to edit trip with baseTripId=${baseTripId}`,
         403
       );
     }
@@ -564,9 +600,11 @@ async function createTripsImages(newPayload, newDestinationImages, userId) {
       allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
       const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
     }
-    logger.info(`created images for Trip with tripId=${tripId}`);
+    logger.info(`created images for Trip with baseTripId=${baseTripId}`);
   } catch (error) {
-    logger.error(`Error creating images for tripId=${tripId}, error=${error}`);
+    logger.error(
+      `Error creating images for baseTripId=${baseTripId}, error=${error}`
+    );
     throw error;
   }
 }
@@ -625,11 +663,8 @@ async function getTripsWithFilter(filter, userId) {
     tripValidator.validateFilter(filter);
     let { date } = filter;
     const query = createQuery(destination, date, userId, false, null);
-    var { trips, newOffset } = await getTripInstancesUsingQueryWithLimitAndOffset(
-      query,
-      limit,
-      offset
-    );
+    var { trips, newOffset } =
+      await getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset);
 
     if (trips.length === 0) {
       return [];
@@ -641,7 +676,7 @@ async function getTripsWithFilter(filter, userId) {
       fetchedTrips.map(async (trip) => {
         const userTripsQuery = createQueryForUserTrips(
           null,
-          trip.tripId,
+          trip.tripInstanceId,
           true,
           null,
           null,
@@ -683,21 +718,21 @@ async function getTripsWithFilter(filter, userId) {
   }
 }
 
-async function deleteTrip(tripId, userId) {
+async function deleteTrip(baseTripId, userId) {
   try {
     const tripInDatabase = await baseTripRepository.findTripWithTripIdAndUserId(
-      tripId,
+      baseTripId,
       userId
     );
 
     if (!tripInDatabase) {
       throw new ValidationError(
-        `Trip not found or user doesn't have permssion to delete trip with tripId=${tripId}, userId=${userId}`,
+        `Trip not found or user doesn't have permssion to delete trip with tripbaseTripIdId=${baseTripId}, userId=${userId}`,
         400
       );
     }
 
-    await tripInstancesRepository.deleteTripsByBaseTripId(tripId);
+    await tripInstancesRepository.deleteTripsByBaseTripId(baseTripId);
 
     deleteObjectsFromS3Bucket(
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
@@ -711,10 +746,12 @@ async function deleteTrip(tripId, userId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    await baseTripRepository.deleteTripsByTripId(tripId);
-    logger.info(`Trip with tripId=${tripId} deleted successfully`);
+    await baseTripRepository.deleteTripsByTripId(baseTripId);
+    logger.info(`Trip with baseTripId=${baseTripId} deleted successfully`);
   } catch (error) {
-    logger.error(`Error deleting trip with tripId=${tripId}, error=${error}`);
+    logger.error(
+      `Error deleting trip with baseTripId=${baseTripId}, error=${error}`
+    );
     throw error;
   }
 }
@@ -763,49 +800,55 @@ async function getWishlistedTrips(filter, userId) {
   }
 }
 
-async function addWishlistTrip(tripId, userId) {
+async function addWishlistTrip(tripInstanceId, userId) {
   try {
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     const addedTrip = await userTripsRepository.updateWishlistTripForUser(
       userId,
-      tripId,
+      tripInstanceId,
       true
     );
     logger.info(
-      `added tripId=${tripId} to wishlisted trips for user with userId=${userId} with result=${addedTrip}`
+      `added tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId} with result=${addedTrip}`
     );
   } catch (error) {
     logger.error(
-      `failed to add tripId=${tripId} to wishlisted trips for user with userId=${userId}`
+      `failed to add tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}`
     );
     throw error;
   }
 }
 
-async function removeWishlistedTrip(tripId, userId) {
+async function removeWishlistedTrip(tripInstanceId, userId) {
   try {
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     const trip = await userTripsRepository.updateWishlistTripForUser(
       userId,
-      tripId,
+      tripInstanceId,
       false
     );
     logger.info(
-      `removed tripId=${tripId} from wishlisted trips for user with userId=${userId} with result=${trip}`
+      `removed tripInstanceId=${tripInstanceId} from wishlisted trips for user with userId=${userId} with result=${trip}`
     );
   } catch (error) {
     logger.error(
-      `failed to remove tripId=${tripId} from wishlisted trips for user with userId=${userId}`
+      `failed to remove tripInstanceId=${tripInstanceId} from wishlisted trips for user with userId=${userId}`
     );
     throw error;
   }
@@ -813,16 +856,19 @@ async function removeWishlistedTrip(tripId, userId) {
 
 async function requestJoinTrip(payload, userId) {
   try {
-    const { tripId } = payload;
+    const { tripInstanceId, hostId } = payload;
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     const query = createQueryForUserTrips(
       userId,
-      tripId,
+      tripInstanceId,
       null,
       null,
       null,
@@ -835,20 +881,22 @@ async function requestJoinTrip(payload, userId) {
         400
       );
     }
-    await userTripsRepository.updateRequestTripForUser(userId, tripId, true);
-    tripRepository.findTripWithTripId(tripId).then(async (trip) => {
-      const notification = {
-        notificationId: uuidv4(),
-        senderId: userId,
-        receiverId: trip.userId,
-        tripId: tripId,
-        event: NotificationEvents.USER_REQUEST_TO_JOIN,
-      };
-      notificationRepository.createNotification(notification);
-    });
+    await userTripsRepository.updateRequestTripForUser(
+      userId,
+      tripInstanceId,
+      true
+    );
+    const notification = {
+      notificationId: uuidv4(),
+      senderId: userId,
+      receiverId: hostId,
+      tripInstanceId,
+      event: NotificationEvents.USER_REQUEST_TO_JOIN,
+    };
+    notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
-      `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+      `Error occured while complete user request to join trip with tripInstanceId=${payload.tripInstanceId}, userId=${userId}, error=${error}`
     );
     throw error;
   }
@@ -856,12 +904,15 @@ async function requestJoinTrip(payload, userId) {
 
 async function addMemberTrip(payload, userId) {
   try {
-    const { tripId, memberId } = payload;
+    const { tripInstanceId, memberId } = payload;
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     if (!memberId) {
       throw new ValidationError(
@@ -869,7 +920,7 @@ async function addMemberTrip(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -883,7 +934,7 @@ async function addMemberTrip(payload, userId) {
     }
     const query = createQueryForUserTrips(
       memberId,
-      tripId,
+      tripInstanceId,
       null,
       true,
       null,
@@ -902,19 +953,30 @@ async function addMemberTrip(payload, userId) {
       );
     }
 
-    await userTripsRepository.updateJoinTripForUser(memberId, tripId, true);
-    await userTripsRepository.updateRequestTripForUser(memberId, tripId, false);
+    //TODO: reduce this to a single DB call
+
+    await userTripsRepository.updateJoinTripForUser(
+      memberId,
+      tripInstanceId,
+      true
+    );
+    await userTripsRepository.updateRequestTripForUser(
+      memberId,
+      tripInstanceId,
+      false
+    );
+
     const notification = {
       notificationId: uuidv4(),
       senderId: userId,
       receiverId: memberId,
-      tripId,
+      tripInstanceId,
       event: NotificationEvents.ADD_MEMBER_TO_TRIP,
     };
     notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
-      `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+      `Error occured while complete user request to join trip with tripInstanceId=${payload.tripInstanceId}, userId=${userId}, error=${error}`
     );
     throw error;
   }
@@ -922,16 +984,19 @@ async function addMemberTrip(payload, userId) {
 
 async function leaveTrip(payload, userId) {
   try {
-    const { tripId, hostId } = payload;
+    const { tripInstanceId, hostId } = payload;
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     const query = createQueryForUserTrips(
       userId,
-      tripId,
+      tripInstanceId,
       true,
       null,
       null,
@@ -942,19 +1007,23 @@ async function leaveTrip(payload, userId) {
       throw new ValidationError("User hasn't joined yet", 400);
     }
 
-    await userTripsRepository.updateJoinTripForUser(userId, tripId, false);
+    await userTripsRepository.updateJoinTripForUser(
+      userId,
+      tripInstanceId,
+      false
+    );
 
     const notification = {
       notificationId: uuidv4(),
       senderId: userId,
       receiverId: hostId,
-      tripId: tripId,
+      tripInstanceId: tripInstanceId,
       event: NotificationEvents.LEAVE_TRIP,
     };
     notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
-      `Error occured while complete user request to join trip with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+      `Error occured while complete user request to join trip with tripInstanceId=${payload.tripInstanceId}, userId=${userId}, error=${error}`
     );
     throw error;
   }
@@ -1048,12 +1117,22 @@ async function getJoinedTrips(filter, userId) {
   }
 }
 
-async function getRequestedMembers(tripId) {
+async function getRequestedMembers(tripInstanceId) {
   try {
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
-    const query = createQueryForUserTrips(null, tripId, null, true, null, null);
+    const query = createQueryForUserTrips(
+      null,
+      tripInstanceId,
+      null,
+      true,
+      null,
+      null
+    );
 
     let pendingUsers = [];
 
@@ -1074,11 +1153,13 @@ async function getRequestedMembers(tripId) {
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    logger.info(`fetched trip with tripId=${tripId}, trip=${trip}`);
+    logger.info(
+      `fetched trip with tripInstanceId=${tripInstanceId}, trip=${trip}`
+    );
     return trip;
   } catch (error) {
     logger.error(
-      `Error while fetching trip with tripId=${tripId}, error=${error}`
+      `Error while fetching trip with tripInstanceId=${tripInstanceId}, error=${error}`
     );
     throw error;
   }
@@ -1086,12 +1167,15 @@ async function getRequestedMembers(tripId) {
 
 async function removeMemberAsHost(payload, userId) {
   try {
-    const { tripId, memberId } = payload;
+    const { tripInstanceId, memberId } = payload;
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     if (!memberId) {
       throw new ValidationError(
@@ -1099,18 +1183,18 @@ async function removeMemberAsHost(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
       0
     );
 
-    if (tripInDatabase.hostId == memberId) {
+    if (tripInDatabase[0].hostId == memberId) {
       throw new ValidationError("Publisher can't be removed", 400);
     }
 
-    if (tripInDatabase.hostId != userId) {
+    if (tripInDatabase[0].hostId != userId) {
       throw new ValidationError(
         "User doesn't have the permission to remove the user",
         400
@@ -1119,7 +1203,7 @@ async function removeMemberAsHost(payload, userId) {
 
     const query = createQueryForUserTrips(
       memberId,
-      tripId,
+      tripInstanceId,
       true,
       null,
       null,
@@ -1129,18 +1213,22 @@ async function removeMemberAsHost(payload, userId) {
     if (!userTrips || userTrips.length == 0) {
       throw new ValidationError("User hasn't joined yet", 400);
     }
-    await userTripsRepository.updateJoinTripForUser(memberId, tripId, false);
+    await userTripsRepository.updateJoinTripForUser(
+      memberId,
+      tripInstanceId,
+      false
+    );
     const notification = {
       notificationId: uuidv4(),
       senderId: userId,
       receiverId: memberId,
-      tripId: tripId,
+      tripInstanceId: tripInstanceId,
       event: NotificationEvents.REMOVE_MEMBER_FROM_TRIP_AS_HOST,
     };
     notificationRepository.createNotification(notification);
   } catch (error) {
     logger.error(
-      `Error occured while removing user=${payload.memberId} with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+      `Error occured while removing user=${payload.memberId} with tripInstanceId=${payload.tripInstanceId}, userId=${userId}, error=${error}`
     );
     throw error;
   }
@@ -1148,12 +1236,15 @@ async function removeMemberAsHost(payload, userId) {
 
 async function declineRequestInvitation(payload, userId) {
   try {
-    const { tripId, memberId } = payload;
+    const { tripInstanceId, memberId } = payload;
     if (!userId) {
       throw new ValidationError(`User Id not valid, userId=${userId}`, 400);
     }
-    if (!tripId) {
-      throw new ValidationError(`tripId Id not valid, tripId=${tripId}`, 400);
+    if (!tripInstanceId) {
+      throw new ValidationError(
+        `tripInstanceId Id not valid, tripInstanceId=${tripInstanceId}`,
+        400
+      );
     }
     if (!memberId) {
       throw new ValidationError(
@@ -1162,23 +1253,27 @@ async function declineRequestInvitation(payload, userId) {
       );
     }
 
-    const tripQuery = createQuery(null, null, userId, true, tripId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
       0
     );
 
-    if (!tripInDatabase || tripInDatabase.hostId != userId) {
+    if (!tripInDatabase || tripInDatabase[0].hostId != userId) {
       throw new ValidationError(
         "User not authorized to remove member from a trip",
         401
       );
     }
-    await userTripsRepository.updateRequestTripForUser(memberId, tripId, false);
+    await userTripsRepository.updateRequestTripForUser(
+      memberId,
+      tripInstanceId,
+      false
+    );
   } catch (error) {
     logger.error(
-      `Error occured while declining invitation user=${payload.memberId} with tripId=${payload.tripId}, userId=${userId}, error=${error}`
+      `Error occured while declining invitation user=${payload.memberId} with tripInstanceId=${payload.tripInstanceId}, userId=${userId}, error=${error}`
     );
     throw error;
   }

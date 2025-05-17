@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const UserTrips = new mongoose.Schema({
   userId: { type: String, required: true },
-  tripId: { type: String, required: true },
+  tripInstanceId: { type: String, required: true },
   isWishlisted: {type: Boolean, required: true},
   isJoined: {type: Boolean, required: true},
   isRequested: {type: Boolean, required: true},
@@ -30,28 +30,28 @@ UserTrips.index(
 );
 
 UserTrips.index(
-  { userId: 1, tripId: 1},
+  { userId: 1, tripInstanceId: 1},
   { name: "userId_tripId_composite_index" }
 );
 
 UserTrips.index(
-  { tripId: 1, isWishlisted: 1},
-  { name: "tripId_isWishlited_composite_index" }
+  { tripInstanceId: 1, isWishlisted: 1},
+  { name: "tripInstanceId_isWishlited_composite_index" }
 );
 
 UserTrips.index(
-  { tripId: 1, isJoined: 1},
-  { name: "tripId_isJoined_composite_index" }
+  { tripInstanceId: 1, isJoined: 1},
+  { name: "tripInstanceId_isJoined_composite_index" }
 );
 
 UserTrips.index(
-  { tripId: 1, isRequested: 1},
-  { name: "tripId_isRequested_composite_index" }
+  { tripInstanceId: 1, isRequested: 1},
+  { name: "tripInstanceId_isRequested_composite_index" }
 );
 
 UserTrips.index(
-  { tripId: 1, isPublished: 1},
-  { name: "tripId_isPublished_composite_index" }
+  { tripInstanceId: 1, isPublished: 1},
+  { name: "tripInstanceId_isPublished_composite_index" }
 );
 
 

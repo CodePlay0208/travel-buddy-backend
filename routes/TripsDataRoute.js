@@ -42,7 +42,7 @@ router
     createTripsImagesHandler
   );
 router
-  .route("/getTripById/:tripId")
+  .route("/getTripById/:tripInstanceId")
   .get(
     jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     getTripByIdHandler
@@ -60,14 +60,14 @@ router
     getTripsWithFilterHandler
   );
 router
-  .route("/editTrip/:tripId")
+  .route("/editTrip/:baseTripId")
   .put(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     editTripHandler
   );
 
 router
-  .route("/editTripImages/:tripId")
+  .route("/editTripImages/:baseTripId")
   .put(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     uploadMiddlewareForImages.array("destinationImages"),
@@ -75,7 +75,7 @@ router
   );
 
 router
-  .route("/deleteTrip/:tripId")
+  .route("/deleteTrip/:tripInstanceId")
   .delete(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     deleteTripHandler
@@ -89,14 +89,14 @@ router
   );
 
 router
-  .route("/addWishlistTrip/:tripId")
+  .route("/addWishlistTrip/:tripInstanceId")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     addWishlistTripHandler
   );
 
 router
-  .route("/removeWishlistedTrip/:tripId")
+  .route("/removeWishlistedTrip/:tripInstanceId")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     removeWishlistedTripHandler

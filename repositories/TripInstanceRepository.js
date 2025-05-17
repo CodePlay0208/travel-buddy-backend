@@ -25,7 +25,7 @@ async function findTripWithTripId(tripInstanceId) {
         $lookup: {
           from: "basetripdataschemas",             
           localField: "baseTripId",      
-          foreignField: "tripId",   
+          foreignField: "baseTripId",   
           as: "baseTripData"
         }
       },
@@ -47,10 +47,10 @@ async function findTripWithTripId(tripInstanceId) {
     return trip;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trip with tripId=${tripInstanceId}, error=${error}`
+      `Error occurred while fetching trip with tripInstanceId=${tripInstanceId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trip with tripId=${tripInstanceId}, error=${error}`
+      `Error occurred while fetching trip with tripInstanceId=${tripInstanceId}, error=${error}`
     );
   }
 }
@@ -76,7 +76,7 @@ async function findTripsWithQueryUsingAggregation(query, limit, offset) {
         $lookup: {
           from: "basetripdataschemas",             
           localField: "baseTripId",      
-          foreignField: "tripId",   
+          foreignField: "baseTripId",   
           as: "baseTripData"
         }
       },
@@ -100,10 +100,10 @@ async function findTripsWithQueryUsingAggregation(query, limit, offset) {
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with tripIds=${JSON.stringify(fetchedUserTripsIds)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trips with tripIds=${JSON.stringify(fetchedUserTripsIds)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
     );
   }
 }
@@ -148,6 +148,25 @@ async function getTripsByBaseTripId(baseTripId) {
   }
 }
 
+async function findTripsWithQuery(query, limit, offset) {
+  try {
+    const trips = TripInstance.find(query)
+      .skip(offset)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching trips with query=${query}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+  }
+}
+
 
 
 module.exports = {
@@ -157,5 +176,6 @@ module.exports = {
   findTripsWithQueryUsingAggregation,
   deleteTripsByUserId,
   deleteTripsByBaseTripId,
-  getTripsByBaseTripId
+  getTripsByBaseTripId,
+  findTripsWithQuery
 };

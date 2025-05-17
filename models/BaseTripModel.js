@@ -9,7 +9,7 @@ const baseTripDataSchema = new mongoose.Schema({
   destinationImages: [{ type: String }],
   croppedDestinationImages: [{ type: String }],
   hostId: { type: String, required: true },
-  tripId: { type: String, required: true, unique: true },
+  baseTripId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
   dayTabs: [
     {
@@ -21,7 +21,7 @@ const baseTripDataSchema = new mongoose.Schema({
 });
 
 
-baseTripDataSchema.index({ hostId: 1 }, { name: "userId_single_index" });
+baseTripDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
 baseTripDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
 
 module.exports = mongoose.model("baseTripDataSchema", baseTripDataSchema);

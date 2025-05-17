@@ -33,7 +33,7 @@ async function getNotification(userId) {
             fetchedUserProfile
           );
           notification.trip = await tripInstanceRepository.findTripWithTripId(
-            notification.tripId
+            notification.tripInstanceId
           );
           return notification;
         }

@@ -132,7 +132,6 @@ async function login(userKey) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
     const userId = userInDatabase.userId;
-    console;
     await otpService.sendOtp(userInDatabase.username, userKey, userId);
     const token = generateToken(
       userId,

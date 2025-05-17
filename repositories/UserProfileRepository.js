@@ -123,37 +123,6 @@ async function findUsersByPrefix(prefix, projection) {
   }
 }
 
-async function addTripToUsers(userIds, tripId) {
-  try {
-    await UserProfile.updateMany(
-      { _id: { $in: userIds } },
-      { $addToSet: { requestTrips: tripId } }
-    );
-    logger.info(
-      `Added members userIds=${JSON.stringify(userIds)}, tripId=${tripId}`
-    );
-  } catch (error) {
-    logger.error(
-      `Failed to add members with userIds=${userIds}, to trip with tripId=${tripId} `
-    );
-    throw error;
-  }
-}
-
-async function joinUserToTrip(userId, tripId){
-  try{
-    const updatedUser = await UserProfile.findOneAndUpdate(
-      { userId: userId },
-      { $pull: { requestingTrips: tripId } }, 
-      { new: true } 
-    );
-    return updatedUser;
-  }
-  catch(error){
-    logger.error(`Failed to join user with userId=${userId}, tripId=${tripId}`)
-    throw error;
-  }
-}
 
 module.exports = {
   updateUser,
@@ -163,7 +132,5 @@ module.exports = {
   findUserByUserId,
   findUsersByUserId,
   findUsersByPrefix,
-  addTripToUsers,
-  joinUserToTrip,
   findUserByPhoneNumber
 };

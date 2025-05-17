@@ -14,28 +14,28 @@ async function deleteTripsByUserId(hostId) {
   }
 }
 
-async function deleteTripsByTripId(tripId) {
+async function deleteTripsByTripId(baseTripId) {
   try {
-    await BaseTripModel.deleteOne({ tripId });
+    await BaseTripModel.deleteOne({ baseTripId });
   } catch (error) {
-    logger.error(`Error occurred while deleting trip with tripId=${tripId}`);
-    throw new Error(`Error deleting trip with ${tripId}, error=${error}`);
+    logger.error(`Error occurred while deleting trip with baseTripId=${baseTripId}`);
+    throw new Error(`Error deleting trip with ${baseTripId}, error=${error}`);
   }
 }
 
-async function findTripWithTripIdAndUserId(tripId, hostId) {
+async function findTripWithTripIdAndUserId(baseTripId, hostId) {
   try {
     const tripInDatabase = await BaseTripModel.findOne({
-      tripId,
+      baseTripId,
       hostId,
     });
     return tripInDatabase;
   } catch (error) {
     logger.error(
-      `Error occurred while finding trips for user with userId=${hostId}, tripId=${tripId}, error=${error}`
+      `Error occurred while finding trips for user with userId=${hostId}, baseTripId=${baseTripId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while finding trips for user with userId=${hostId}, tripId=${tripId}, error=${error}`
+      `Error occurred while finding trips for user with userId=${hostId}, baseTripId=${baseTripId}, error=${error}`
     );
   }
 }
@@ -47,24 +47,24 @@ async function createTrip(newTrip) {
     return createdTrip;
   } catch (error) {
     logger.error(
-      `Error occurred while creating trips for user with userId=${newTrip.hostId}, tripId=${newTrip.tripId}, error=${error}`
+      `Error occurred while creating trips for user with userId=${newTrip.hostId}, baseTripId=${newTrip.baseTripId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while creating trips for user with userId=${newTrip.hostId}, tripId=${newTrip.tripId}, error=${error}`
+      `Error occurred while creating trips for user with userId=${newTrip.hostId}, baseTripId=${newTrip.baseTripId}, error=${error}`
     );
   }
 }
 
-async function findTripWithTripId(tripId) {
+async function findTripWithTripId(baseTripId) {
   try {
-    const trip = await BaseTripModel.findOne({ tripId });
+    const trip = await BaseTripModel.findOne({ baseTripId });
     return trip;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trip with tripId=${tripId}, error=${error}`
+      `Error occurred while fetching trip with baseTripId=${baseTripId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trip with tripId=${tripId}, error=${error}`
+      `Error occurred while fetching trip with baseTripId=${baseTripId}, error=${error}`
     );
   }
 }

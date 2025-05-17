@@ -65,6 +65,7 @@ const createIndexes = async () => {
 const initializeDB = async () => {
   try {
     await connectDB();
+    // await dropAllIndexes();
     await createIndexes();
   } catch (error) {
     logger.error("Error while initializing database");

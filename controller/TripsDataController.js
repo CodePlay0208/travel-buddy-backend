@@ -39,8 +39,8 @@ const createTripsHandler = asyncHandler(async (req, res) => {
     const user = req.userId;
     const payload = req.body;
 
-    const tripId = await tripDataService.createTrip(payload, user);
-    res.status(201).json({ tripId });
+    const baseTripId = await tripDataService.createTrip(payload, user);
+    res.status(201).json({ baseTripId });
     const endTime = Date.now();
     logger.info(
       `API_NAME=${CREATE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -98,9 +98,9 @@ const getTripByIdHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${GET_TRIP_BY_ID}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { tripId } = req.params;
+    const { tripInstanceId } = req.params;
     const userId = req.userId;
-    const trip = await tripDataService.getTripById(tripId, userId);
+    const trip = await tripDataService.getTripById(tripInstanceId, userId);
     res.status(200).json(trip);
     const endTime = Date.now();
     logger.info(
@@ -193,12 +193,12 @@ const editTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${EDIT_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { tripId } = req.params;
+    const { baseTripId } = req.params;
     const userId = req.userId;
     const newPayload = req.body;
     const newDestinationImages = req.files;
     const updatedTrip  = await tripDataService.editTrip(
-      tripId,
+      baseTripId,
       userId,
       newPayload,
       newDestinationImages
@@ -230,12 +230,12 @@ const editTripImagesHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const { tripId } = req.params;
+    const { baseTripId } = req.params;
     const userId = req.userId;
     const newPayload = req.body;
     const newDestinationImages = req.files;
     const { updatedTrip, allObjectsUploaded } = await tripDataService.editTripImages(
-      tripId,
+      baseTripId,
       userId,
       newPayload,
       newDestinationImages
@@ -267,10 +267,10 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${DELETE_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const tripId = req.params.tripId;
+    const baseTripId = req.params.baseTripId;
     const userId = req.userId;
 
-    await tripDataService.deleteTrip(tripId, userId);
+    await tripDataService.deleteTrip(baseTripId, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(
@@ -329,10 +329,10 @@ const addWishlistTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${ADD_WISHLIST_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const tripId = req.params.tripId;
+    const tripInstanceId = req.params.tripInstanceId;
     const userId = req.userId;
 
-    await tripDataService.addWishlistTrip(tripId, userId);
+    await tripDataService.addWishlistTrip(tripInstanceId, userId);
     res.status(200).json();
 
     const endTime = Date.now();
@@ -360,10 +360,10 @@ const removeWishlistedTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${REMOVE_WISHLIST_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const tripId = req.params.tripId;
+    const tripInstanceId = req.params.tripInstanceId;
     const userId = req.userId;
 
-    await tripDataService.removeWishlistedTrip(tripId, userId);
+    await tripDataService.removeWishlistedTrip(tripInstanceId, userId);
     res.status(200).json();
 
     const endTime = Date.now();
@@ -577,9 +577,9 @@ const getRequestedMembersHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${GET_REQUESTED_MEMBERS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const {tripId} = req.body;
+    const {tripInstanceId} = req.body;
     const trip = await tripDataService.getRequestedMembers(
-      tripId
+      tripInstanceId
     );
     res.status(200).json(trip);
     const endTime = Date.now();

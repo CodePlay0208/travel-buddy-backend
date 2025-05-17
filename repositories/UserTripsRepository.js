@@ -2,10 +2,10 @@ const UserTrips = require("../models/UserTripsModel");
 const logger = require("../logger");
 const { ValidationError } = require("../exceptions/ValidationError");
 
-async function updateWishlistTripForUser(userId, tripId, isWishlisted) {
+async function updateWishlistTripForUser(userId, tripInstanceId, isWishlisted) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId, tripId },
+      { userId, tripInstanceId },
       {
         $set: {
           isWishlisted,
@@ -16,18 +16,18 @@ async function updateWishlistTripForUser(userId, tripId, isWishlisted) {
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
   }
 }
 
-async function updateJoinTripForUser(userId, tripId, isJoined) {
+async function updateJoinTripForUser(userId, tripInstanceId, isJoined) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId, tripId },
+      { userId, tripInstanceId },
       {
         $set: {
           isJoined,
@@ -38,18 +38,18 @@ async function updateJoinTripForUser(userId, tripId, isJoined) {
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
   }
 }
 
-async function updateRequestTripForUser(userId, tripId, isRequested) {
+async function updateRequestTripForUser(userId, tripInstanceId, isRequested) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId, tripId },
+      { userId, tripInstanceId },
       {
         $set: {
           isRequested,
@@ -60,18 +60,18 @@ async function updateRequestTripForUser(userId, tripId, isRequested) {
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while adding tripId=${tripId} to wishlisted trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to wishlisted trips for user with userId=${userId}, error=${error}`
     );
   }
 }
 
-async function updatePublishTripForUser(userId, tripId, isPublished) {
+async function updatePublishTripForUser(userId, tripInstanceId, isPublished) {
   try {
     const result = await UserTrips.findOneAndUpdate(
-      { userId, tripId },
+      { userId, tripInstanceId },
       {
         $set: {
           isPublished,
@@ -82,10 +82,10 @@ async function updatePublishTripForUser(userId, tripId, isPublished) {
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while adding tripId=${tripId} to published trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to published trips for user with userId=${userId}, error=${error}`
     );
     throw new Error(
-      `Error occurred while adding tripId=${tripId} to published trips for user with userId=${userId}, error=${error}`
+      `Error occurred while adding tripInstanceId=${tripInstanceId} to published trips for user with userId=${userId}, error=${error}`
     );
   }
 }
@@ -115,9 +115,9 @@ async function getUserTripsUsingQuery(
   }
 }
 
-async function updateTripInstances(
-  hostId,
-  tripIds,
+async function updateUserTrips(
+  userId,
+  tripInstanceId,
   isPublished,
   isJoined,
   isRequested,
@@ -125,16 +125,17 @@ async function updateTripInstances(
 ) {
   try {
     const result = await UserTrips.updateMany(
-      { hostId, tripId: { $in: tripIds } },
-      { $set: { isPublished, isJoined, isWishlisted, isRequested } }
+      { userId, tripInstanceId },
+      { $set: { isPublished, isJoined, isWishlisted, isRequested } },
+      { new: true, upsert: true }
     );
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while updating trip instances for userId=${hostId} and tripIds=${tripIds}, error=${error}`
+      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
     );
     throw new Error(
-      `Error occurred while updating trip instances for userId=${hostId} and tripIds=${tripIds}, error=${error}`
+      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
     );
   }
 }
@@ -145,5 +146,5 @@ module.exports = {
   updateJoinTripForUser,
   updateRequestTripForUser,
   updatePublishTripForUser,
-  updateTripInstances
+  updateUserTrips
 };
