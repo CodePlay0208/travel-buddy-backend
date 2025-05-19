@@ -58,6 +58,20 @@ try {
     logger.info(`Responding to Health Check Status`)
     res.status(200).send('OK'); 
 });
+  // Register blogs API route
+  const blogRoute = require("./routes/BlogRoute");
+  app.use("/blogs", blogRoute);
+
+  app.get("/health/status", (req, res) => {
+    logger.info(`Responding to Health Check Status`);
+    res.status(200).send("OK");
+  });
+
+  // Optionally, add a root route for `/` to avoid Not Found error on `/`
+  app.get("/", (req, res) => {
+    res.status(200).send("API is running");
+  });
+
   app.use(notFound);
   app.use(errorHandler);
 

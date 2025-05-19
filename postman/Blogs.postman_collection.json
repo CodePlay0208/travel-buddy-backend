@@ -1,0 +1,162 @@
+{
+  "info": {
+    "name": "Blogs API",
+    "description": "CRUD & Publishing for Blogs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "b1b2b3b4-b5b6-b7b8-b9ba-bbbcbdbebfb0"
+  },
+  "item": [
+    {
+      "name": "List Blogs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/blogs?page=1&limit=10&status=published",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "status",
+              "value": "published"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Blog By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/blogs/{{blogId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs",
+            "{{blogId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Blog",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"seo\": {\n    \"title\": \"My New Post\",\n    \"description\": \"SEO description here\"\n  },\n  \"hero\": {\n    \"h1\": \"Main headline\",\n    \"description\": \"Intro paragraph\"\n  },\n  \"sections\": [\n    { \"h1\": \"Section 1\", \"content\": \"Markdown or HTML\", \"images\": [] }\n  ],\n  \"tags\": [\"news\", \"update\"],\n  \"status\": \"draft\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/blogs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Blog",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"seo\": {\n    \"title\": \"Updated Title\",\n    \"description\": \"Updated SEO description\"\n  },\n  \"hero\": {\n    \"h1\": \"Updated headline\",\n    \"description\": \"Updated intro\"\n  },\n  \"sections\": [\n    { \"h1\": \"Section 1\", \"content\": \"Updated content\", \"images\": [] }\n  ],\n  \"tags\": [\"news\", \"update\"],\n  \"status\": \"draft\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/blogs/{{blogId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs",
+            "{{blogId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Publish Blog",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"status\": \"published\" }"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/blogs/{{blogId}}/publish",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs",
+            "{{blogId}}",
+            "publish"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete Blog",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/blogs/{{blogId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "blogs",
+            "{{blogId}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "blogId",
+      "value": ""
+    }
+  ]
+}
