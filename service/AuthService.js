@@ -84,7 +84,7 @@ async function googleLogin(googleToken) {
 async function signUp(payload) {
   try {
     let userId = uuidv4();
-    const { userKey, username } = payload;
+    let { userKey, username } = payload;
     userKey = userKey.trim();
     username.trim();
     logger.info(`Signing Up user with email=${userKey}, username=${username}`);
@@ -201,7 +201,7 @@ async function verifyOtp(userId, payload) {
 
 async function resendOtp(payload, userId) {
   try {
-    const { userKey, isSignUpRequest } = payload;
+    let { userKey, isSignUpRequest } = payload;
     let user = null;
     userKey = userKey.trim();
     if (isSignUpRequest == null || isSignUpRequest == undefined) {
