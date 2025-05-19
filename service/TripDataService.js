@@ -953,18 +953,9 @@ async function addMemberTrip(payload, userId) {
       );
     }
 
-    //TODO: reduce this to a single DB call
+    const queryForUpdate = createQueryForUserTrips(null, null, true, false, null, null);
 
-    await userTripsRepository.updateJoinTripForUser(
-      memberId,
-      tripInstanceId,
-      true
-    );
-    await userTripsRepository.updateRequestTripForUser(
-      memberId,
-      tripInstanceId,
-      false
-    );
+    await userTripsRepository.updateUserTripsUsingQuery(memberId, tripInstanceId, queryForUpdate);
 
     const notification = {
       notificationId: uuidv4(),

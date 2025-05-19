@@ -140,11 +140,34 @@ async function updateUserTrips(
   }
 }
 
+async function updateUserTripsUsingQuery(
+  userId,
+  tripInstanceId,
+  query
+) {
+  try {
+    const result = await UserTrips.updateMany(
+      { userId, tripInstanceId },
+      { $set: query },
+      { new: true, upsert: true }
+    );
+    return result;
+  } catch (error) {
+    logger.error(
+      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
+    );
+  }
+}
+
 module.exports = {
   getUserTripsUsingQuery,
   updateWishlistTripForUser,
   updateJoinTripForUser,
   updateRequestTripForUser,
   updatePublishTripForUser,
-  updateUserTrips
+  updateUserTrips,
+  updateUserTripsUsingQuery
 };
