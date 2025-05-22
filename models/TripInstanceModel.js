@@ -21,3 +21,4 @@ tripInstanceDataSchema.index({ baseTripId: 1 }, { name: "tripInstanceId_single_i
 tripInstanceDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
 
 module.exports = mongoose.model("tripInstanceDataSchema", tripInstanceDataSchema);
+

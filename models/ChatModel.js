@@ -16,3 +16,4 @@ chatModel.index({ users: 1 }, { name: "users_single_index" });
 
 const Chat = mongoose.model("ChatModel", chatModel);
 module.exports = Chat;
+
