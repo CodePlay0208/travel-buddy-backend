@@ -11,7 +11,7 @@ const SectionSchema = new mongoose.Schema(
 
 const BlogSchema = new mongoose.Schema({
   slug: { type: String, unique: true },
-  blogImage: { type: String },
+  blogImage:  [{ type: String }],
   category: { type: String, default: "general" },
   seo: {
     title: { type: String, required: true },

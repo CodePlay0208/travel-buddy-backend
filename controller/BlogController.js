@@ -1,15 +1,58 @@
 const asyncHandler = require("express-async-handler");
 const blogService = require("../service/BlogService");
-const { uploadObjectsToS3Bucket } = require("../aws/S3");
+const {
+  uploadObjectsToS3Bucket,
+  getObjectsFromS3Bucket,
+} = require("../aws/S3");
+
+const resolveBlogImages = async (blog) => {
+  if (Array.isArray(blog.blogImage) && blog.blogImage.length > 0) {
+    const urlObjs = await getObjectsFromS3Bucket(
+      "blog-images/",
+      blog.blogImage,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+    if (
+      Array.isArray(urlObjs) &&
+      urlObjs.length > 0 &&
+      urlObjs[0].preSignedUrl
+    ) {
+      blog.blogImage = urlObjs[0].preSignedUrl;
+    } else {
+      blog.blogImage = "";
+    }
+  }
+  
+  if (Array.isArray(blog.sections)) {
+    for (const section of blog.sections) {
+      if (Array.isArray(section.images) && section.images.length > 0) {
+        console.log(section.images);
+        const urls = await getObjectsFromS3Bucket(
+          "blog-images/",
+          section.images,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
+        section.images = Array.isArray(urls)
+          ? urls.map((u) => u.preSignedUrl || "")
+          : [];
+      }
+    }
+  }
+  return blog;
+};
 
 const listBlogsHandler = asyncHandler(async (req, res) => {
   const result = await blogService.getBlogs(req.query);
+  if (Array.isArray(result.data)) {
+    result.data = await Promise.all(result.data.map(resolveBlogImages));
+  }
   res.status(200).json(result);
 });
 
 const getBlogByIdHandler = asyncHandler(async (req, res) => {
-  const blog = await blogService.getBlogById(req.params.id);
+  let blog = await blogService.getBlogById(req.params.id);
   if (!blog) return res.status(404).json({ message: "Not found" });
+  blog = await resolveBlogImages(blog);
   res.status(200).json(blog);
 });
 
@@ -33,7 +76,7 @@ const createBlogHandler = asyncHandler(async (req, res) => {
     if (!allObjectsUploaded) {
       return res.status(500).json({ message: "Failed to upload image" });
     }
-    blogImageUrl = `https://${process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES}.s3.${process.env.S3_BUCKET_REGION}.amazonaws.com/blog-images/${uploadedObjectNames[0]}`;
+    blogImageUrl = [uploadedObjectNames[0]];
   }
 
   let blogData = { ...req.body, blogImage: blogImageUrl };
@@ -44,6 +87,12 @@ const createBlogHandler = asyncHandler(async (req, res) => {
     blogData.sections = JSON.parse(blogData.sections);
   if (typeof blogData.tags === "string")
     blogData.tags = JSON.parse(blogData.tags);
+
+  if (typeof blogData.blogImage === "string") {
+    blogData.blogImage = blogData.blogImage.split(",").map((s) => s.trim());
+  } else if (!Array.isArray(blogData.blogImage)) {
+    blogData.blogImage = [];
+  }
 
   if (Array.isArray(blogData.sections) && Array.isArray(req.files)) {
     const sectionImageFiles = req.files.filter((f) =>
@@ -75,9 +124,8 @@ const createBlogHandler = asyncHandler(async (req, res) => {
             blogData.sections[sectionIdx] &&
             Array.isArray(blogData.sections[sectionIdx].images)
           ) {
-            blogData.sections[sectionIdx].images[
-              imgIdx
-            ] = `https://${process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES}.s3.${process.env.S3_BUCKET_REGION}.amazonaws.com/blog-images/${uploadedObjectNames[idx]}`;
+             blogData.sections[sectionIdx].images[imgIdx] =
+              uploadedObjectNames[idx];
           }
         }
       });
@@ -88,7 +136,11 @@ const createBlogHandler = asyncHandler(async (req, res) => {
     blogData.sections = blogData.sections.map((section) => ({
       ...section,
       images: Array.isArray(section.images)
-        ? section.images.map((img) => String(img))
+        ? section.images.flatMap((img) =>
+            typeof img === "string" && img.includes(",")
+              ? img.split(",").map((s) => s.trim())
+              : [String(img)]
+          )
         : [],
     }));
   }
@@ -104,7 +156,6 @@ const updateBlogHandler = asyncHandler(async (req, res) => {
   if (typeof update.sections === "string")
     update.sections = JSON.parse(update.sections);
   if (typeof update.tags === "string") update.tags = JSON.parse(update.tags);
-
 
   if (Array.isArray(update.sections)) {
     update.sections = update.sections.map((section) => ({
