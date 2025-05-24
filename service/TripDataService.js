@@ -135,7 +135,7 @@ function addDestinationToQuery(query, destination) {
   }
 }
 
-function addDateToQuery(query, queryDate) {
+function addDateToQuery(query, queryDate, fetchPastTrips) {
   if (queryDate) {
     if (!isNaN(queryDate)) {
       query.startDate = { $eq: queryDate };
@@ -144,6 +144,11 @@ function addDateToQuery(query, queryDate) {
       throw new ValidationError("Invalid Date Passed");
     }
   }
+  else if(!fetchPastTrips){
+      const todayDate = new Date();
+      todayDate.setUTCHours(0, 0, 0, 0);
+      query.startDate = { $gte: todayDate };
+    }
 }
 
 function excludeUserIdFromQuery(query, userId) {
@@ -164,10 +169,10 @@ function addTripIdToQuery(query, tripInstanceId) {
   }
 }
 
-function createQuery(destination, date, userId, includeUser, tripInstanceId) {
+function createQuery(destination, date, userId, includeUser, tripInstanceId, fetchPastTrips) {
   let query = {};
   addDestinationToQuery(query, destination);
-  addDateToQuery(query, date);
+  addDateToQuery(query, date, fetchPastTrips);
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
@@ -617,7 +622,7 @@ async function getTripsByUser(filter, userId) {
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
 
-    const query = createQuery(null, null, userId, true, null);
+    const query = createQuery(null, null, userId, true, null, null);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
       query,
       limitNumber,
@@ -656,7 +661,7 @@ async function getTripsWithFilter(filter, userId) {
     filter.date = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
     let { date } = filter;
-    const query = createQuery(destination, date, userId, false, null);
+    const query = createQuery(destination, date, userId, false, null, false);
     var { trips, newOffset } =
       await getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset);
 
@@ -722,7 +727,7 @@ async function getRandomTrips(filter, userId) {
     filter.date = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
     let { date } = filter;
-    const query = createQuery(destination, date, userId, false, null);
+    const query = createQuery(destination, date, userId, false, null, false);
     let fetchedTrips =
       await tripInstancesRepository.findRandomTripsWithQueryUsingAggregation(
         query,
@@ -752,7 +757,7 @@ async function getRandomTrips(filter, userId) {
 
 async function deleteTrip(tripInstanceId, userId) {
   try {
-    const query = createQuery(null, null, userId, true, tripInstanceId);
+    const query = createQuery(null, null, userId, true, tripInstanceId, null);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       query,
       50,
@@ -955,7 +960,7 @@ async function addMemberTrip(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -1220,7 +1225,7 @@ async function removeMemberAsHost(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -1290,7 +1295,7 @@ async function declineRequestInvitation(payload, userId) {
       );
     }
 
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId);
+    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
