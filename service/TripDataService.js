@@ -111,7 +111,6 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
       skip
     );
 
-
   let fetchedTripsObj = fetchedTrips;
 
   fetchedTripsObj = await addCroppedDestinationImagesToTrips(
@@ -713,21 +712,61 @@ async function getTripsWithFilter(filter, userId) {
   }
 }
 
-async function deleteTrip(baseTripId, userId) {
+async function getRandomTrips(filter, userId) {
   try {
-    const tripInDatabase = await baseTripRepository.findTripWithTripIdAndUserId(
-      baseTripId,
-      userId
+    const {
+      destination,
+      limit = parseInt(process.env.LIMIT_FOR_SENDING_RANDOM_TRIPS, 10),
+    } = filter;
+
+    filter.date = dateFromDateString(filter.date);
+    tripValidator.validateFilter(filter);
+    let { date } = filter;
+    const query = createQuery(destination, date, userId, false, null);
+    let fetchedTrips =
+      await tripInstancesRepository.findRandomTripsWithQueryUsingAggregation(
+        query,
+        limit
+      );
+
+    await addCroppedDestinationImagesToTrips(
+      fetchedTrips,
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
+    );
+
+    await Promise.all(
+      fetchedTrips.map(async (trip) => {
+        await updateJoinedMembersProfilesInTrip(
+          trip,
+          USER_PROFILE_PROJECTION_IN_SEARCH_CARD
+        );
+      })
+    );
+
+    return { trips: fetchedTrips };
+  } catch (error) {
+    logger.error(`failed to fetch trips with filter=${filter}, error=${error}`);
+    throw error;
+  }
+}
+
+async function deleteTrip(tripInstanceId, userId) {
+  try {
+    const query = createQuery(null, null, userId, true, tripInstanceId);
+    const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
+      query,
+      50,
+      0
     );
 
     if (!tripInDatabase) {
       throw new ValidationError(
-        `Trip not found or user doesn't have permssion to delete trip with tripbaseTripIdId=${baseTripId}, userId=${userId}`,
+        `Trip not found or user doesn't have permssion to delete trip with tripInstanceId=${tripInstanceId}, userId=${userId}`,
         400
       );
     }
 
-    await tripInstancesRepository.deleteTripsByBaseTripId(baseTripId);
+    await tripInstancesRepository.deleteTripsByTripInstanceId(tripInstanceId);
 
     deleteObjectsFromS3Bucket(
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
@@ -741,11 +780,12 @@ async function deleteTrip(baseTripId, userId) {
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
-    await baseTripRepository.deleteTripsByTripId(baseTripId);
-    logger.info(`Trip with baseTripId=${baseTripId} deleted successfully`);
+    logger.info(
+      `Trip with tripInstanceId=${tripInstanceId} deleted successfully`
+    );
   } catch (error) {
     logger.error(
-      `Error deleting trip with baseTripId=${baseTripId}, error=${error}`
+      `Error deleting trip with tripInstanceId=${tripInstanceId}, error=${error}`
     );
     throw error;
   }
@@ -1296,4 +1336,5 @@ module.exports = {
   editTripImages,
   createTripsImages,
   declineRequestInvitation,
+  getRandomTrips,
 };

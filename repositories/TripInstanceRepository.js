@@ -90,12 +90,52 @@ async function findTripsWithQueryUsingAggregation(query, limit, offset) {
       },
       {
         $project: {
-          baseTripData: 0 // optional: remove the now-unneeded nested object
+          baseTripData: 0 
         }
       },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: limit }
+    ]);
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+  }
+}
+
+async function findRandomTripsWithQueryUsingAggregation(query, limit) {
+  try {
+    const trips = await TripInstance.aggregate([
+      {
+        $match: query
+      },
+      {
+        $lookup: {
+          from: "basetripdataschemas",             
+          localField: "baseTripId",      
+          foreignField: "baseTripId",   
+          as: "baseTripData"
+        }
+      },
+      { $unwind: "$baseTripData" } ,
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$baseTripData", "$$ROOT"]
+          }
+        }
+      },
+      {
+        $project: {
+          baseTripData: 0 
+        }
+      },
+      { $sample: { size: limit } }
     ]);
     return trips;
   } catch (error) {
@@ -167,6 +207,19 @@ async function findTripsWithQuery(query, limit, offset) {
   }
 }
 
+async function deleteTripsByTripInstanceId(tripInstanceId) {
+  try {
+    await TripInstance.deleteMany({ tripInstanceId });
+  } catch (error) {
+    logger.error(
+      `Error occurred while deleting trips for trip with tripInstanceId=${tripInstanceId}, error=${error}`
+    );
+    throw new Error(
+      `Error deleting trips for trip with tripInstanceId=${tripInstanceId}, error=${error}`
+    );
+  }
+}
+
 
 
 module.exports = {
@@ -177,5 +230,7 @@ module.exports = {
   deleteTripsByUserId,
   deleteTripsByBaseTripId,
   getTripsByBaseTripId,
-  findTripsWithQuery
+  findTripsWithQuery,
+  findRandomTripsWithQueryUsingAggregation,
+  deleteTripsByTripInstanceId
 };

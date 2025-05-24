@@ -22,7 +22,8 @@ const {
   getRequestedMembersHandler,
   createTripsImagesHandler,
   editTripImagesHandler,
-  declineRequestInvitationHandler
+  declineRequestInvitationHandler,
+  getRandomTripsHandler
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -58,6 +59,13 @@ router
   .get(
     jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     getTripsWithFilterHandler
+  );
+
+  router
+  .route("/getRandomTrips")
+  .get(
+    jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    getRandomTripsHandler
   );
 router
   .route("/editTrip/:baseTripId")

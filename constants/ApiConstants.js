@@ -18,6 +18,7 @@ const EDIT_TRIP = "edit_trip";
 const GET_TRIP_BY_ID = "get_trip_by_id";
 const GET_TRIPS_BY_USER = "get_trip_by_user";
 const GET_TRIPS_WITH_FILTERS = "get_trip_with_filters";
+const GET_RANDOM_TRIPS = "get_random_trips";
 const FETCH_OR_CREATE_CHAT = "fetch_or_create_chat";
 const GET_ALL_CHATS = "get_all_chats";
 const CREATE_NEW_MESSAGE = "create_new_message";
@@ -45,7 +46,6 @@ const EDIT_TRIP_IMAGES = "edit_trip_images";
 const CREATE_TRIPS_IMAGES = "create_trips_images";
 const DECLINE_REQUEST_INVITATION = "decline_request_invitation";
 const EDIT_SECONDARY_KEY = "edit_secondary_key";
-
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -94,5 +94,6 @@ module.exports = {
   CREATE_TRIPS_IMAGES,
   DECLINE_REQUEST_INVITATION,
   GET_OTHER_USER_PROFILE,
-  EDIT_SECONDARY_KEY
+  EDIT_SECONDARY_KEY,
+  GET_RANDOM_TRIPS,
 };

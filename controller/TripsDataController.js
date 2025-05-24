@@ -186,6 +186,40 @@ const getTripsWithFilterHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const getRandomTripsHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GET_RANDOM_TRIPS}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const filter = req.query;
+    const userId = req?.userId;
+
+    const trips  = await tripDataService.getRandomTrips(
+      filter,
+      userId
+    );
+
+    res.status(200).json({ trips, offset: newOffset });
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GET_RANDOM_TRIPS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GET_RANDOM_TRIPS}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
 const editTripHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
@@ -267,10 +301,10 @@ const deleteTripHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${DELETE_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const baseTripId = req.params.baseTripId;
+    const tripInstanceId = req.params.tripInstanceId;
     const userId = req.userId;
 
-    await tripDataService.deleteTrip(baseTripId, userId);
+    await tripDataService.deleteTrip(tripInstanceId, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(
@@ -651,5 +685,6 @@ module.exports = {
   getRequestedMembersHandler,
   editTripImagesHandler,
   createTripsImagesHandler,
-  declineRequestInvitationHandler
+  declineRequestInvitationHandler,
+  getRandomTripsHandler
 };
