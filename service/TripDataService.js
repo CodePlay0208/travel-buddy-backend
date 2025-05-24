@@ -420,15 +420,10 @@ async function editTrip(baseTripId, userId, newPayload) {
       );
     }
 
+    console.log(tripInDatabase);
+
     Object.entries(newPayload).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        key != startDate &&
-        key != endDate &&
-        key != destination &&
-        key != startLocation
-      ) {
+      if (value !== undefined && value !== null) {
         tripInDatabase[key] = value;
       }
     });
@@ -953,9 +948,20 @@ async function addMemberTrip(payload, userId) {
       );
     }
 
-    const queryForUpdate = createQueryForUserTrips(null, null, true, false, null, null);
+    const queryForUpdate = createQueryForUserTrips(
+      null,
+      null,
+      true,
+      false,
+      null,
+      null
+    );
 
-    await userTripsRepository.updateUserTripsUsingQuery(memberId, tripInstanceId, queryForUpdate);
+    await userTripsRepository.updateUserTripsUsingQuery(
+      memberId,
+      tripInstanceId,
+      queryForUpdate
+    );
 
     const notification = {
       notificationId: uuidv4(),
