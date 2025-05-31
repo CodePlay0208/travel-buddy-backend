@@ -66,7 +66,7 @@ async function updateTrip(trip) {
   }
 }
 
-async function findTripsWithQueryUsingAggregation(query, limit, offset) {
+async function findTripsWithQueryUsingAggregation(query, limit, offset, additionalFilters) {
   try {
     const trips = await TripInstance.aggregate([
       {
@@ -81,6 +81,24 @@ async function findTripsWithQueryUsingAggregation(query, limit, offset) {
         }
       },
       { $unwind: "$baseTripData" } ,
+
+      {
+        $lookup: {
+          from: "userProfiles",
+          localField: "hostId",
+          foreignField: "userId",
+          as: "hostProfile"
+        }
+      },
+      { $unwind: "$hostProfile" },
+
+
+      ...(additionalFilters.persona? [{
+        $match: {
+          "hostProfile.persona": additionalFilters.persona
+        }
+      }] : []),
+
       {
         $replaceRoot: {
           newRoot: {
@@ -90,7 +108,8 @@ async function findTripsWithQueryUsingAggregation(query, limit, offset) {
       },
       {
         $project: {
-          baseTripData: 0 
+          baseTripData: 0 ,
+          hostProfile: 0
         }
       },
       { $sort: { createdAt: -1 } },

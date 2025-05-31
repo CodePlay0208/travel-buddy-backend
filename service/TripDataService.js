@@ -108,7 +108,8 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
         tripInstanceId: { $in: fetchedUserTripsIds },
       },
       limitNumber,
-      skip
+      skip,
+      {}
     );
 
   let fetchedTripsObj = fetchedTrips;
@@ -132,6 +133,12 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
 function addDestinationToQuery(query, destination) {
   if (destination) {
     query.destination = { $in: [destination] };
+  }
+}
+
+function addPersonaToQuery(query, persona) {
+  if (persona) {
+    query.persona = persona;
   }
 }
 
@@ -189,6 +196,14 @@ function createQuery(
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
     addTripInstanceIdToQuery(query, tripInstanceId);
+  return query;
+}
+
+function createAdditionalFilters(
+  filter
+) {
+  let query = {};
+  addPersonaToQuery(query, filter.persona);
   return query;
 }
 
@@ -257,7 +272,8 @@ async function getTripsUsingQueryWithLimitAndOffset(query, limit, offset) {
 async function getTripInstancesUsingQueryWithLimitAndOffset(
   query,
   limit,
-  offset
+  offset,
+  additionalFilters
 ) {
   const { skip, limitNumber, newOffset } = parseLimitAndOffset(
     limit,
@@ -268,7 +284,8 @@ async function getTripInstancesUsingQueryWithLimitAndOffset(
     await tripInstancesRepository.findTripsWithQueryUsingAggregation(
       query,
       limitNumber,
-      skip
+      skip,
+      additionalFilters
     );
 
   return { trips, newOffset };
@@ -726,10 +743,11 @@ async function getTripsWithFilter(filter, userId) {
 
     filter.date = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
-    let { date } = filter;
+    let { date, persona } = filter;
     const query = createQuery(destination, date, userId, false, null, false);
+    const additionalFilters = createAdditionalFilters(filter);
     var { trips, newOffset } =
-      await getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset);
+      await getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset, additionalFilters);
 
     if (trips.length === 0) {
       return [];
