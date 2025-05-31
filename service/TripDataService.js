@@ -143,12 +143,11 @@ function addDateToQuery(query, queryDate, fetchPastTrips) {
       logger.error("Invalid date passed in query");
       throw new ValidationError("Invalid Date Passed");
     }
+  } else if (!fetchPastTrips) {
+    const todayDate = new Date();
+    todayDate.setUTCHours(0, 0, 0, 0);
+    query.startDate = { $gte: todayDate };
   }
-  else if(!fetchPastTrips){
-      const todayDate = new Date();
-      todayDate.setUTCHours(0, 0, 0, 0);
-      query.startDate = { $gte: todayDate };
-    }
 }
 
 function excludeUserIdFromQuery(query, userId) {
@@ -163,20 +162,50 @@ function addUserIdToQuery(query, userId) {
   }
 }
 
-function addTripIdToQuery(query, tripInstanceId) {
+function addTripInstanceIdToQuery(query, tripInstanceId) {
   if (tripInstanceId) {
     query.tripInstanceId = tripInstanceId;
   }
 }
 
-function createQuery(destination, date, userId, includeUser, tripInstanceId, fetchPastTrips) {
+function addBaseTripIdToQuery(query, baseTripId) {
+  if (baseTripId) {
+    query.baseTripId = baseTripId;
+  }
+}
+
+function createQuery(
+  destination,
+  date,
+  userId,
+  includeUser,
+  tripInstanceId,
+  fetchPastTrips
+) {
   let query = {};
   addDestinationToQuery(query, destination);
   addDateToQuery(query, date, fetchPastTrips);
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
-  addTripIdToQuery(query, tripInstanceId);
+    addTripInstanceIdToQuery(query, tripInstanceId);
+  return query;
+}
+
+function createQueryForBaseTrips(
+  destination,
+  date,
+  userId,
+  includeUser,
+  baseTripId,
+) {
+  let query = {};
+  addDestinationToQuery(query, destination);
+  addDateToQuery(query, date, true);
+  includeUser
+    ? addUserIdToQuery(query, userId)
+    : excludeUserIdFromQuery(query, userId);
+  addBaseTripIdToQuery(query, baseTripId);
   return query;
 }
 
@@ -265,6 +294,8 @@ async function createTrip(payload, userId) {
   try {
     const baseTripId = uuidv4();
     const baseTrip = {
+      destination: payload.destination,
+      startLocation: payload.startLocation,
       minBudget: payload.minBudget,
       maxBudget: payload.maxBudget,
       title: payload.title,
@@ -272,6 +303,7 @@ async function createTrip(payload, userId) {
       dayTabs: payload.dayTabs,
       baseTripId,
       hostId: userId,
+      duration: payload.duration
     };
 
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
@@ -424,7 +456,41 @@ async function editTrip(baseTripId, userId, newPayload) {
       );
     }
 
-    console.log(tripInDatabase);
+    if (newPayload.newTripDates) {
+      const { newTripDates: strTripDates } = newPayload;
+      const newTripDates = Array.from(strTripDates);
+      const tripInstances = newTripDates.map((tripDate) => {
+        const { startDate, endDate } = tripDate;
+        const queryStartDate = dateFromDateString(startDate);
+        const queryEndDate = dateFromDateString(endDate);
+        const tripInstanceId = uuidv4();
+        const tripInstance = {
+          tripInstanceId,
+          baseTripId,
+          hostId: userId,
+          destination: tripInDatabase.destination,
+          startLocation: tripInDatabase.startLocation,
+          startDate: queryStartDate,
+          endDate: queryEndDate,
+        };
+        return tripInstance;
+      });
+
+      const createdTripInstances =
+        await tripInstancesRepository.createInstances(tripInstances);
+    }
+
+    if (newPayload.removedTripDates) {
+      const { removedTripDates: strTripDates } = newPayload;
+      const removedTripDates = Array.from(strTripDates);
+      const deletedDates = removedTripDates.map((tripDate) => {
+        const { startDate, endDate } = tripDate;
+        const queryStartDate = dateFromDateString(startDate);
+        const queryEndDate = dateFromDateString(endDate);
+        return { startDate:queryStartDate, endDate:queryEndDate };
+      });
+      await tripInstancesRepository.deleteTripDates(deletedDates);
+    }
 
     Object.entries(newPayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -622,15 +688,15 @@ async function getTripsByUser(filter, userId) {
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
 
-    const query = createQuery(null, null, userId, true, null, null);
+    const query = createQueryForBaseTrips(null, null, userId, true, null);
     var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
       query,
       limitNumber,
       skip
     );
 
-    let fetchedTrips = trips.map((trip) => trip.toObject());
 
+    let fetchedTrips = trips.map((trip) => trip.toObject());
     fetchedTrips = await getRelatedDatesToBaseTrip(fetchedTrips);
 
     fetchedTrips = await addCroppedDestinationImagesToTrips(
@@ -755,7 +821,47 @@ async function getRandomTrips(filter, userId) {
   }
 }
 
-async function deleteTrip(tripInstanceId, userId) {
+async function deleteBaseTrip(baseTripId, userId) {
+  try {
+    const query = createQueryForBaseTrips(null, null, userId, true, baseTripId);
+    const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
+      query,
+      50,
+      0
+    );
+
+    if (!tripInDatabase) {
+      throw new ValidationError(
+        `Trip not found or user doesn't have permssion to delete trip with baseTripId=${baseTripId}, userId=${userId}`,
+        400
+      );
+    }
+
+    await tripInstancesRepository.deleteTripsByBaseTripId(baseTripId);
+
+    deleteObjectsFromS3Bucket(
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+      tripInDatabase.destinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
+    deleteObjectsFromS3Bucket(
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+      tripInDatabase.destinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
+    await baseTripRepository.deleteTripsByTripId(baseTripId);
+    logger.info(`Trip with baseTripId=${baseTripId} deleted successfully`);
+  } catch (error) {
+    logger.error(
+      `Error deleting trip with baseTripId=${baseTripId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function deleteTripInstance(tripInstanceId, userId) {
   try {
     const query = createQuery(null, null, userId, true, tripInstanceId, null);
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
@@ -772,22 +878,7 @@ async function deleteTrip(tripInstanceId, userId) {
     }
 
     await tripInstancesRepository.deleteTripsByTripInstanceId(tripInstanceId);
-
-    deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-      tripInDatabase.destinationImages,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-    );
-
-    deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-      tripInDatabase.destinationImages,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-    );
-
-    logger.info(
-      `Trip with tripInstanceId=${tripInstanceId} deleted successfully`
-    );
+    logger.info(`Trip with tripInstanceId=${tripInstanceId} deleted successfully`);
   } catch (error) {
     logger.error(
       `Error deleting trip with tripInstanceId=${tripInstanceId}, error=${error}`
@@ -960,7 +1051,14 @@ async function addMemberTrip(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
+    const tripQuery = createQuery(
+      null,
+      null,
+      userId,
+      true,
+      tripInstanceId,
+      false
+    );
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -1225,7 +1323,14 @@ async function removeMemberAsHost(payload, userId) {
         400
       );
     }
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
+    const tripQuery = createQuery(
+      null,
+      null,
+      userId,
+      true,
+      tripInstanceId,
+      false
+    );
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -1295,7 +1400,14 @@ async function declineRequestInvitation(payload, userId) {
       );
     }
 
-    const tripQuery = createQuery(null, null, userId, true, tripInstanceId, false);
+    const tripQuery = createQuery(
+      null,
+      null,
+      userId,
+      true,
+      tripInstanceId,
+      false
+    );
     const tripInDatabase = await tripInstancesRepository.findTripsWithQuery(
       tripQuery,
       5,
@@ -1326,7 +1438,8 @@ module.exports = {
   getTripById,
   getTripsWithFilter,
   editTrip,
-  deleteTrip,
+  deleteBaseTrip,
+  deleteTripInstance,
   getTripsByUser,
   getWishlistedTrips,
   addWishlistTrip,

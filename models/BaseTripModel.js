@@ -2,8 +2,11 @@ const mongoose = require("mongoose");
 
 
 const baseTripDataSchema = new mongoose.Schema({
+  destination: [{ type: String, required: true }],
+  startLocation: [{ type: String, required: true }],
   minBudget: { type: Number },
   maxBudget: { type: Number },
+  duration: { type: Number },
   title: { type: String, required: true },
   description: { type: String, required: true },
   destinationImages: [{ type: String }],

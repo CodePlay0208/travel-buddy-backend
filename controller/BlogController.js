@@ -26,7 +26,6 @@ const resolveBlogImages = async (blog) => {
   if (Array.isArray(blog.sections)) {
     for (const section of blog.sections) {
       if (Array.isArray(section.images) && section.images.length > 0) {
-        console.log(section.images);
         const urls = await getObjectsFromS3Bucket(
           "blog-images/",
           section.images,

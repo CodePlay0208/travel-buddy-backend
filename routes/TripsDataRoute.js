@@ -8,7 +8,8 @@ const {
   getTripByIdHandler,
   getTripsByUserHandler,
   editTripHandler,
-  deleteTripHandler,
+  deleteBaseTripHandler,
+  deleteTripInstanceHandler,
   getTripsWithFilterHandler,
   joinRequestHandler,
   getWishlistedTripsHandler,
@@ -23,7 +24,7 @@ const {
   createTripsImagesHandler,
   editTripImagesHandler,
   declineRequestInvitationHandler,
-  getRandomTripsHandler
+  getRandomTripsHandler,
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -61,7 +62,7 @@ router
     getTripsWithFilterHandler
   );
 
-  router
+router
   .route("/getRandomTrips")
   .get(
     jwtTokenDecoder(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
@@ -83,10 +84,17 @@ router
   );
 
 router
-  .route("/deleteTrip/:tripInstanceId")
+  .route("/deleteBaseTrip/:baseTripId")
   .delete(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    deleteTripHandler
+    deleteBaseTripHandler
+  );
+
+router
+  .route("/deleteTripInstance/:tripInstanceId")
+  .delete(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    deleteTripInstanceHandler
   );
 
 router
@@ -152,7 +160,7 @@ router
     removeMemberAsHostHandler
   );
 
-  router
+router
   .route("/declineRequest")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),

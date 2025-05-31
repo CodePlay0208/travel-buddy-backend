@@ -5,7 +5,8 @@ const {
   API_STARTED,
   API_SUCCESS,
   API_FAILED,
-  DELETE_TRIP,
+  DELETE_BASE_TRIP,
+  DELETE_TRIP_INSTANCE,
   CREATE_TRIP,
   GET_TRIP_BY_ID,
   EDIT_TRIP,
@@ -294,27 +295,57 @@ const editTripImagesHandler = asyncHandler(async (req, res) => {
   }
 });
 
-const deleteTripHandler = asyncHandler(async (req, res) => {
+const deleteBaseTripHandler = asyncHandler(async (req, res) => {
   const REQUEST_TID = requestContext.getRequestTid();
   try {
     const startTime = Date.now();
     logger.info(
-      `Request recieved for API_NAME=${DELETE_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+      `Request recieved for API_NAME=${DELETE_BASE_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-    const tripInstanceId = req.params.tripInstanceId;
+    const baseTripId = req.params.baseTripId;
     const userId = req.userId;
 
-    await tripDataService.deleteTrip(tripInstanceId, userId);
+    await tripDataService.deleteBaseTrip(baseTripId, userId);
     res.status(200).json();
     const endTime = Date.now();
     logger.info(
-      `API_NAME=${DELETE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+      `API_NAME=${DELETE_BASE_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
       }ms`
     );
   } catch (error) {
     logger.error(
-      `API_NAME=${DELETE_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+      `API_NAME=${DELETE_BASE_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const deleteTripInstanceHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${DELETE_TRIP_INSTANCE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const tripInstanceId = req.params.tripInstanceId;
+    const userId = req.userId;
+
+    await tripDataService.deleteTripInstance(tripInstanceId, userId);
+    res.status(200).json();
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${DELETE_TRIP_INSTANCE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${DELETE_TRIP_INSTANCE}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -671,7 +702,8 @@ module.exports = {
   getTripByIdHandler,
   getTripsByUserHandler,
   editTripHandler,
-  deleteTripHandler,
+  deleteBaseTripHandler,
+  deleteTripInstanceHandler,
   getTripsWithFilterHandler,
   getWishlistedTripsHandler,
   addWishlistTripHandler,

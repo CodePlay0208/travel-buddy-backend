@@ -12,7 +12,8 @@ const EDIT_USER_PROFILE = "edit_user_profile";
 const DELETE_USER_PROFILE = "delete_user_profile";
 const OTP_VERIFICATION = "otp_verification";
 const RESEND_OTP = "resend_otp";
-const DELETE_TRIP = "delete_trip";
+const DELETE_BASE_TRIP = "delete_base_trip";
+const DELETE_TRIP_INSTANCE = "delete_trip_instance";
 const CREATE_TRIP = "create_trip";
 const EDIT_TRIP = "edit_trip";
 const GET_TRIP_BY_ID = "get_trip_by_id";
@@ -61,7 +62,8 @@ module.exports = {
   DELETE_USER_PROFILE,
   OTP_VERIFICATION,
   RESEND_OTP,
-  DELETE_TRIP,
+  DELETE_BASE_TRIP,
+  DELETE_TRIP_INSTANCE,
   CREATE_TRIP,
   GET_TRIP_BY_ID,
   EDIT_TRIP,
