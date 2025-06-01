@@ -41,7 +41,7 @@ async function generateTripInstancesFor3Months() {
 
     const today = new Date();
     const endDateLimit = new Date();
-    endDateLimit.setMonth(today.getMonth() + 3);
+    endDateLimit.setMonth(today.getMonth() + parseInt(process.env.ROLLING_WINDOW_FOR_SCHEDULED_TRIPS));
 
     for (const baseTrip of baseTrips) {
       const { scheduledWeekdays, duration, baseTripId } = baseTrip;
