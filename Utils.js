@@ -42,7 +42,7 @@ const dateFromDateString = (date) => {
       return date;
     }
     const [day, month, year] = date.split("-").map(Number);
-    const inputDate = new Date(year, month - 1, day + 1);
+    const inputDate = new Date(Date.UTC(year, month - 1, day));
     inputDate.setUTCHours(0, 0, 0, 0);
     return inputDate;
   } catch (error) {

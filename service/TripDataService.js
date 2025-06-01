@@ -320,7 +320,8 @@ async function createTrip(payload, userId) {
       dayTabs: payload.dayTabs,
       baseTripId,
       hostId: userId,
-      duration: payload.duration
+      duration: payload.duration,
+      scheduledWeekdays: payload.scheduledWeekdays
     };
 
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);

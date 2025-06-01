@@ -16,7 +16,13 @@ tripInstanceDataSchema.index(
   { startDate: 1, destination: 1 },
   { name: "startDate_destination_composite_index" }
 );
-tripInstanceDataSchema.index({ hostId: 1 }, { name: "userId_single_index" });
+
+tripInstanceDataSchema.index(
+  { startDate: 1, baseTripId: 1 },
+  { name: "startDate_baseTripId_composite_index" }
+);
+
+tripInstanceDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
 tripInstanceDataSchema.index({ baseTripId: 1 }, { name: "tripInstanceId_single_index" });
 tripInstanceDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
 

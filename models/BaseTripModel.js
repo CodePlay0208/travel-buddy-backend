@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const WEEKDAYS = require("../enums/Weekdays");
 
 const baseTripDataSchema = new mongoose.Schema({
   destination: [{ type: String, required: true }],
@@ -14,6 +14,7 @@ const baseTripDataSchema = new mongoose.Schema({
   hostId: { type: String, required: true },
   baseTripId: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
+  scheduledWeekdays: [{ type: String, enum: Object.values(WEEKDAYS) }],
   dayTabs: [
     {
       dayTabId: { type: String },
@@ -23,8 +24,8 @@ const baseTripDataSchema = new mongoose.Schema({
   ],
 });
 
-
 baseTripDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
 baseTripDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
+baseTripDataSchema.index({ scheduledWeekdays: 1 }, { name: "scheduled)weekdays_index" });
 
 module.exports = mongoose.model("baseTripDataSchema", baseTripDataSchema);

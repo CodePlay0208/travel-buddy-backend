@@ -5,7 +5,8 @@ const partnersProfileRepository = require("../repositories/PartnersProfileReposi
 const agentDataRepository = require("../repositories/AgentDataRepository");
 const { v4: uuidv4 } = require("uuid");
 const generateToken = require("../config/GenerateToken");
-const { dateFromDateString} = require("../Utils");
+const { dateFromDateString } = require("../Utils");
+const { generateTripInstancesFor3Months } = require("../cron/ScheduleTripsFunction");
 
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -110,28 +111,35 @@ async function setAgentData(payload) {
     const agentData = {
       ...payload,
       agentDataId,
-      callDate
+      callDate,
     };
 
     await agentDataRepository.createAgentData(agentData);
   } catch (error) {
-    logger.error(
-      `Failed to create agentData=${payload}, error=${error}`
-    );
+    logger.error(`Failed to create agentData=${payload}, error=${error}`);
     throw error;
   }
 }
 
 async function getAgentsData() {
-    try {
-      const agentsData = await agentDataRepository.getAgentsData();
-      return agentsData;
-    } catch (error) {
-      logger.error(
-        `Failed to fetch agents Data, error=${error}`
-      );
-      throw error;
-    }
+  try {
+    const agentsData = await agentDataRepository.getAgentsData();
+    return agentsData;
+  } catch (error) {
+    logger.error(`Failed to fetch agents Data, error=${error}`);
+    throw error;
   }
+}
 
-module.exports = { sendOtp, login, setAgentData, getAgentsData };
+async function scheduleTrips() {
+  try{
+    logger.info('Scheduling trips using partners endpoint');
+    await generateTripInstancesFor3Months();
+  }
+  catch(error){
+    logger.error(`Error occurred while scheduling trips using partners service, error=${error}`);
+    throw error;
+  }
+}
+
+module.exports = { sendOtp, login, setAgentData, getAgentsData, scheduleTrips };

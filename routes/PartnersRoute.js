@@ -5,6 +5,7 @@ const {
   loginHandler,
   setAgentDataHandler,
   getAgentDataHandler,
+  scheduleTripsHandler,
 } = require("../controller/PartnersController");
 const router = express.Router();
 
@@ -12,10 +13,7 @@ router.route("/sendOtp").post(sendOtpHandler);
 
 router
   .route("/login")
-  .post(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW),
-    loginHandler
-  );
+  .post(tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW), loginHandler);
 
 router
   .route("/agentData")
@@ -29,6 +27,13 @@ router
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
     setAgentDataHandler
+  );
+
+router
+  .route("/scheduleTrips")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    scheduleTripsHandler
   );
 
 module.exports = router;

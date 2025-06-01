@@ -34,6 +34,7 @@ const SEND_OTP_TO_PARTNERS = "send_otp_to_partners";
 const PARTNER_LOGIN = "partner_login";
 const SET_AGENT_DATA = "set_agent_data";
 const GET_AGENT_DATA = "get_agent_data";
+const ADMIN_SCHEDULE_TRIPS = "admin_schedule_trips";
 const REQUEST_JOIN_TRIP = "request_join_trip";
 const ADD_MEMBER_TO_TRIP = "add_member_to_trip";
 const LEAVE_TRIP = "leave_trip";
@@ -98,4 +99,5 @@ module.exports = {
   GET_OTHER_USER_PROFILE,
   EDIT_SECONDARY_KEY,
   GET_RANDOM_TRIPS,
+  ADMIN_SCHEDULE_TRIPS
 };

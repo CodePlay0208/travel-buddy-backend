@@ -16,6 +16,7 @@ const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
 const handleSocketIO = require("./config/Socket");
 const initializeDB = require("./repositories/Config");
+const scheduleTripsCron = require("./cron/ScheduleTripsCron");
 const logger = require("./logger");
 const {
   requestContextMiddleware,
@@ -45,6 +46,7 @@ try {
 
   initializeDB();
 
+
   app.use("/login", loginRoute);
   app.use("/user", userProfileRoute);
   app.use("/trips", tripsDataRoute);
@@ -58,7 +60,7 @@ try {
     logger.info(`Responding to Health Check Status`)
     res.status(200).send('OK'); 
 });
-  // Register blogs API route
+
   const blogRoute = require("./routes/BlogRoute");
   app.use("/blogs", blogRoute);
 
@@ -67,7 +69,7 @@ try {
     res.status(200).send("OK");
   });
 
-  // Optionally, add a root route for `/` to avoid Not Found error on `/`
+ 
   app.get("/", (req, res) => {
     res.status(200).send("API is running");
   });
