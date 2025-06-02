@@ -22,6 +22,12 @@ const baseTripDataSchema = new mongoose.Schema({
       dayDescription: [{ type: String }],
     },
   ],
+  inc_exc: [
+    {
+      inc_excTitle: { type: String },
+      inc_excDescription: [{ type: String }],
+    },
+  ],
 });
 
 baseTripDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
