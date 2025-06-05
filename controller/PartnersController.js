@@ -8,7 +8,10 @@ const {
   PARTNER_LOGIN,
   SET_AGENT_DATA,
   GET_AGENT_DATA,
-  ADMIN_SCHEDULE_TRIPS
+  ADMIN_SCHEDULE_TRIPS,
+  ADMIN_SETUP_PROFILE,
+  ADMIN_PUBLISH_TRIP_IMAGES,
+  ADMIN_PUBLISH_TRIP
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const partnersService = require("../service/PartnersService");
@@ -162,10 +165,115 @@ const scheduleTripsHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const setupProfileHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${ADMIN_SETUP_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+
+    const updateData = req.body;
+    const { files } = req;
+    const updatedUserProfile = await partnersService.setupProfile(
+      updateData,
+      files
+    );
+    res.status(200).json();
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${ADMIN_SETUP_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms
+  `
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${ADMIN_SETUP_PROFILE}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(400).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const publishTripHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${ADMIN_PUBLISH_TRIP}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+
+    const updateData = req.body;
+    const { files } = req;
+    const baseTripId = await partnersService.publishTrip(
+      updateData,
+      files
+    );
+    res.status(200).json({baseTripId});
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${ADMIN_PUBLISH_TRIP}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms
+  `
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${ADMIN_PUBLISH_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(400).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const publishImagesHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+
+    const updateData = req.body;
+    const { files } = req;
+    await partnersService.createTripsImages(
+      updateData,
+      files
+    );
+    res.status(200).json();
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms
+  `
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(400).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
 module.exports = {
   loginHandler,
   sendOtpHandler,
   getAgentDataHandler,
   setAgentDataHandler,
-  scheduleTripsHandler
+  scheduleTripsHandler,
+  setupProfileHandler,
+  publishTripHandler,
+  publishImagesHandler
 };

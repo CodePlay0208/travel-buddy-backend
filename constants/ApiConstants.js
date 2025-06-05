@@ -35,6 +35,7 @@ const PARTNER_LOGIN = "partner_login";
 const SET_AGENT_DATA = "set_agent_data";
 const GET_AGENT_DATA = "get_agent_data";
 const ADMIN_SCHEDULE_TRIPS = "admin_schedule_trips";
+const ADMIN_SETUP_PROFILE = "admin_setup_profile";
 const REQUEST_JOIN_TRIP = "request_join_trip";
 const ADD_MEMBER_TO_TRIP = "add_member_to_trip";
 const LEAVE_TRIP = "leave_trip";
@@ -48,6 +49,8 @@ const EDIT_TRIP_IMAGES = "edit_trip_images";
 const CREATE_TRIPS_IMAGES = "create_trips_images";
 const DECLINE_REQUEST_INVITATION = "decline_request_invitation";
 const EDIT_SECONDARY_KEY = "edit_secondary_key";
+const ADMIN_PUBLISH_TRIP = "admin_publish_trip";
+const ADMIN_PUBLISH_TRIP_IMAGES = "admin_publish_trip_images";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -99,5 +102,8 @@ module.exports = {
   GET_OTHER_USER_PROFILE,
   EDIT_SECONDARY_KEY,
   GET_RANDOM_TRIPS,
-  ADMIN_SCHEDULE_TRIPS
+  ADMIN_SCHEDULE_TRIPS,
+  ADMIN_SETUP_PROFILE,
+  ADMIN_PUBLISH_TRIP,
+  ADMIN_PUBLISH_TRIP_IMAGES
 };

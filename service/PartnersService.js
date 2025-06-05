@@ -3,10 +3,24 @@ const logger = require("../logger");
 const partnersOtpRepository = require("../repositories/PartnersOtpRepository");
 const partnersProfileRepository = require("../repositories/PartnersProfileRepository");
 const agentDataRepository = require("../repositories/AgentDataRepository");
+const userProfileRepository = require("../repositories/UserProfileRepository.js");
+const baseTripRepository = require("../repositories/BaseTripRepository.js");
+const tripInstancesRepository = require("../repositories/TripInstanceRepository.js");
+const userTripsRepository = require("../repositories/UserTripsRepository.js");
 const { v4: uuidv4 } = require("uuid");
 const generateToken = require("../config/GenerateToken");
 const { dateFromDateString } = require("../Utils");
-const { generateTripInstancesFor3Months } = require("../cron/ScheduleTripsFunction");
+const {
+  generateTripInstancesFor3Months,
+} = require("../cron/ScheduleTripsFunction");
+const { isPhoneNumberOrEmail } = require("../Utils");
+const { randomFileName } = require("../Utils");
+const {
+  uploadObjectsToS3Bucket,
+  getObjectsFromS3Bucket,
+  deleteObjectsFromS3Bucket,
+} = require("../aws/S3");
+const { cropAndResizeImages } = require("../Utils.js");
 
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -93,7 +107,7 @@ async function sendOtp(useremail) {
     await partnersOtpRepository.create(userId, otp);
     const token = generateToken(
       userId,
-      process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
+      process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN
     );
     return token;
   } catch (error) {
@@ -132,14 +146,211 @@ async function getAgentsData() {
 }
 
 async function scheduleTrips() {
-  try{
-    logger.info('Scheduling trips using partners endpoint');
+  try {
+    logger.info("Scheduling trips using partners endpoint");
     await generateTripInstancesFor3Months();
-  }
-  catch(error){
-    logger.error(`Error occurred while scheduling trips using partners service, error=${error}`);
+  } catch (error) {
+    logger.error(
+      `Error occurred while scheduling trips using partners service, error=${error}`
+    );
     throw error;
   }
 }
 
-module.exports = { sendOtp, login, setAgentData, getAgentsData, scheduleTrips };
+async function setupProfile(updateData, newProfilePic) {
+  try {
+    logger.info(`Setting up profile using partners service`);
+    const sanitizedUpdateData = {};
+    const userId = uuidv4();
+    if (updateData.username) sanitizedUpdateData.username = updateData.username;
+    if (updateData.dateOfBirth)
+      sanitizedUpdateData.dateOfBirth = updateData.dateOfBirth;
+    if (updateData.persona) sanitizedUpdateData.persona = updateData.persona;
+    if (updateData.profilePic)
+      sanitizedUpdateData.profilePic = updateData.profilePic;
+    if (updateData.gender) sanitizedUpdateData.gender = updateData.gender;
+    if (newProfilePic && newProfilePic.length > 0) {
+      newProfilePic.forEach((profilePic) => {
+        profilePic.originalname = randomFileName(profilePic.originalname);
+      });
+      const { uploadedObjectNames, allObjectsUploaded } =
+        await uploadObjectsToS3Bucket(
+          "",
+          newProfilePic,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+        );
+      sanitizedUpdateData.profilePic = uploadedObjectNames;
+    }
+    let { userKey } = updateData;
+    const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+    if (isPhoneNumber) {
+      sanitizedUpdateData.isSignupWithEmail = false;
+      sanitizedUpdateData.phoneNumber = userKey;
+    } else {
+      sanitizedUpdateData.isSignupWithEmail = true;
+      sanitizedUpdateData.emailId = userKey;
+    }
+    sanitizedUpdateData.userId = userId;
+    var updatedUserProfile = await userProfileRepository.create(
+      sanitizedUpdateData
+    );
+  } catch (error) {
+    logger.error(
+      `Error occurred while setting profile using partners service, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function publishTrip(payload) {
+  try {
+    let { userKey } = payload;
+    logger.info(`publish trip using partners service, trips=${payload}`);
+    try {
+      const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+      let user;
+      if (isPhoneNumber) {
+        user = await userProfileRepository.findUserByPhoneNumber(userKey);
+      } else {
+        user = await userProfileRepository.findUserWithEmailId(userKey);
+      }
+      if (!user) {
+        throw new ValidationError(`User doesn't exists`, 400);
+      }
+      const userId = user.userId;
+      const baseTripId = uuidv4();
+      const baseTrip = {
+        destination: payload.destination,
+        startLocation: payload.startLocation,
+        minBudget: payload.minBudget,
+        maxBudget: payload.maxBudget,
+        title: payload.title,
+        description: payload.description,
+        dayTabs: payload.dayTabs,
+        baseTripId,
+        hostId: userId,
+        duration: payload.duration,
+        scheduledWeekdays: payload.scheduledWeekdays,
+      };
+
+      const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
+      const { tripDates: strTripDates } = payload;
+      const tripDates = Array.from(strTripDates);
+
+      const tripInstances = tripDates.map((tripDate) => {
+        const { startDate, endDate } = tripDate;
+        const queryStartDate = dateFromDateString(startDate);
+        const queryEndDate = dateFromDateString(endDate);
+        const tripInstanceId = uuidv4();
+        const tripInstance = {
+          tripInstanceId,
+          baseTripId,
+          hostId: userId,
+          destination: payload.destination,
+          startLocation: payload.startLocation,
+          startDate: queryStartDate,
+          endDate: queryEndDate,
+        };
+        return tripInstance;
+      });
+
+      const createdTripInstances =
+        await tripInstancesRepository.createInstances(tripInstances);
+
+      tripInstances.forEach(async (tripInstance) => {
+        const userTrips = await userTripsRepository.updateUserTrips(
+          userId,
+          tripInstance.tripInstanceId,
+          true,
+          true,
+          false,
+          false
+        );
+      });
+
+      return baseTripId;
+    } catch (error) {
+      logger.error(
+        `Error creating trip with payload=${JSON.stringify(
+          payload
+        )}, error=${error}`
+      );
+      throw error;
+    }
+  } catch (error) {
+    logger.error(
+      `Error occurred while publish trips using partners service, error=${error}`
+    );
+    throw error;
+  }
+}
+
+
+async function createTripsImages(newPayload, newDestinationImages, userId) {
+  const baseTripId = newPayload.baseTripId;
+  try {
+    const tripInDatabase = await baseTripRepository.findTripWithTripId(
+      baseTripId
+    );
+    if (!tripInDatabase) {
+      throw new ValidationError(
+        `Trip with baseTripId=${baseTripId} not found`,
+        400
+      );
+    }
+
+    if (
+      tripInDatabase.destinationImages &&
+      tripInDatabase.destinationImages.length > 0
+    ) {
+      throw new ValidationError(`Images already created for this trip`, 400);
+    }
+
+    if (newDestinationImages && newDestinationImages.length > 0) {
+      newDestinationImages.forEach((newDestinationImage) => {
+        newDestinationImage.originalname = randomFileName(
+          newDestinationImage.originalname
+        );
+      });
+
+      const { uploadedObjectNames, allObjectsUploaded } =
+        await uploadObjectsToS3Bucket(
+          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+          newDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        );
+
+      newDestinationImages = await cropAndResizeImages(newDestinationImages);
+
+      const {
+        uploadedObjectNames: croppedImagesNames,
+        allObjectsUploaded: allCroppedImagesUploaded,
+      } = await uploadObjectsToS3Bucket(
+        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+        newDestinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
+      tripInDatabase.destinationImages = uploadedObjectNames;
+      tripInDatabase.croppedDestinationImages = croppedImagesNames;
+      allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
+      const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
+    }
+    logger.info(`created images for Trip with baseTripId=${baseTripId} using partners service`);
+  } catch (error) {
+    logger.error(
+      `Error creating images for baseTripId=${baseTripId} using partners service, error=${error}`
+    );
+    throw error;
+  }
+}
+
+module.exports = {
+  sendOtp,
+  login,
+  setAgentData,
+  getAgentsData,
+  scheduleTrips,
+  setupProfile,
+  publishTrip,
+  createTripsImages
+};

@@ -6,14 +6,21 @@ const {
   setAgentDataHandler,
   getAgentDataHandler,
   scheduleTripsHandler,
+  setupProfileHandler,
+  publishTripHandler,
+  publishImagesHandler,
 } = require("../controller/PartnersController");
 const router = express.Router();
+const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
 
 router.route("/sendOtp").post(sendOtpHandler);
 
 router
   .route("/login")
-  .post(tokenProtect(process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW), loginHandler);
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    loginHandler
+  );
 
 router
   .route("/agentData")
@@ -34,6 +41,29 @@ router
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
     scheduleTripsHandler
+  );
+
+router
+  .route("/setup")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    uploadMiddlewareForImages.array("profilePic"),
+    setupProfileHandler
+  );
+
+router
+  .route("/createTrip")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    publishTripHandler
+  );
+
+router
+  .route("/createTripImages")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    uploadMiddlewareForImages.array("destinationImages"),
+    publishImagesHandler
   );
 
 module.exports = router;
