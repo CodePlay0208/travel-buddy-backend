@@ -318,6 +318,7 @@ async function createTrip(payload, userId) {
       title: payload.title,
       description: payload.description,
       dayTabs: payload.dayTabs,
+      inc_exc: payload.inc_exc,
       baseTripId,
       hostId: userId,
       duration: payload.duration,

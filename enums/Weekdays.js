@@ -9,3 +9,4 @@ const Weekdays = {
 };
 
 module.exports = Weekdays;
+

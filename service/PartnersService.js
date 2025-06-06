@@ -227,6 +227,7 @@ async function publishTrip(payload) {
         title: payload.title,
         description: payload.description,
         dayTabs: payload.dayTabs,
+        inc_exc: payload.inc_exc,
         baseTripId,
         hostId: userId,
         duration: payload.duration,
