@@ -1,5 +1,6 @@
 const baseTripRepository = require("../repositories/BaseTripRepository");
 const tripInstanceRepository = require("../repositories/TripInstanceRepository");
+const userTripsRepository = require("../repositories/UserTripsRepository.js");
 const { v4: uuidv4 } = require("uuid");
 const logger = require("../logger");
 
@@ -93,7 +94,18 @@ async function generateTripInstancesFor3Months() {
         logger.info(
           `Created ${newInstances.length} trip instance(s) for baseTripId: ${baseTripId}, newInstances=${newInstances}`
         );
+        newInstances.forEach(async (tripInstance) => {
+          const userTrips = await userTripsRepository.updateUserTrips(
+            baseTrip.hostId,
+            tripInstance.tripInstanceId,
+            true,
+            true,
+            false,
+            false
+          );
+        });
       }
+
     }
   } catch (error) {
     logger.error(`Error occurred while scheduling trips, error=${error}`);
