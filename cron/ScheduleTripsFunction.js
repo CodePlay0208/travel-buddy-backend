@@ -76,12 +76,15 @@ async function generateTripInstancesFor3Months() {
         if (existingStartDates.has(startDateStr)) continue;
 
         const instanceEndDate = new Date(date);
+        
         instanceEndDate.setDate(instanceEndDate.getDate() + duration);
-
+        const instanceStartDate = new Date(date);
+        instanceStartDate.setUTCHours(0,0,0,0);
+        instanceEndDate.setUTCHours(0,0,0,0);
         newInstances.push({
           destination: baseTrip.destination,
           startLocation: baseTrip.startLocation,
-          startDate: new Date(date),
+          startDate: instanceStartDate,
           endDate: instanceEndDate,
           hostId: baseTrip.hostId,
           tripInstanceId: uuidv4(),
