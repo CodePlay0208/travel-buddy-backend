@@ -145,7 +145,9 @@ function addPersonaToQuery(query, persona) {
 function addDateToQuery(query, queryDate, fetchPastTrips) {
   if (queryDate) {
     if (!isNaN(queryDate)) {
-      query.startDate = { $eq: queryDate };
+      const queryStartDate = new Date(queryDate);
+      const queryEndDate = queryDate.setUTCHours(23, 59, 59, 999);
+      query.startDate = { $gte: queryStartDate, $lt: queryDate };
     } else {
       logger.error("Invalid date passed in query");
       throw new ValidationError("Invalid Date Passed");
@@ -195,13 +197,11 @@ function createQuery(
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
-    addTripInstanceIdToQuery(query, tripInstanceId);
+  addTripInstanceIdToQuery(query, tripInstanceId);
   return query;
 }
 
-function createAdditionalFilters(
-  filter
-) {
+function createAdditionalFilters(filter) {
   let query = {};
   addPersonaToQuery(query, filter.persona);
   return query;
@@ -212,7 +212,7 @@ function createQueryForBaseTrips(
   date,
   userId,
   includeUser,
-  baseTripId,
+  baseTripId
 ) {
   let query = {};
   addDestinationToQuery(query, destination);
@@ -322,7 +322,7 @@ async function createTrip(payload, userId) {
       baseTripId,
       hostId: userId,
       duration: payload.duration,
-      scheduledWeekdays: payload.scheduledWeekdays
+      scheduledWeekdays: payload.scheduledWeekdays,
     };
 
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
@@ -506,7 +506,7 @@ async function editTrip(baseTripId, userId, newPayload) {
         const { startDate, endDate } = tripDate;
         const queryStartDate = dateFromDateString(startDate);
         const queryEndDate = dateFromDateString(endDate);
-        return { startDate:queryStartDate, endDate:queryEndDate };
+        return { startDate: queryStartDate, endDate: queryEndDate };
       });
       await tripInstancesRepository.deleteTripDates(deletedDates);
     }
@@ -714,7 +714,6 @@ async function getTripsByUser(filter, userId) {
       skip
     );
 
-
     let fetchedTrips = trips.map((trip) => trip.toObject());
     fetchedTrips = await getRelatedDatesToBaseTrip(fetchedTrips);
 
@@ -743,14 +742,25 @@ async function getTripsWithFilter(filter, userId) {
       limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
     } = filter;
 
-    filter.date = dateFromDateString(filter.date);
+    const queryDate = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
-    let { date, persona } = filter;
-    const query = createQuery(destination, date, userId, false, null, false);
+    const query = createQuery(
+      destination,
+      queryDate,
+      userId,
+      false,
+      null,
+      false
+    );
     const additionalFilters = createAdditionalFilters(filter);
+    console.log(additionalFilters, query);
     var { trips, newOffset } =
-      await getTripInstancesUsingQueryWithLimitAndOffset(query, limit, offset, additionalFilters);
-
+      await getTripInstancesUsingQueryWithLimitAndOffset(
+        query,
+        limit,
+        offset,
+        additionalFilters
+      );
     if (trips.length === 0) {
       return [];
     }
@@ -898,7 +908,9 @@ async function deleteTripInstance(tripInstanceId, userId) {
     }
 
     await tripInstancesRepository.deleteTripsByTripInstanceId(tripInstanceId);
-    logger.info(`Trip with tripInstanceId=${tripInstanceId} deleted successfully`);
+    logger.info(
+      `Trip with tripInstanceId=${tripInstanceId} deleted successfully`
+    );
   } catch (error) {
     logger.error(
       `Error deleting trip with tripInstanceId=${tripInstanceId}, error=${error}`
