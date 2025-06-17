@@ -24,7 +24,8 @@ const {
   GET_REQUESTED_MEMBERS,
   CREATE_TRIPS_IMAGES,
   DECLINE_REQUEST_INVITATION,
-  EDIT_TRIP_IMAGES
+  EDIT_TRIP_IMAGES,
+  GET_RANDOM_TRIPS
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
