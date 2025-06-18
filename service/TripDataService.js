@@ -539,7 +539,7 @@ async function editTripImages(
 ) {
   try {
     const tripInDatabase = await baseTripRepository.findTripWithTripId(
-      tripbaseTripIdId
+      baseTripId
     );
     if (!tripInDatabase) {
       throw new ValidationError(
