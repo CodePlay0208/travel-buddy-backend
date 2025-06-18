@@ -203,7 +203,7 @@ const getRandomTripsHandler = asyncHandler(async (req, res) => {
       userId
     );
 
-    res.status(200).json({ trips, offset: newOffset });
+    res.status(200).json({ trips });
     const endTime = Date.now();
     logger.info(
       `API_NAME=${GET_RANDOM_TRIPS}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
