@@ -816,20 +816,16 @@ async function getTripsWithFilter(filter, userId) {
 async function getRandomTrips(filter, userId) {
   try {
     const {
-      destination,
       limit = parseInt(process.env.LIMIT_FOR_SENDING_RANDOM_TRIPS, 10),
     } = filter;
-
-    filter.date = dateFromDateString(filter.date);
+    const parsedLimit = parseInt(limit, 10);
     tripValidator.validateFilter(filter);
-    let { date } = filter;
-    const query = createQuery(destination, date, userId, false, null, false);
+    const query = createQuery(null, null, userId, false, null, false);
     let fetchedTrips =
       await tripInstancesRepository.findRandomTripsWithQueryUsingAggregation(
         query,
-        limit
+        parsedLimit
       );
-
     await addCroppedDestinationImagesToTrips(
       fetchedTrips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
