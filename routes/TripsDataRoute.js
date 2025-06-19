@@ -22,9 +22,9 @@ const {
   removeMemberAsHostHandler,
   getRequestedMembersHandler,
   createTripsImagesHandler,
-  editTripImagesHandler,
   declineRequestInvitationHandler,
   getRandomTripsHandler,
+  generatePreSignedUrlHandler,
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -73,14 +73,6 @@ router
   .put(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     editTripHandler
-  );
-
-router
-  .route("/editTripImages/:baseTripId")
-  .put(
-    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    uploadMiddlewareForImages.array("destinationImages"),
-    editTripImagesHandler
   );
 
 router
@@ -168,5 +160,13 @@ router
   );
 
 router.route("/getRequestedMembers").post(getRequestedMembersHandler);
+
+router
+  .route("/generatePreSignedUrlForDestinationImages")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    generatePreSignedUrlHandler
+  );
+
 
 module.exports = router;

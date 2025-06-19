@@ -8,6 +8,7 @@ const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
+  generatePresignedUrl,
 } = require("../aws/S3");
 const { dateFromDateString, parseLimitAndOffset } = require("../Utils");
 const { v4: uuidv4 } = require("uuid");
@@ -383,7 +384,7 @@ async function getTripById(tripInstanceId, userId) {
     }
 
     let fetchedTrip = trip[0];
-
+    console.log(fetchedTrip)
     fetchedTrip.destinationImages = await getObjectsFromS3Bucket(
       process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
       fetchedTrip.destinationImages,
@@ -511,6 +512,18 @@ async function editTrip(baseTripId, userId, newPayload) {
       await tripInstancesRepository.deleteTripDates(deletedDates);
     }
 
+    deleteObjectsFromS3Bucket(
+      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+      newPayload.removedDestinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
+    deleteObjectsFromS3Bucket(
+      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+      newPayload.removedDestinationImages,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+    );
+
     Object.entries(newPayload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         tripInDatabase[key] = value;
@@ -531,13 +544,14 @@ async function editTrip(baseTripId, userId, newPayload) {
   }
 }
 
-async function editTripImages(
-  baseTripId,
-  userId,
-  newPayload,
-  newDestinationImages
-) {
+async function createTripsImages(payload) {
+  const objectKey = payload.detail.object.key;
   try {
+    const parts = objectKey.split("/");
+    const folder = parts[0];
+    const userId = parts[1];
+    const baseTripId = parts[2];
+    const fileName = parts.slice(3).join("/");
     const tripInDatabase = await baseTripRepository.findTripWithTripId(
       baseTripId
     );
@@ -554,136 +568,8 @@ async function editTripImages(
         403
       );
     }
-
-    var allFilesUploaded = true;
-    let uploadedDestinationImages = tripInDatabase.destinationImages || [];
-    let uploadedCroppedImagesNames =
-      tripInDatabase.croppedDestinationImages || [];
-    let removedImages = [];
-    if (newPayload.removedDestinationImages)
-      removedImages = JSON.parse(newPayload.removedDestinationImages);
-
-    uploadedDestinationImages = uploadedDestinationImages.filter(
-      (image) => !removedImages.includes(image)
-    );
-    uploadedCroppedImagesNames = uploadedCroppedImagesNames.filter(
-      (image) => !removedImages.includes(image)
-    );
-    if (newDestinationImages && newDestinationImages.length > 0) {
-      newDestinationImages.forEach((newDestinationImage) => {
-        newDestinationImage.originalname = randomFileName(
-          newDestinationImage.originalname
-        );
-      });
-
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-          newDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-
-      newDestinationImages = await cropAndResizeImages(newDestinationImages);
-
-      const {
-        uploadedObjectNames: croppedImagesNames,
-        allObjectsUploaded: allCroppedImagesUploaded,
-      } = await uploadObjectsToS3Bucket(
-        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-        newDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
-
-      deleteObjectsFromS3Bucket(
-        process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-        newPayload.removedDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
-
-      deleteObjectsFromS3Bucket(
-        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-        newPayload.removedDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
-
-      uploadedDestinationImages.push(...uploadedObjectNames);
-      uploadedCroppedImagesNames.push(...croppedImagesNames);
-      allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
-    }
-
-    tripInDatabase.destinationImages = uploadedDestinationImages;
-    tripInDatabase.croppedDestinationImages = uploadedCroppedImagesNames;
-
+    tripInDatabase.destinationImages.push(objectKey);
     const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
-    logger.info(`Trip with baseTripId=${baseTripId} updated successfully`);
-
-    return { updatedTrip, allFilesUploaded };
-  } catch (error) {
-    logger.error(
-      `Error editing trip with newPayload=${JSON.stringify(
-        newPayload
-      )}, error=${error}`
-    );
-    throw error;
-  }
-}
-
-async function createTripsImages(newPayload, newDestinationImages, userId) {
-  const baseTripId = newPayload.baseTripId;
-  try {
-    const tripInDatabase = await baseTripRepository.findTripWithTripId(
-      baseTripId
-    );
-    if (!tripInDatabase) {
-      throw new ValidationError(
-        `Trip with baseTripId=${baseTripId} not found`,
-        400
-      );
-    }
-
-    if (!tripInDatabase.hostId == userId) {
-      throw new ValidationError(
-        `User with userId=${userId} not authorized to edit trip with baseTripId=${baseTripId}`,
-        403
-      );
-    }
-
-    if (
-      tripInDatabase.destinationImages &&
-      tripInDatabase.destinationImages.length > 0
-    ) {
-      throw new ValidationError(`Images already created for this trip`, 400);
-    }
-
-    if (newDestinationImages && newDestinationImages.length > 0) {
-      newDestinationImages.forEach((newDestinationImage) => {
-        newDestinationImage.originalname = randomFileName(
-          newDestinationImage.originalname
-        );
-      });
-
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-          newDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-
-      newDestinationImages = await cropAndResizeImages(newDestinationImages);
-
-      const {
-        uploadedObjectNames: croppedImagesNames,
-        allObjectsUploaded: allCroppedImagesUploaded,
-      } = await uploadObjectsToS3Bucket(
-        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-        newDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
-      tripInDatabase.destinationImages = uploadedObjectNames;
-      tripInDatabase.croppedDestinationImages = croppedImagesNames;
-      allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
-      const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
-    }
     logger.info(`created images for Trip with baseTripId=${baseTripId}`);
   } catch (error) {
     logger.error(
@@ -753,7 +639,6 @@ async function getTripsWithFilter(filter, userId) {
       false
     );
     const additionalFilters = createAdditionalFilters(filter);
-    console.log(additionalFilters, query);
     var { trips, newOffset } =
       await getTripInstancesUsingQueryWithLimitAndOffset(
         query,
@@ -815,9 +700,8 @@ async function getTripsWithFilter(filter, userId) {
 
 async function getRandomTrips(filter, userId) {
   try {
-    const {
-      limit = parseInt(process.env.LIMIT_FOR_SENDING_RANDOM_TRIPS, 10),
-    } = filter;
+    const { limit = parseInt(process.env.LIMIT_FOR_SENDING_RANDOM_TRIPS, 10) } =
+      filter;
     const parsedLimit = parseInt(limit, 10);
     tripValidator.validateFilter(filter);
     const query = createQuery(null, null, userId, false, null, false);
@@ -1461,6 +1345,48 @@ async function declineRequestInvitation(payload, userId) {
   }
 }
 
+async function generatePreSignedUrl(payload, userId) {
+  const { files, prefix, baseTripId } = payload;
+  try {
+    const tripInDatabase = await baseTripRepository.findTripWithTripId(
+      baseTripId
+    );
+    if (!tripInDatabase) {
+      throw new ValidationError(
+        `Trip with baseTripId=${baseTripId} not found`,
+        400
+      );
+    }
+
+    if (!tripInDatabase.hostId == userId) {
+      throw new ValidationError(
+        `User with userId=${userId} not authorized to generate presigned url for baseTripId=${baseTripId}`,
+        403
+      );
+    }
+
+    const signedUrls = await Promise.all(
+      files.map(({ filename, filetype }) => {
+        const key = `${prefix}/${filename}`;
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
+          Key: key,
+          ContentType: filetype,
+        };
+        return generatePresignedUrl("putObject", params);
+      })
+    );
+    return signedUrls;
+  } catch (error) {
+    logger.error(
+      `Error occured while generating presigned url for files=${JSON.stringify(
+        files
+      )} with prefix=${prefix}, error=${error}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   createTrip,
   getTripById,
@@ -1479,8 +1405,8 @@ module.exports = {
   getJoinedTrips,
   getRequestedMembers,
   removeMemberAsHost,
-  editTripImages,
   createTripsImages,
   declineRequestInvitation,
   getRandomTrips,
+  generatePreSignedUrl,
 };

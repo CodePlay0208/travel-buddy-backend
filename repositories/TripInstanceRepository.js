@@ -159,10 +159,10 @@ async function findRandomTripsWithQueryUsingAggregation(query, limit) {
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, error=${error}`
     );
   }
 }

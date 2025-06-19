@@ -9,6 +9,6 @@ cron.schedule('0 1 * * *', async () => {
   try {
     await generateTripInstancesFor3Months();
   } catch (error) {
-    console.error(`Error running cron job generating instancesm,error=${error}`);
+    logger.error(`Error running cron job generating instancesm,error=${error}`);
   }
 });

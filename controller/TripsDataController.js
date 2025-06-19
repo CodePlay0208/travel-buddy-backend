@@ -24,8 +24,8 @@ const {
   GET_REQUESTED_MEMBERS,
   CREATE_TRIPS_IMAGES,
   DECLINE_REQUEST_INVITATION,
-  EDIT_TRIP_IMAGES,
-  GET_RANDOM_TRIPS
+  GET_RANDOM_TRIPS,
+  GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES
 } = require("../constants/ApiConstants");
 const tripDataService = require("../service/TripDataService");
 const { ValidationError } = require("../exceptions/ValidationError");
@@ -69,11 +69,9 @@ const createTripsImagesHandler = asyncHandler(async (req, res) => {
       `Request recieved for API_NAME=${CREATE_TRIPS_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
 
-    const userId = req.userId;
-    const { files } = req;
     const newPayload = req.body;
 
-    await tripDataService.createTripsImages(newPayload, files, userId);
+    await tripDataService.createTripsImages(newPayload);
     res.status(201).json();
     const endTime = Date.now();
     logger.info(
@@ -250,43 +248,6 @@ const editTripHandler = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error(
       `API_NAME=${EDIT_TRIP}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
-    );
-    if (error instanceof ValidationError) {
-      res.status(error.errorCode).json();
-    } else {
-      res.status(500).json();
-    }
-  }
-});
-
-const editTripImagesHandler = asyncHandler(async (req, res) => {
-  const REQUEST_TID = requestContext.getRequestTid();
-  try {
-    const startTime = Date.now();
-    logger.info(
-      `Request recieved for API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
-    );
-    const { baseTripId } = req.params;
-    const userId = req.userId;
-    const newPayload = req.body;
-    const newDestinationImages = req.files;
-    const { updatedTrip, allObjectsUploaded } = await tripDataService.editTripImages(
-      baseTripId,
-      userId,
-      newPayload,
-      newDestinationImages
-    );
-
-    res.status(200).json({ updatedTrip, allFilesUploaded: allObjectsUploaded });
-    const endTime = Date.now();
-    logger.info(
-      `API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
-        endTime - startTime
-      }ms`
-    );
-  } catch (error) {
-    logger.error(
-      `API_NAME=${EDIT_TRIP_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -698,6 +659,38 @@ const declineRequestInvitationHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const generatePreSignedUrlHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+    const payload = req.body;
+    const signedUrls = await tripDataService.generatePreSignedUrl(
+      payload,
+      userId
+    );
+    res.status(200).json(signedUrls);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
 module.exports = {
   createTripsHandler,
   getTripByIdHandler,
@@ -716,8 +709,8 @@ module.exports = {
   getJoinedTripsHandler,
   removeMemberAsHostHandler,
   getRequestedMembersHandler,
-  editTripImagesHandler,
   createTripsImagesHandler,
   declineRequestInvitationHandler,
-  getRandomTripsHandler
+  getRandomTripsHandler,
+  generatePreSignedUrlHandler,
 };

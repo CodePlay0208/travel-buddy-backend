@@ -51,6 +51,7 @@ const DECLINE_REQUEST_INVITATION = "decline_request_invitation";
 const EDIT_SECONDARY_KEY = "edit_secondary_key";
 const ADMIN_PUBLISH_TRIP = "admin_publish_trip";
 const ADMIN_PUBLISH_TRIP_IMAGES = "admin_publish_trip_images";
+const GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES = "generate_pre_signed_url_for_destination_images";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -105,5 +106,6 @@ module.exports = {
   ADMIN_SCHEDULE_TRIPS,
   ADMIN_SETUP_PROFILE,
   ADMIN_PUBLISH_TRIP,
-  ADMIN_PUBLISH_TRIP_IMAGES
+  ADMIN_PUBLISH_TRIP_IMAGES,
+  GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES
 };
