@@ -691,6 +691,25 @@ const generatePreSignedUrlHandler = asyncHandler(async (req, res) => {
   }
 });
 
+// const testRouteHandler = asyncHandler(async (req, res) => {
+//   try {
+//     const s3Url = req.body.url;
+//     const files = req.files;
+//     console.log(files);
+//     files.forEach(async (file) => {
+//       await fetch(s3Url, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': file.type },
+//         body: file.buffer,
+//       });
+//     })
+//     res.status(200).json({})
+//   } catch (error) {
+//     logger.error(`Error occured while uploading files, error=${error}`);
+//     res.status(500).json({})
+//   }
+// });
+
 module.exports = {
   createTripsHandler,
   getTripByIdHandler,

@@ -40,7 +40,7 @@ router
   .route("/createTripsImages")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    uploadMiddlewareForImages.array("destinationImages"),
+
     createTripsImagesHandler
   );
 router

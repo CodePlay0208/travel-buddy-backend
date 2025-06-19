@@ -568,7 +568,14 @@ async function createTripsImages(payload) {
         403
       );
     }
-    tripInDatabase.destinationImages.push(objectKey);
+
+    if(folder == process.env.S3_FOLDER_FOR_FULL_DESTINATION_IMAGES){
+      tripInDatabase.destinationImages.push(objectKey);
+    }
+    else if(folder == process.env.S3_FOLDER_FOR_CROPPED_DESTINATION_IMAGES){
+      tripInDatabase.croppedDestinationImages.push(objectKey);
+    }
+    
     const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
     logger.info(`created images for Trip with baseTripId=${baseTripId}`);
   } catch (error) {
