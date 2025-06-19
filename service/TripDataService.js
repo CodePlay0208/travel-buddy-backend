@@ -8,7 +8,7 @@ const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
-  generatePresignedUrl,
+  generatePresignedUrlFromS3,
 } = require("../aws/S3");
 const { dateFromDateString, parseLimitAndOffset } = require("../Utils");
 const { v4: uuidv4 } = require("uuid");
@@ -1373,14 +1373,15 @@ async function generatePreSignedUrl(payload, userId) {
     }
 
     const signedUrls = await Promise.all(
-      files.map(({ filename, filetype }) => {
+      files.map(async ({ filename, filetype }) => {
         const key = `${prefix}/${filename}`;
         const params = {
           Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
           Key: key,
           ContentType: filetype,
         };
-        return generatePresignedUrl("putObject", params);
+        const s3Url = await generatePresignedUrlFromS3("putObject", params);
+        return {s3Url, filename, filetype}
       })
     );
     return signedUrls;

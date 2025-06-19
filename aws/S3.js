@@ -166,7 +166,7 @@ const deleteObjectsFromS3Bucket = async (
   return allObjectsDeleted;
 };
 
-const generatePresignedUrl = async (
+const generatePresignedUrlFromS3 = async (
  requestType,
  params
 ) => {
@@ -188,5 +188,5 @@ module.exports = {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
-  generatePresignedUrl
+  generatePresignedUrlFromS3
 };
