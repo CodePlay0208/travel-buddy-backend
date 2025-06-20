@@ -167,11 +167,11 @@ router
     generatePreSignedUrlHandler
   );
 
-  router
-  .route("/testRoute")
-  .post(
-    uploadMiddlewareForImages.array('destinationImages'),
-    testRouteHandler
-  );
+  // router
+  // .route("/testRoute")
+  // .post(
+  //   uploadMiddlewareForImages.array('destinationImages'),
+  //   testRouteHandler
+  // );
 
 module.exports = router;
