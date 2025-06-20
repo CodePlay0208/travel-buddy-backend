@@ -64,7 +64,6 @@ const uploadObjectsToS3Bucket = async (path, objects, s3Bucket) => {
 const getObjectFromS3Bucket = async (path, uploadedObjectName, s3Bucket) => {
   try {
     logger.info(`Fetching object from s3bucket=${s3Bucket}, path=${path}`);
-    console.log(path + uploadedObjectName)
     const getObjectParams = {
       Bucket: s3Bucket,
       Key: path + uploadedObjectName,

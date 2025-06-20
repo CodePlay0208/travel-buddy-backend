@@ -384,7 +384,6 @@ async function getTripById(tripInstanceId, userId) {
     }
 
     let fetchedTrip = trip[0];
-    console.log(fetchedTrip)
     fetchedTrip.destinationImages = await getObjectsFromS3Bucket(
       process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
       fetchedTrip.destinationImages,
