@@ -244,10 +244,26 @@ async function deleteTripDates(tripDates) {
     await TripInstance.deleteMany({  $or: tripDates });
   } catch (error) {
     logger.error(
-      `Error occurred while deleting trips for trip with baseTripId=${baseTripId}, error=${error}`
+      `Error occurred while deleting trips=${tripDates}, error=${error}`
     );
     throw new Error(
-      `Error deleting trips for trip with baseTripId=${baseTripId}, error=${error}`
+      `Error deleting trips for trips=${tripDates}, error=${error}`
+    );
+  }
+}
+
+async function updateTrips(baseTripId, query) {
+  try {
+    await TripInstance.updateMany(
+      { baseTripId },           
+      { $set: query} 
+    )
+  } catch (error) {
+    logger.error(
+      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(query)}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(query)}, error=${error}`
     );
   }
 }
@@ -265,5 +281,6 @@ module.exports = {
   findTripsWithQuery,
   findRandomTripsWithQueryUsingAggregation,
   deleteTripsByTripInstanceId,
-  deleteTripDates
+  deleteTripDates,
+  updateTrips
 };

@@ -506,7 +506,7 @@ async function editTrip(baseTripId, userId, newPayload) {
         const { startDate, endDate } = tripDate;
         const queryStartDate = dateFromDateString(startDate);
         const queryEndDate = dateFromDateString(endDate);
-        return { startDate: queryStartDate, endDate: queryEndDate };
+        return { startDate: queryStartDate, endDate: queryEndDate, baseTripId };
       });
       await tripInstancesRepository.deleteTripDates(deletedDates);
     }
@@ -528,6 +528,17 @@ async function editTrip(baseTripId, userId, newPayload) {
         tripInDatabase[key] = value;
       }
     });
+
+    if(newPayload.startLocation || newPayload.destination){
+      let query = {};
+      if(newPayload.startLocation){
+        query.startLocation = newPayload.startLocation;
+      }
+      if(newPayload.destination){
+        query.destination = newPayload.destination;
+      }
+      tripInstancesRepository.updateTrips(baseTripId, query);
+    }
 
     const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
     logger.info(`Trip with baseTripId=${baseTripId} updated successfully`);
