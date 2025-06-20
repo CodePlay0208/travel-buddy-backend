@@ -25,6 +25,7 @@ const {
   declineRequestInvitationHandler,
   getRandomTripsHandler,
   generatePreSignedUrlHandler,
+  testRouteHandler
 } = require("../controller/TripsDataController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -166,5 +167,11 @@ router
     generatePreSignedUrlHandler
   );
 
+  router
+  .route("/testRoute")
+  .post(
+    uploadMiddlewareForImages.array('destinationImages'),
+    testRouteHandler
+  );
 
 module.exports = router;

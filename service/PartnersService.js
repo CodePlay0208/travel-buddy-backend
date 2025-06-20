@@ -118,8 +118,12 @@ async function sendOtp(useremail) {
   }
 }
 
-async function setAgentData(payload) {
+async function setAgentData(payload, userId) {
   try {
+    const user = await partnersProfileRepository.findUserByUserId(userId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     const agentDataId = uuidv4();
     const callDate = dateFromDateString(payload.callDate);
     const agentData = {
@@ -135,8 +139,12 @@ async function setAgentData(payload) {
   }
 }
 
-async function getAgentsData() {
+async function getAgentsData(userId) {
   try {
+    const user = await partnersProfileRepository.findUserByUserId(userId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     const agentsData = await agentDataRepository.getAgentsData();
     return agentsData;
   } catch (error) {
@@ -145,8 +153,12 @@ async function getAgentsData() {
   }
 }
 
-async function scheduleTrips() {
+async function scheduleTrips(userId) {
   try {
+    const user = await partnersProfileRepository.findUserByUserId(userId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     logger.info("Scheduling trips using partners endpoint");
     await generateTripInstancesFor3Months();
   } catch (error) {
@@ -157,8 +169,12 @@ async function scheduleTrips() {
   }
 }
 
-async function setupProfile(updateData, newProfilePic) {
+async function setupProfile(updateData, newProfilePic, adminId) {
   try {
+    const user = await partnersProfileRepository.findUserByUserId(adminId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     logger.info(`Setting up profile using partners service`);
     const sanitizedUpdateData = {};
     const userId = uuidv4();
@@ -202,8 +218,12 @@ async function setupProfile(updateData, newProfilePic) {
   }
 }
 
-async function publishTrip(payload) {
+async function publishTrip(payload, adminId) {
   try {
+    const user = await partnersProfileRepository.findUserByUserId(adminId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     let { userKey } = payload;
     logger.info(`publish trip using partners service, trips=${payload}`);
     try {
@@ -287,9 +307,13 @@ async function publishTrip(payload) {
 }
 
 
-async function createTripsImages(newPayload, newDestinationImages, userId) {
-  const baseTripId = newPayload.baseTripId;
+async function generatePreSignedUrl(payload, userId) {
+  const { files, prefix, baseTripId } = payload;
   try {
+    const user = await partnersProfileRepository.findUserByUserId(userId);
+    if(!user){
+      throw new ValidationError(`user not authorised`, 401);
+    }
     const tripInDatabase = await baseTripRepository.findTripWithTripId(
       baseTripId
     );
@@ -300,46 +324,24 @@ async function createTripsImages(newPayload, newDestinationImages, userId) {
       );
     }
 
-    if (
-      tripInDatabase.destinationImages &&
-      tripInDatabase.destinationImages.length > 0
-    ) {
-      throw new ValidationError(`Images already created for this trip`, 400);
-    }
-
-    if (newDestinationImages && newDestinationImages.length > 0) {
-      newDestinationImages.forEach((newDestinationImage) => {
-        newDestinationImage.originalname = randomFileName(
-          newDestinationImage.originalname
-        );
-      });
-
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-          newDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-
-      newDestinationImages = await cropAndResizeImages(newDestinationImages);
-
-      const {
-        uploadedObjectNames: croppedImagesNames,
-        allObjectsUploaded: allCroppedImagesUploaded,
-      } = await uploadObjectsToS3Bucket(
-        process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-        newDestinationImages,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-      );
-      tripInDatabase.destinationImages = uploadedObjectNames;
-      tripInDatabase.croppedDestinationImages = croppedImagesNames;
-      allFilesUploaded = allObjectsUploaded && allCroppedImagesUploaded;
-      const updatedTrip = await baseTripRepository.updateTrip(tripInDatabase);
-    }
-    logger.info(`created images for Trip with baseTripId=${baseTripId} using partners service`);
+    const signedUrls = await Promise.all(
+      files.map(async ({ filename, filetype }) => {
+        const key = `${prefix}/${filename}`;
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
+          Key: key,
+          ContentType: filetype,
+        };
+        const s3Url = await generatePresignedUrlFromS3("putObject", params);
+        return {s3Url, filename, filetype}
+      })
+    );
+    return signedUrls;
   } catch (error) {
     logger.error(
-      `Error creating images for baseTripId=${baseTripId} using partners service, error=${error}`
+      `Error occured while generating presigned url for files=${JSON.stringify(
+        files
+      )} with prefix=${prefix}, error=${error}`
     );
     throw error;
   }
@@ -353,5 +355,5 @@ module.exports = {
   scheduleTrips,
   setupProfile,
   publishTrip,
-  createTripsImages
+  generatePreSignedUrl
 };

@@ -9,6 +9,7 @@ const {
   setupProfileHandler,
   publishTripHandler,
   publishImagesHandler,
+  generatePreSignedUrlHandler
 } = require("../controller/PartnersController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -59,11 +60,10 @@ router
   );
 
 router
-  .route("/createTripImages")
+  .route("/generatePreSignedUrlForDestinationImages")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
-    uploadMiddlewareForImages.array("destinationImages"),
-    publishImagesHandler
+    generatePreSignedUrlHandler
   );
 
 module.exports = router;
