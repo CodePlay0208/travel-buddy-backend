@@ -47,7 +47,7 @@ router
 router.route("/getOtherUserProfile").post(getOtherUserProfileHandler);
 
 router
-  .route("/generatePreSignedUrlForDestinationImages")
+  .route("/generatePreSignedUrlForProfileImages")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     generatePreSignedUrlHandler
