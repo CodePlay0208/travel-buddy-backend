@@ -70,8 +70,16 @@ async function sendOTPHelper(useremail, otp) {
       },
       body: JSON.stringify(mailingData),
     });
+
     console.log(`line 73`, JSON.stringify(response));
-    await response.json();
+    console.log("Status code:", response.status);
+
+    if (!response.ok) {
+      const errorBody = await response.text(); // Read response body as text
+      console.error("Failed to send mail via Brevo:", errorBody);
+    }
+    const res = await response.json();
+    console.log("the res is", res);
     logger.info(`OTP sent successfully to user with emailId=${useremail}`);
   } catch (error) {
     logger.error(
@@ -134,7 +142,7 @@ async function sendOtp(useremail) {
 async function setAgentData(payload, userId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(userId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     const agentDataId = uuidv4();
@@ -155,7 +163,7 @@ async function setAgentData(payload, userId) {
 async function getAgentsData(userId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(userId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     const agentsData = await agentDataRepository.getAgentsData();
@@ -169,7 +177,7 @@ async function getAgentsData(userId) {
 async function scheduleTrips(userId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(userId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     logger.info("Scheduling trips using partners endpoint");
@@ -185,7 +193,7 @@ async function scheduleTrips(userId) {
 async function setupProfile(updateData, newProfilePic, adminId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(adminId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     logger.info(`Setting up profile using partners service`);
@@ -222,7 +230,7 @@ async function setupProfile(updateData, newProfilePic, adminId) {
 async function publishTrip(payload, adminId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(adminId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     let { userKey } = payload;
@@ -307,12 +315,11 @@ async function publishTrip(payload, adminId) {
   }
 }
 
-
 async function generatePreSignedUrl(payload, userId) {
   const { files, prefix, baseTripId } = payload;
   try {
     const user = await partnersProfileRepository.findUserByUserId(userId);
-    if(!user){
+    if (!user) {
       throw new ValidationError(`user not authorised`, 401);
     }
     const tripInDatabase = await baseTripRepository.findTripWithTripId(
@@ -334,7 +341,7 @@ async function generatePreSignedUrl(payload, userId) {
           ContentType: filetype,
         };
         const s3Url = await generatePresignedUrlFromS3("putObject", params);
-        return {s3Url, filename, filetype}
+        return { s3Url, filename, filetype };
       })
     );
     return signedUrls;
@@ -350,10 +357,10 @@ async function generatePreSignedUrl(payload, userId) {
 
 async function getUserProfile(payload, userId) {
   const user = await partnersProfileRepository.findUserByUserId(adminId);
-  if(!user){
+  if (!user) {
     throw new ValidationError(`user not authorised`, 401);
   }
-  const { userKey} = payload;
+  const { userKey } = payload;
   try {
     const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
     return userInDatabase;
@@ -374,5 +381,5 @@ module.exports = {
   setupProfile,
   publishTrip,
   generatePreSignedUrl,
-  getUserProfile
+  getUserProfile,
 };
