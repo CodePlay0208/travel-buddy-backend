@@ -14,6 +14,7 @@ const {
   GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES,
   CREATE_PROFILE_IMAGES
 } = require("../constants/ApiConstants");
+const { ValidationError } = require("../exceptions/ValidationError");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
 const getUserProfileHandler = asyncHandler(async (req, res) => {
