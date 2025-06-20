@@ -10,7 +10,9 @@ const {
   DELETE_USER_PROFILE,
   FIND_USER_PROFILE,
   GET_OTHER_USER_PROFILE,
-  EDIT_SECONDARY_KEY
+  EDIT_SECONDARY_KEY,
+  GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES,
+  CREATE_PROFILE_IMAGES
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 
@@ -178,4 +180,66 @@ const getOtherUserProfileHandler = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getUserProfileHandler, editUserHandler, deleteUserHandler, findUserHandler, getOtherUserProfileHandler,editSecondaryKeyHandler };
+const generatePreSignedUrlHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+    const payload = req.body;
+    const signedUrls = await userProfileService.generatePreSignedUrl(
+      payload,
+      userId
+    );
+    res.status(200).json(signedUrls);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+const createProfileImagesHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${CREATE_PROFILE_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+
+    const newPayload = req.body;
+
+    await userProfileService.createProfileImages(newPayload);
+    res.status(201).json();
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${CREATE_PROFILE_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${CREATE_PROFILE_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(400).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
+module.exports = { getUserProfileHandler, editUserHandler, deleteUserHandler, findUserHandler, getOtherUserProfileHandler,editSecondaryKeyHandler, generatePreSignedUrlHandler, createProfileImagesHandler };

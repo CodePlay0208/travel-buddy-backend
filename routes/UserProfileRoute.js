@@ -1,12 +1,17 @@
 const express = require("express");
-const { tokenProtect, jwtTokenDecoder } = require("../middleware/AuthMiddleware");
+const {
+  tokenProtect,
+  jwtTokenDecoder,
+} = require("../middleware/AuthMiddleware");
 const {
   getUserProfileHandler,
   editUserHandler,
   deleteUserHandler,
   findUserHandler,
   getOtherUserProfileHandler,
-  editSecondaryKeyHandler
+  editSecondaryKeyHandler,
+  generatePreSignedUrlHandler,
+  createProfileImagesHandler
 } = require("../controller/UserProfileController");
 const router = express.Router();
 const { uploadMiddlewareForImages } = require("../middleware/UploadMiddleware");
@@ -21,7 +26,6 @@ router
   .route("/editUserProfile")
   .put(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
-    uploadMiddlewareForImages.array("profilePic"),
     editUserHandler
   );
 router
@@ -31,23 +35,28 @@ router
     deleteUserHandler
   );
 
-router
-  .route("/findUserProfile")
-  .get(
-    findUserHandler
-  );
+router.route("/findUserProfile").get(findUserHandler);
 
-  router
+router
   .route("/editSecondaryKey")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
     editSecondaryKeyHandler
   );
 
-  router
-  .route("/getOtherUserProfile")
+router.route("/getOtherUserProfile").post(getOtherUserProfileHandler);
+
+router
+  .route("/generatePreSignedUrlForDestinationImages")
   .post(
-    getOtherUserProfileHandler
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_USER_LOGIN),
+    generatePreSignedUrlHandler
+  );
+
+  router
+  .route("/createProfileImages")
+  .post(
+    createProfileImagesHandler
   );
 
 module.exports = router;

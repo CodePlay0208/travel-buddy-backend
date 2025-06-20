@@ -7,6 +7,7 @@ const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
+  generatePresignedUrlFromS3
 } = require("../aws/S3");
 const {
   USER_PROFILE_PROJECTION_IN_SEARCH_BAR,
@@ -124,27 +125,6 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       }
     }
 
-
-    if (newProfilePic && newProfilePic.length > 0) {
-      newProfilePic.forEach((profilePic) => {
-        profilePic.originalname = randomFileName(
-          profilePic.originalname
-        );
-      });
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          "",
-          newProfilePic,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-        );
-      deleteObjectsFromS3Bucket(
-        "",
-        user.profilePic,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-      );
-      sanitizedUpdateData.profilePic = uploadedObjectNames;
-    }
-
     var updatedUserProfile = await userProfileRepository.updateUser(
       userId,
       sanitizedUpdateData
@@ -153,12 +133,6 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     logger.info(
       `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
     );
-    updatedUserProfileObj.profilePic = await getObjectsFromS3Bucket(
-      "",
-      updatedUserProfileObj.profilePic,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-    );
-
     return updatedUserProfileObj;
   } catch (error) {
     logger.error(`Failed to update user with userId=${userId}, error=${error}`);
@@ -279,11 +253,81 @@ async function getOtherUserProfile(userId) {
   }
 }
 
+async function generatePreSignedUrl(payload, userId) {
+  const { files, prefix} = payload;
+  try {
+    
+    const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError(`User not present in the database`, 400);
+    }
+
+    const signedUrls = await Promise.all(
+      files.map(async ({ filename, filetype }) => {
+        const key = `${prefix}/${filename}`;
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC,
+          Key: key,
+          ContentType: filetype,
+        };
+        const s3Url = await generatePresignedUrlFromS3("putObject", params);
+        return {s3Url, filename, filetype}
+      })
+    );
+    return signedUrls;
+  } catch (error) {
+    logger.error(
+      `Error occured while generating presigned url for files=${JSON.stringify(
+        files
+      )} with prefix=${prefix}, error=${error}`
+    );
+    throw error;
+  }
+}
+
+async function createProfileImages(payload) {
+  const objectKey = payload.detail.object.key;
+  try {
+    const parts = objectKey.split("/");
+    const folder = parts[0];
+    const userId = parts[1];
+    const fileName = parts.slice(2).join("/");
+    const userInDatabase = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!userInDatabase) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError(`User not present in the database`, 400);
+    }
+
+    let sanitizedUpdateData = {};
+    let profilePics = [];
+    profilePics.push(fileName);
+    sanitizedUpdateData.profilePic = profilePics;
+    const updatedUser = await userProfileRepository.updateUser(userId, sanitizedUpdateData);
+    logger.info(`created images for user with userId=${userId}`);
+  } catch (error) {
+    logger.error(
+      `Error creating images for userId=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   updateUserProfile,
   deleteUserProfile,
   getUserProfile,
   findUserProfile,
   getOtherUserProfile,
-  editSecondaryKey
+  editSecondaryKey,
+  generatePreSignedUrl,
+  createProfileImages
 };
