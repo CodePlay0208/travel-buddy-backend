@@ -44,7 +44,6 @@ async function sendOTPHelper(useremail, otp) {
     const otpString = `Your otp is=${otp}`;
     const htmlContent = `<p>${otpString}</p>`;
     const subject = "Travmigoz partners OTP";
-    logger.info(`line 47`);
     const mailingData = {
       sender: {
         name: "travmigoz",
@@ -59,9 +58,7 @@ async function sendOTPHelper(useremail, otp) {
       subject: subject,
       htmlContent: htmlContent,
     };
-    console.log(`line 62`, JSON.stringify(mailingData));
     const url = process.env.API_FOR_SENDING_MAILS;
-    console.log(`line 64`, url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -71,15 +68,12 @@ async function sendOTPHelper(useremail, otp) {
       body: JSON.stringify(mailingData),
     });
 
-    console.log(`line 73`, JSON.stringify(response));
-    console.log("Status code:", response.status);
-
     if (!response.ok) {
-      const errorBody = await response.text(); // Read response body as text
-      console.error("Failed to send mail via Brevo:", errorBody);
+      const errorBody = await response.text(); 
+      logger.error("Failed to send mail via Brevo:", errorBody);
+      throw new ValidationError(errorBody, response.status);
     }
     const res = await response.json();
-    console.log("the res is", res);
     logger.info(`OTP sent successfully to user with emailId=${useremail}`);
   } catch (error) {
     logger.error(

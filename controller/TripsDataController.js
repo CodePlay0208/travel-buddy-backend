@@ -695,7 +695,6 @@ const testRouteHandler = asyncHandler(async (req, res) => {
   try {
     const s3Url = req.body.url;
     const files = req.files;
-    console.log(files);
     files.forEach(async (file) => {
       await fetch(s3Url, {
         method: 'PUT',
