@@ -22,6 +22,17 @@ const {
 } = require("../aws/S3");
 const { cropAndResizeImages } = require("../Utils.js");
 
+async function findUserByUserKey(userKey) {
+  const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+  let userInDatabase = null;
+  if (isPhoneNumber) {
+    userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
+  } else {
+    userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
+  }
+  return { userInDatabase, isPhoneNumber };
+}
+
 function generateOTP() {
   const otp = Math.floor(100000 + Math.random() * 900000);
   return otp;
@@ -33,6 +44,7 @@ async function sendOTPHelper(useremail, otp) {
     const otpString = `Your otp is=${otp}`;
     const htmlContent = `<p>${otpString}</p>`;
     const subject = "Travmigoz partners OTP";
+    logger.info(`line 47`);
     const mailingData = {
       sender: {
         name: "travmigoz",
@@ -47,8 +59,9 @@ async function sendOTPHelper(useremail, otp) {
       subject: subject,
       htmlContent: htmlContent,
     };
-
+    logger.info(`line 62`, JSON.stringify(mailingData));
     const url = process.env.API_FOR_SENDING_MAILS;
+    logger.info(`line 64`, url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -57,7 +70,7 @@ async function sendOTPHelper(useremail, otp) {
       },
       body: JSON.stringify(mailingData),
     });
-
+    logger.info(`line 73`, JSON.stringify(response));
     await response.json();
     logger.info(`OTP sent successfully to user with emailId=${useremail}`);
   } catch (error) {
@@ -208,7 +221,6 @@ async function setupProfile(updateData, newProfilePic, adminId) {
 
 async function publishTrip(payload, adminId) {
   try {
-    console.log(adminId)
     const user = await partnersProfileRepository.findUserByUserId(adminId);
     if(!user){
       throw new ValidationError(`user not authorised`, 401);
@@ -336,6 +348,23 @@ async function generatePreSignedUrl(payload, userId) {
   }
 }
 
+async function getUserProfile(payload, userId) {
+  const user = await partnersProfileRepository.findUserByUserId(adminId);
+  if(!user){
+    throw new ValidationError(`user not authorised`, 401);
+  }
+  const { userKey} = payload;
+  try {
+    const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
+    return userInDatabase;
+  } catch (error) {
+    logger.error(
+      `Error occured while fetching userProfile=${userId}, error=${error}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   sendOtp,
   login,
@@ -344,5 +373,6 @@ module.exports = {
   scheduleTrips,
   setupProfile,
   publishTrip,
-  generatePreSignedUrl
+  generatePreSignedUrl,
+  getUserProfile
 };

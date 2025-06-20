@@ -8,7 +8,7 @@ const {
   scheduleTripsHandler,
   setupProfileHandler,
   publishTripHandler,
-  publishImagesHandler,
+  getUserProfileHandler,
   generatePreSignedUrlHandler
 } = require("../controller/PartnersController");
 const router = express.Router();
@@ -63,6 +63,13 @@ router
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
     generatePreSignedUrlHandler
+  );
+
+  router
+  .route("/getUserProfile")
+  .post(
+    tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
+    getUserProfileHandler
   );
 
 module.exports = router;
