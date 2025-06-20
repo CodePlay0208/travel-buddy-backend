@@ -41,8 +41,10 @@ async function generateTripInstancesFor3Months() {
     );
 
     const today = new Date();
+    today.setUTCHours(0,0,0,0);
     const endDateLimit = new Date();
     endDateLimit.setMonth(today.getMonth() + parseInt(process.env.ROLLING_WINDOW_FOR_SCHEDULED_TRIPS));
+    endDateLimit.setUTCHours(0,0,0,0)
 
     for (const baseTrip of baseTrips) {
       const { scheduledWeekdays, duration, baseTripId } = baseTrip;
@@ -68,7 +70,6 @@ async function generateTripInstancesFor3Months() {
           (doc) => doc.startDate.toISOString().split("T")[0]
         )
       );
-
       const newInstances = [];
 
       for (const date of matchingDates) {
