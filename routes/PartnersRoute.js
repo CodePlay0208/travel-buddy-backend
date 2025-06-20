@@ -48,7 +48,6 @@ router
   .route("/setup")
   .post(
     tokenProtect(process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN),
-    uploadMiddlewareForImages.array("profilePic"),
     setupProfileHandler
   );
 

@@ -185,18 +185,6 @@ async function setupProfile(updateData, newProfilePic, adminId) {
     if (updateData.profilePic)
       sanitizedUpdateData.profilePic = updateData.profilePic;
     if (updateData.gender) sanitizedUpdateData.gender = updateData.gender;
-    if (newProfilePic && newProfilePic.length > 0) {
-      newProfilePic.forEach((profilePic) => {
-        profilePic.originalname = randomFileName(profilePic.originalname);
-      });
-      const { uploadedObjectNames, allObjectsUploaded } =
-        await uploadObjectsToS3Bucket(
-          "",
-          newProfilePic,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-        );
-      sanitizedUpdateData.profilePic = uploadedObjectNames;
-    }
     let { userKey } = updateData;
     const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
     if (isPhoneNumber) {
@@ -220,6 +208,7 @@ async function setupProfile(updateData, newProfilePic, adminId) {
 
 async function publishTrip(payload, adminId) {
   try {
+    console.log(adminId)
     const user = await partnersProfileRepository.findUserByUserId(adminId);
     if(!user){
       throw new ValidationError(`user not authorised`, 401);

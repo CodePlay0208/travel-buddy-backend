@@ -210,10 +210,8 @@ const publishTripHandler = asyncHandler(async (req, res) => {
     );
 
     const updateData = req.body;
-    const { files } = req;
     const baseTripId = await partnersService.publishTrip(
       updateData,
-      files,
       req.userId
     );
     res.status(200).json({baseTripId});
