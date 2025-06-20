@@ -309,7 +309,7 @@ async function createProfileImages(payload) {
 
     let sanitizedUpdateData = {};
     let profilePics = [];
-    profilePics.push(fileName);
+    profilePics.push(objectKey);
     sanitizedUpdateData.profilePic = profilePics;
     const updatedUser = await userProfileRepository.updateUser(userId, sanitizedUpdateData);
     logger.info(`created images for user with userId=${userId}`);

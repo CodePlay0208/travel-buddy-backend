@@ -59,9 +59,9 @@ async function sendOTPHelper(useremail, otp) {
       subject: subject,
       htmlContent: htmlContent,
     };
-    logger.info(`line 62`, JSON.stringify(mailingData));
+    console.log(`line 62`, JSON.stringify(mailingData));
     const url = process.env.API_FOR_SENDING_MAILS;
-    logger.info(`line 64`, url);
+    console.log(`line 64`, url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -70,7 +70,7 @@ async function sendOTPHelper(useremail, otp) {
       },
       body: JSON.stringify(mailingData),
     });
-    logger.info(`line 73`, JSON.stringify(response));
+    console.log(`line 73`, JSON.stringify(response));
     await response.json();
     logger.info(`OTP sent successfully to user with emailId=${useremail}`);
   } catch (error) {
