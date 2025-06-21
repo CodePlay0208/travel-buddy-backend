@@ -53,7 +53,8 @@ const ADMIN_PUBLISH_TRIP = "admin_publish_trip";
 const ADMIN_PUBLISH_TRIP_IMAGES = "admin_publish_trip_images";
 const GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES = "generate_pre_signed_url_for_destination_images";
 const GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES = "generate_pre_signed_url_for_profile_pic_images";
-const CREATE_PROFILE_IMAGES = "create_profile_images"
+const CREATE_PROFILE_IMAGES = "create_profile_images";
+const ADMIN_GET_USER_PROFILE = "admin_get_user_profile";
 
 module.exports = {
   GOOGLE_LOGIN,
@@ -111,5 +112,6 @@ module.exports = {
   ADMIN_PUBLISH_TRIP_IMAGES,
   GENERATE_PRE_SIGNED_URL_FOR_DESTINATION_IMAGES,
   GENERATE_PRE_SIGNED_URL_FOR_PROFILE_PIC_IMAGES,
-  CREATE_PROFILE_IMAGES
+  CREATE_PROFILE_IMAGES,
+  ADMIN_GET_USER_PROFILE,
 };

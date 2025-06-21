@@ -19,6 +19,7 @@ const {
   uploadObjectsToS3Bucket,
   getObjectsFromS3Bucket,
   deleteObjectsFromS3Bucket,
+  generatePresignedUrlFromS3
 } = require("../aws/S3");
 const { cropAndResizeImages } = require("../Utils.js");
 
@@ -349,7 +350,7 @@ async function generatePreSignedUrl(payload, userId) {
   }
 }
 
-async function getUserProfile(payload, userId) {
+async function getUserProfile(payload, adminId) {
   const user = await partnersProfileRepository.findUserByUserId(adminId);
   if (!user) {
     throw new ValidationError(`user not authorised`, 401);

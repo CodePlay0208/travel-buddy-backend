@@ -12,7 +12,7 @@ const {
   ADMIN_SETUP_PROFILE,
   ADMIN_PUBLISH_TRIP_IMAGES,
   ADMIN_PUBLISH_TRIP,
-  ADMIN_PRESIGNED_URL_DESTINATION_IMAGES
+  ADMIN_GET_USER_PROFILE
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const partnersService = require("../service/PartnersService");
@@ -239,7 +239,7 @@ const generatePreSignedUrlHandler = asyncHandler(async (req, res) => {
   try {
     const startTime = Date.now();
     logger.info(
-      `Request recieved for API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+      `Request recieved for API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const userId = req.userId;
     const payload = req.body;
@@ -250,13 +250,13 @@ const generatePreSignedUrlHandler = asyncHandler(async (req, res) => {
     res.status(200).json(signedUrls);
     const endTime = Date.now();
     logger.info(
-      `API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+      `API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
       }ms`
     );
   } catch (error) {
     logger.error(
-      `API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+      `API_NAME=${ADMIN_PUBLISH_TRIP_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
@@ -271,7 +271,7 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
   try {
     const startTime = Date.now();
     logger.info(
-      `Request recieved for API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+      `Request recieved for API_NAME=${ADMIN_GET_USER_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
     const userId = req.userId;
     const payload = req.body;
@@ -282,13 +282,13 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
     res.status(200).json(userInDatabase);
     const endTime = Date.now();
     logger.info(
-      `API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+      `API_NAME=${ADMIN_GET_USER_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
         endTime - startTime
       }ms`
     );
   } catch (error) {
     logger.error(
-      `API_NAME=${ADMIN_PRESIGNED_URL_DESTINATION_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+      `API_NAME=${ADMIN_GET_USER_PROFILE}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
     );
     if (error instanceof ValidationError) {
       res.status(error.errorCode).json();
