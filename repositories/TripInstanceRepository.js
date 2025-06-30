@@ -59,9 +59,9 @@ async function updateTrip(trip) {
   try {
     return await trip.save();
   } catch (error) {
-    logger.error(`Error occurred while updating trip=${trip}, error=${error}`);
+    logger.error(`Error occurred while updating tripInstance=${trip}, error=${error}`);
     throw new Error(
-      `Error occurred while updating trip=${trip}, error=${error}`
+      `Error occurred while updating tripInstance=${trip}, error=${error}`
     );
   }
 }

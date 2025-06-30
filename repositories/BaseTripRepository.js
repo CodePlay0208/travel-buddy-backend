@@ -73,9 +73,9 @@ async function updateTrip(trip) {
   try {
     return await trip.save();
   } catch (error) {
-    logger.error(`Error occurred while updating trip=${trip}, error=${error}`);
+    logger.error(`Error occurred while updating baseTrip=${trip}, error=${error}`);
     throw new Error(
-      `Error occurred while updating trip=${trip}, error=${error}`
+      `Error occurred while updating baseTrip=${trip}, error=${error}`
     );
   }
 }
@@ -99,6 +99,49 @@ async function findTripsWithQuery(query, limit, offset) {
   }
 }
 
+async function findTripsWithQueryUsingAggregation(query, limit, offset, additionalFilters) {
+  try {
+    console.log(query, additionalFilters)
+    const trips = await BaseTripModel.aggregate([
+      {
+        $match: query
+      },
+      {
+        $lookup: {
+          from: "userProfiles",
+          localField: "hostId",
+          foreignField: "userId",
+          as: "hostProfile"
+        }
+      },
+      { $unwind: "$hostProfile" },
+
+
+      ...(additionalFilters.persona? [{
+        $match: {
+          "hostProfile.persona": additionalFilters.persona
+        }
+      }] : []),
+      {
+        $project: {
+          hostProfile: 0
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: limit }
+    ]);
+    return trips;
+  } catch (error) {
+    logger.error(
+      `Error occurred while fetching base trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while fetching base trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+    );
+  }
+}
+
 
 module.exports = {
   deleteTripsByUserId,
@@ -107,5 +150,6 @@ module.exports = {
   createTrip,
   findTripWithTripId,
   updateTrip,
-  findTripsWithQuery
+  findTripsWithQuery,
+  findTripsWithQueryUsingAggregation
 };

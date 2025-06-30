@@ -11,7 +11,6 @@ const logger = require("../logger");
 
 const uploadObjectToS3Bucket = async (path = "", object, s3Bucket) => {
   try {
-    logger.info(`Uploading object to s3bucket=${s3Bucket} at path=${path}`);
     const uploadedObjectName = object.originalname;
     const params = {
       Bucket: s3Bucket,
@@ -63,7 +62,6 @@ const uploadObjectsToS3Bucket = async (path, objects, s3Bucket) => {
 
 const getObjectFromS3Bucket = async (path, uploadedObjectName, s3Bucket) => {
   try {
-    logger.info(`Fetching object from s3bucket=${s3Bucket}, path=${path}`);
     const getObjectParams = {
       Bucket: s3Bucket,
       Key: path + uploadedObjectName,
@@ -114,8 +112,7 @@ const getObjectsFromS3Bucket = async (path, uploadedObjectNames, s3Bucket) => {
 
 const deleteObjectFromS3Bucket = async (path, uploadedObjectName, s3Bucket) => {
   try {
-    logger.info(`Deleting object from s3bucket=${s3Bucket}, path${path}`);
-
+   
     const getObjectParams = {
       Bucket: s3Bucket,
       Key: path + uploadedObjectName,
@@ -143,7 +140,7 @@ const deleteObjectsFromS3Bucket = async (
     return { allObjectsDeleted };
   }
   try {
-    logger.info(`Deleting object from s3bucket=${s3Bucket}`);
+    logger.info(`Deleting objects from s3bucket=${s3Bucket}`);
     await Promise.all(
       uploadedObjectNames.map(async (object) => {
         const isObjectDeleted = await deleteObjectFromS3Bucket(
