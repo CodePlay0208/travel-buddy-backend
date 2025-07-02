@@ -530,7 +530,7 @@ async function editTrip(baseTripId, userId, newPayload) {
     );
 
     Object.entries(newPayload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && key != "__v") {
+      if (value !== undefined && value !== null && key != "__v" && key != "_id" && key != "createdAt") {
         tripInDatabase[key] = value;
       }
     });
