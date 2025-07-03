@@ -481,7 +481,7 @@ async function editTrip(baseTripId, userId, newPayload) {
       );
     }
 
-    if (newPayload.newTripDates) {
+    if (newPayload.newTripDates && newPayload.newTripDates.length != 0) {
       const { newTripDates: strTripDates } = newPayload;
       const newTripDates = Array.from(strTripDates);
       const tripInstances = newTripDates.map((tripDate) => {
@@ -505,7 +505,10 @@ async function editTrip(baseTripId, userId, newPayload) {
         await tripInstancesRepository.createInstances(tripInstances);
     }
 
-    if (newPayload.removedTripDates) {
+    if (
+      newPayload.removedTripDates &&
+      newPayload.removedTripDates.length != 0
+    ) {
       const { removedTripDates: strTripDates } = newPayload;
       const removedTripDates = Array.from(strTripDates);
       const deletedDates = removedTripDates.map((tripDate) => {
@@ -530,7 +533,14 @@ async function editTrip(baseTripId, userId, newPayload) {
     );
 
     Object.entries(newPayload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && key != "__v" && key != "_id" && key != "createdAt" && key != "baseTripId" && key != "hostId") {
+      if (
+        value !== undefined &&
+        value !== null &&
+        key != "__v" &&
+        key != "_id" &&
+        key != "createdAt" &&
+        key != "hostId"
+      ) {
         tripInDatabase[key] = value;
       }
     });
@@ -702,8 +712,7 @@ async function getTripsWithFilter(filter, userId) {
           return trip;
         })
       );
-    } 
-    else {
+    } else {
       const query = createQueryForBaseTrips(
         destination,
         null,
@@ -718,7 +727,7 @@ async function getTripsWithFilter(filter, userId) {
         offset,
         additionalFilters
       );
-  
+
       if (trips.length === 0) {
         return [];
       }
@@ -727,7 +736,7 @@ async function getTripsWithFilter(filter, userId) {
       fetchedTrips = await getRelatedDatesToBaseTrip(fetchedTrips);
       fetchedTrips = await Promise.all(
         fetchedTrips.map(async (trip) => {
-          if(trip.relatedTrips.length == 0){
+          if (trip.relatedTrips.length == 0) {
             return;
           }
           trip.tripInstanceId = trip.relatedTrips[0].tripInstanceId;
@@ -742,15 +751,15 @@ async function getTripsWithFilter(filter, userId) {
             null
           );
           let joinedUsers = [];
-    
+
           const joinedTrips = await userTripsRepository.getUserTripsUsingQuery(
             userTripsQuery
           );
-          
+
           joinedTrips.forEach((userTrip) => {
             joinedUsers.push(userTrip.userId);
           });
-          
+
           trip.tripMembersIds = joinedUsers;
           return trip;
         })
@@ -773,7 +782,11 @@ async function getTripsWithFilter(filter, userId) {
 
     return { trips: fetchedTrips, newOffset };
   } catch (error) {
-    logger.error(`failed to fetch trips with filter=${JSON.stringify(filter)}, error=${error}`);
+    logger.error(
+      `failed to fetch trips with filter=${JSON.stringify(
+        filter
+      )}, error=${error}`
+    );
     throw error;
   }
 }
