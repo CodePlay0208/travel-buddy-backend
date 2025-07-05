@@ -1242,7 +1242,7 @@ async function getJoinedTrips(filter, userId) {
       true,
       null,
       null,
-      null
+      false
     );
     const fetchedTrips = await populateTripsUsingUserTripsQuery(
       joinedQuery,
