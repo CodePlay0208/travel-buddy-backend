@@ -736,7 +736,8 @@ async function getTripsWithFilter(filter, userId) {
       fetchedTrips = await getRelatedDatesToBaseTrip(fetchedTrips);
       fetchedTrips = await Promise.all(
         fetchedTrips.map(async (trip) => {
-          if (trip.relatedTrips.length == 0) {
+          if (!trip || trip.relatedTrips.length == 0) {
+              logger.error(`baseTrip with empty tripInstances found, trip=${trip}`)
             return;
           }
           trip.tripInstanceId = trip.relatedTrips[0].tripInstanceId;
@@ -766,6 +767,7 @@ async function getTripsWithFilter(filter, userId) {
       );
     }
 
+    fetchedTrips = fetchedTrips.filter(trip => (trip != null && trip != undefined));
     await addCroppedDestinationImagesToTrips(
       fetchedTrips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
