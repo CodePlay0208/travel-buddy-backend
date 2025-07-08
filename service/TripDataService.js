@@ -528,7 +528,7 @@ async function editTrip(baseTripId, userId, newPayload) {
 
     deleteObjectsFromS3Bucket(
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-      newPayload.removedDestinationImages,
+      newPayload.removedCroppedDestinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
 
