@@ -473,8 +473,9 @@ async function editTrip(baseTripId, userId, newPayload) {
         400
       );
     }
-
-    if (!tripInDatabase.hostId == userId) {
+    
+    const user = await userProfileRepository.findAdminByUserId(userId);
+    if (!(tripInDatabase.hostId == userId) && !user) {
       throw new ValidationError(
         `User with userId=${userId} not authorized to edit trip with baseTripId=${baseTripId}`,
         403
@@ -737,7 +738,9 @@ async function getTripsWithFilter(filter, userId) {
       fetchedTrips = await Promise.all(
         fetchedTrips.map(async (trip) => {
           if (!trip || trip.relatedTrips.length == 0) {
-              logger.error(`baseTrip with empty tripInstances found, trip=${trip}`)
+            logger.error(
+              `baseTrip with empty tripInstances found, trip=${trip}`
+            );
             return;
           }
           trip.tripInstanceId = trip.relatedTrips[0].tripInstanceId;
@@ -767,7 +770,9 @@ async function getTripsWithFilter(filter, userId) {
       );
     }
 
-    fetchedTrips = fetchedTrips.filter(trip => (trip != null && trip != undefined));
+    fetchedTrips = fetchedTrips.filter(
+      (trip) => trip != null && trip != undefined
+    );
     await addCroppedDestinationImagesToTrips(
       fetchedTrips,
       process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES

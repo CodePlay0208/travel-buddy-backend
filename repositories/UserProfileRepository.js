@@ -1,6 +1,6 @@
 const UserProfile = require("../models/UserProfileModel");
 const logger = require("../logger");
-
+const AdminProfileModel = require("../models/AdminProfileModel");
 
 async function updateUser(userId, updateData) {
   try {
@@ -21,7 +21,7 @@ async function updateUser(userId, updateData) {
 
 async function deleteUserByUserId(userId) {
   try {
-    await UserProfile.findOneAndDelete({userId});
+    await UserProfile.findOneAndDelete({ userId });
   } catch (error) {
     logger.error(
       `Error occured while deleting user with userId=${userId}, error=${error}`
@@ -42,6 +42,20 @@ async function findUserWithEmailId(emailId, projection) {
     );
     throw new Error(
       `Error finding user profile using emailId from DB, error=${error}`
+    );
+  }
+}
+
+async function findAdminByUserId(userId) {
+  try {
+    const userInDatabase = await AdminProfileModel.findOne({ userId });
+    return userInDatabase;
+  } catch (error) {
+    logger.error(
+      `Error occured while finding user with userId=${userId}, error=${error}`
+    );
+    throw new Error(
+      `Error finding user profile using userId=${userId} from DB, error=${error}`
     );
   }
 }
@@ -123,7 +137,6 @@ async function findUsersByPrefix(prefix, projection) {
   }
 }
 
-
 module.exports = {
   updateUser,
   deleteUserByUserId,
@@ -132,5 +145,6 @@ module.exports = {
   findUserByUserId,
   findUsersByUserId,
   findUsersByPrefix,
-  findUserByPhoneNumber
+  findUserByPhoneNumber,
+  findAdminByUserId,
 };
