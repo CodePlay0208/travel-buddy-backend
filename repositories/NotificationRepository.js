@@ -28,7 +28,8 @@ async function getNotificationsByReceiverId(
       .limit(limitNumber)
       .sort({
         createdAt: -1,
-      });
+      })
+      .lean();
     return notifications;
   } catch (error) {
     logger.error(
@@ -40,38 +41,37 @@ async function getNotificationsByReceiverId(
   }
 }
 
-async function getNotificationsByNotificationId(
-    notificationId
-  ) {
-    try {
-      const notifications = await Notifications.findOne({ notificationId })
-      return notifications;
-    } catch (error) {
-      logger.error(
-        `Error occurred while getting notifications with id=${notificationId}, error=${error}`
-      );
-      throw new Error(
-        `Error occurred while getting notifications with id=${notificationId}, error=${error}`
-      );
-    }
+async function getNotificationsByNotificationId(notificationId) {
+  try {
+    const notifications = await Notifications.findOne({
+      notificationId,
+    }).lean();
+    return notifications;
+  } catch (error) {
+    logger.error(
+      `Error occurred while getting notifications with id=${notificationId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while getting notifications with id=${notificationId}, error=${error}`
+    );
   }
+}
 
 async function deleteNotificationById(notificationId) {
-    try {
-      await Notifications.deleteMany({ notificationId });
-    } catch (error) {
-      logger.error(
-        `Error occurred while deleting notification with id=${notificationId}, error=${error}`
-      );
-      throw new Error(
-        `Error occurred while deleting notification with id=${notificationId}, error=${error}`
-      );
-    }
+  try {
+    await Notifications.deleteMany({ notificationId });
+  } catch (error) {
+    logger.error(
+      `Error occurred while deleting notification with id=${notificationId}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while deleting notification with id=${notificationId}, error=${error}`
+    );
   }
-  
+}
 
 module.exports = {
   getNotificationsByReceiverId,
   createNotification,
-  deleteNotificationById
+  deleteNotificationById,
 };

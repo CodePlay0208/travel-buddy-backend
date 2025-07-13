@@ -4,7 +4,7 @@ const notificationRepository = require("../repositories/NotificationRepository")
 const userProfileRepository = require("../repositories/UserProfileRepository");
 const tripInstanceRepository = require("../repositories/TripInstanceRepository");
 const { getObjectsFromS3Bucket } = require("../aws/S3");
-
+const cache = require("./cache");
 
 async function updateMemberProfiles(member) {
   return await getObjectsFromS3Bucket(
@@ -15,10 +15,13 @@ async function updateMemberProfiles(member) {
 }
 
 async function getNotification(userId) {
+  const cacheKey = `notification:user:${userId}`;
+  let cached = cache.get(cacheKey);
+  if (cached) return cached;
   try {
     const fetchedNotifications =
       await notificationRepository.getNotificationsByReceiverId(userId);
-      if(!fetchedNotifications) return [];
+    if (!fetchedNotifications) return [];
 
     const notifications = await Promise.all(
       fetchedNotifications.map(async (fetchedNotification) => {
@@ -37,7 +40,9 @@ async function getNotification(userId) {
           );
           return notification;
         }
-        logger.info(`Sender deleted for notificationId=${notification.notificationId}, senderId=${notification.senderId}`)
+        logger.info(
+          `Sender deleted for notificationId=${notification.notificationId}, senderId=${notification.senderId}`
+        );
         return null;
       })
     );
@@ -50,7 +55,7 @@ async function getNotification(userId) {
         filteredNotifications
       )} for user with userId=${userId}`
     );
-
+    cache.set(cacheKey, filteredNotifications);
     return filteredNotifications;
   } catch (error) {
     logger.error(

@@ -21,6 +21,7 @@ const userProfileSchema = new mongoose.Schema({
   isSignupWithEmail: { type: Boolean, default: true },
 });
 
+userProfileSchema.index({ userId: 1 }, { name: "userId_single_index" });
 userProfileSchema.index({ phoneNumber: 1 }, { name: "phoneNumber_single_index" });
 userProfileSchema.index({ emailId: 1 }, { name: "emailId_single_index" });
 

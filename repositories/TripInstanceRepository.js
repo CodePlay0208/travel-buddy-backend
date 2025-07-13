@@ -1,47 +1,49 @@
 const TripInstance = require("../models/TripInstanceModel");
 const logger = require("../logger");
 
-
 async function createInstances(tripInstances) {
   try {
     const createdTrips = await TripInstance.insertMany(tripInstances);
     return createdTrips;
   } catch (error) {
     logger.error(
-      `Error occurred while creating instances tripInstances=${JSON.stringify(tripInstances)}, error=${error}`
+      `Error occurred while creating instances tripInstances=${JSON.stringify(
+        tripInstances
+      )}, error=${error}`
     );
     throw new Error(
-      `Error occurred while creating instances tripInstances=${JSON.stringify(tripInstances)}, error=${error}`
+      `Error occurred while creating instances tripInstances=${JSON.stringify(
+        tripInstances
+      )}, error=${error}`
     );
   }
 }
 
 async function findTripWithTripId(tripInstanceId) {
   try {
-
     const trip = await TripInstance.aggregate([
       { $match: { tripInstanceId: tripInstanceId } },
       {
         $lookup: {
-          from: "basetripdataschemas",             
-          localField: "baseTripId",      
-          foreignField: "baseTripId",   
-          as: "baseTripData"
-        }
+          from: "basetripdataschemas",
+          localField: "baseTripId",
+          foreignField: "baseTripId",
+          as: "baseTripData",
+        },
       },
-      { $unwind: "$baseTripData" } ,
+      { $unwind: "$baseTripData" },
       {
         $replaceRoot: {
           newRoot: {
-            $mergeObjects: ["$baseTripData", "$$ROOT"]
-          }
-        }
+            $mergeObjects: ["$baseTripData", "$$ROOT"],
+          },
+        },
       },
       {
         $project: {
-          baseTripData: 0 // optional: remove the now-unneeded nested object
-        }
-      }
+          baseTripData: 0, // optional: remove the now-unneeded nested object
+        },
+      },
     ]);
 
     return trip;
@@ -59,70 +61,84 @@ async function updateTrip(trip) {
   try {
     return await trip.save();
   } catch (error) {
-    logger.error(`Error occurred while updating tripInstance=${trip}, error=${error}`);
+    logger.error(
+      `Error occurred while updating tripInstance=${trip}, error=${error}`
+    );
     throw new Error(
       `Error occurred while updating tripInstance=${trip}, error=${error}`
     );
   }
 }
 
-async function findTripsWithQueryUsingAggregation(query, limit, offset, additionalFilters) {
+async function findTripsWithQueryUsingAggregation(
+  query,
+  limit,
+  offset,
+  additionalFilters
+) {
   try {
     const trips = await TripInstance.aggregate([
       {
-        $match: query
+        $match: query,
       },
       {
         $lookup: {
-          from: "basetripdataschemas",             
-          localField: "baseTripId",      
-          foreignField: "baseTripId",   
-          as: "baseTripData"
-        }
+          from: "basetripdataschemas",
+          localField: "baseTripId",
+          foreignField: "baseTripId",
+          as: "baseTripData",
+        },
       },
-      { $unwind: "$baseTripData" } ,
+      { $unwind: "$baseTripData" },
 
       {
         $lookup: {
           from: "userProfiles",
           localField: "hostId",
           foreignField: "userId",
-          as: "hostProfile"
-        }
+          as: "hostProfile",
+        },
       },
       { $unwind: "$hostProfile" },
 
-
-      ...(additionalFilters.persona? [{
-        $match: {
-          "hostProfile.persona": additionalFilters.persona
-        }
-      }] : []),
+      ...(additionalFilters.persona
+        ? [
+            {
+              $match: {
+                "hostProfile.persona": additionalFilters.persona,
+              },
+            },
+          ]
+        : []),
 
       {
         $replaceRoot: {
           newRoot: {
-            $mergeObjects: ["$baseTripData", "$$ROOT"]
-          }
-        }
+            $mergeObjects: ["$baseTripData", "$$ROOT"],
+          },
+        },
       },
       {
         $project: {
-          baseTripData: 0 ,
-          hostProfile: 0
-        }
+          baseTripData: 0,
+          hostProfile: 0,
+        },
       },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ]);
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
     );
   }
 }
@@ -131,38 +147,42 @@ async function findRandomTripsWithQueryUsingAggregation(query, limit) {
   try {
     const trips = await TripInstance.aggregate([
       {
-        $match: query
+        $match: query,
       },
       {
         $lookup: {
-          from: "basetripdataschemas",             
-          localField: "baseTripId",      
-          foreignField: "baseTripId",   
-          as: "baseTripData"
-        }
+          from: "basetripdataschemas",
+          localField: "baseTripId",
+          foreignField: "baseTripId",
+          as: "baseTripData",
+        },
       },
-      { $unwind: "$baseTripData" } ,
+      { $unwind: "$baseTripData" },
       {
         $replaceRoot: {
           newRoot: {
-            $mergeObjects: ["$baseTripData", "$$ROOT"]
-          }
-        }
+            $mergeObjects: ["$baseTripData", "$$ROOT"],
+          },
+        },
       },
       {
         $project: {
-          baseTripData: 0 
-        }
+          baseTripData: 0,
+        },
       },
-      { $sample: { size: limit } }
+      { $sample: { size: limit } },
     ]);
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching trips with query=${JSON.stringify(query)}, limit=${limit}, error=${error}`
+      `Error occurred while fetching trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, error=${error}`
     );
   }
 }
@@ -195,7 +215,7 @@ async function deleteTripsByBaseTripId(baseTripId) {
 
 async function getTripsByBaseTripId(baseTripId) {
   try {
-    const trips = await TripInstance.find({ baseTripId });
+    const trips = await TripInstance.find({ baseTripId }).lean();
     return trips;
   } catch (error) {
     logger.error(
@@ -212,7 +232,8 @@ async function findTripsWithQuery(query, limit, offset) {
     const trips = TripInstance.find(query)
       .skip(offset)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     return trips;
   } catch (error) {
     logger.error(
@@ -241,7 +262,7 @@ async function deleteTripsByTripInstanceId(tripInstanceId) {
 
 async function deleteTripDates(tripDates) {
   try {
-    await TripInstance.deleteMany({  $or: tripDates });
+    await TripInstance.deleteMany({ $or: tripDates });
   } catch (error) {
     logger.error(
       `Error occurred while deleting trips=${tripDates}, error=${error}`
@@ -254,21 +275,20 @@ async function deleteTripDates(tripDates) {
 
 async function updateTrips(baseTripId, query) {
   try {
-    await TripInstance.updateMany(
-      { baseTripId },           
-      { $set: query} 
-    )
+    await TripInstance.updateMany({ baseTripId }, { $set: query });
   } catch (error) {
     logger.error(
-      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(query)}, error=${error}`
+      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(
+        query
+      )}, error=${error}`
     );
     throw new Error(
-      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(query)}, error=${error}`
+      `Error occurred while updating tripInstances for baseTripId=${baseTripId}, query=${JSON.stringify(
+        query
+      )}, error=${error}`
     );
   }
 }
-
-
 
 module.exports = {
   createInstances,
@@ -282,5 +302,5 @@ module.exports = {
   findRandomTripsWithQueryUsingAggregation,
   deleteTripsByTripInstanceId,
   deleteTripDates,
-  updateTrips
+  updateTrips,
 };

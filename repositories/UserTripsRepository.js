@@ -12,7 +12,7 @@ async function updateWishlistTripForUser(userId, tripInstanceId, isWishlisted) {
         },
       },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
@@ -34,7 +34,7 @@ async function updateJoinTripForUser(userId, tripInstanceId, isJoined) {
         },
       },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
@@ -56,7 +56,7 @@ async function updateRequestTripForUser(userId, tripInstanceId, isRequested) {
         },
       },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
@@ -78,7 +78,7 @@ async function updatePublishTripForUser(userId, tripInstanceId, isPublished) {
         },
       },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
@@ -99,7 +99,8 @@ async function getUserTripsUsingQuery(
     const usersInTrip = await UserTrips.find(query)
       .skip(skip)
       .limit(limitNumber)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     return usersInTrip;
   } catch (error) {
     logger.error(
@@ -124,11 +125,18 @@ async function updateUserTrips(
   isWishlisted
 ) {
   try {
-    const result = await UserTrips.updateMany(
+    const result = await UserTrips.findOneAndUpdate(
       { userId, tripInstanceId },
-      { $set: { isPublished, isJoined, isWishlisted, isRequested } },
+      {
+        $set: {
+          isPublished,
+          isJoined,
+          isRequested,
+          isWishlisted,
+        },
+      },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
@@ -140,24 +148,20 @@ async function updateUserTrips(
   }
 }
 
-async function updateUserTripsUsingQuery(
-  userId,
-  tripInstanceId,
-  query
-) {
+async function updateUserTripsUsingQuery(userId, tripInstanceId, query) {
   try {
-    const result = await UserTrips.updateMany(
+    const result = await UserTrips.findOneAndUpdate(
       { userId, tripInstanceId },
       { $set: query },
       { new: true, upsert: true }
-    );
+    ).lean();
     return result;
   } catch (error) {
     logger.error(
-      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
+      `Error occurred while updating trip instance for userId=${userId}, tripInstanceId=${tripInstanceId}, error=${error.message}`
     );
     throw new Error(
-      `Error occurred while updating trip instances for userId=${userId} and tripIds=${tripIds}, error=${error}`
+      `Failed to update trip instance for userId=${userId}, tripInstanceId=${tripInstanceId}`
     );
   }
 }
@@ -169,5 +173,5 @@ module.exports = {
   updateRequestTripForUser,
   updatePublishTripForUser,
   updateUserTrips,
-  updateUserTripsUsingQuery
+  updateUserTripsUsingQuery,
 };

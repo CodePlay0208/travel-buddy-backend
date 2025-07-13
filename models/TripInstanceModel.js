@@ -11,7 +11,10 @@ const tripInstanceDataSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-tripInstanceDataSchema.index({ destination: 1 }, { name: "destination_single_index" });
+tripInstanceDataSchema.index(
+  { destination: 1 },
+  { name: "destination_single_index" }
+);
 tripInstanceDataSchema.index(
   { startDate: 1, destination: 1 },
   { name: "startDate_destination_composite_index" }
@@ -23,8 +26,21 @@ tripInstanceDataSchema.index(
 );
 
 tripInstanceDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
-tripInstanceDataSchema.index({ baseTripId: 1 }, { name: "tripInstanceId_single_index" });
-tripInstanceDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
+tripInstanceDataSchema.index(
+  { tripInstanceId: 1 },
+  { name: "tripInstanceId_single_index" }
+);
+tripInstanceDataSchema.index(
+  { baseTripId: 1 },
+  { name: "baseTripId_single_index" }
+);
+tripInstanceDataSchema.index(
+  { createdAt: -1 },
+  { name: "createdAt_desc_index" }
+);
 
-module.exports = mongoose.model("tripInstanceDataSchema", tripInstanceDataSchema);
 
+module.exports = mongoose.model(
+  "tripInstanceDataSchema",
+  tripInstanceDataSchema
+);

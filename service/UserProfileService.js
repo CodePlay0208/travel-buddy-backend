@@ -33,7 +33,7 @@ async function getUserProfile(userId) {
       throw new ValidationError(`User not present in the database`, 400);
     }
 
-    const userObj = user.toObject();
+    const userObj = user;
 
     if(userObj.isEmailPrivate && userObj.userId !== userId){
       delete userObj.emailId;
@@ -72,7 +72,7 @@ async function getOtherUserProfile(userId) {
       throw new ValidationError(`User not present in the database`, 400);
     }
 
-    const userObj = user.toObject();
+    const userObj = user;
 
     if(userObj.isEmailPrivate && userObj.userId !== userId){
       delete userObj.emailId;
@@ -129,7 +129,7 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
       userId,
       sanitizedUpdateData
     );
-    const updatedUserProfileObj = updatedUserProfile.toObject();
+    const updatedUserProfileObj = updatedUserProfile;
     logger.info(
       `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
     );
@@ -228,7 +228,7 @@ async function getOtherUserProfile(userId) {
       throw new ValidationError(`User not present in the database`, 400);
     }
 
-    const userObj = user.toObject();
+    const userObj = user;
 
     if(userObj.isEmailPrivate && userObj.userId !== userId){
       delete userObj.emailId;

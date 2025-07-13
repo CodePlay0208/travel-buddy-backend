@@ -39,7 +39,7 @@ async function addRequestedMembersProfilesToTrip(trip, projection) {
 async function updateMemberProfiles(members) {
   return Promise.all(
     members.map(async (originaMember) => {
-      let member = originaMember.toObject();
+      let member = originaMember;
       member.profilePic = await getObjectsFromS3Bucket(
         "",
         member.profilePic,
@@ -95,7 +95,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
     return [];
   }
 
-  const fetchedUserTrips = userTrips.map((trip) => trip.toObject());
+  const fetchedUserTrips = userTrips;
 
   var fetchedUserTripsIds = [];
 
@@ -357,16 +357,18 @@ async function createTrip(payload, userId) {
       tripInstances
     );
 
-    tripInstances.forEach(async (tripInstance) => {
-      const userTrips = await userTripsRepository.updateUserTrips(
-        userId,
-        tripInstance.tripInstanceId,
-        true,
-        true,
-        false,
-        false
-      );
-    });
+    await Promise.all(
+      tripInstances.map((tripInstance) =>
+        userTripsRepository.updateUserTrips(
+          userId,
+          tripInstance.tripInstanceId,
+          true,
+          true,
+          false,
+          false
+        )
+      )
+    );
 
     return baseTripId;
   } catch (error) {
@@ -473,7 +475,7 @@ async function editTrip(baseTripId, userId, newPayload) {
         400
       );
     }
-    
+
     const user = await userProfileRepository.findAdminByUserId(userId);
     if (!(tripInDatabase.hostId == userId) && !user) {
       throw new ValidationError(

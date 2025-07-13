@@ -30,8 +30,10 @@ const baseTripDataSchema = new mongoose.Schema({
   ],
 });
 
+baseTripDataSchema.index({ baseTripId: 1 }, { name: "baseTripId_single_index" });
 baseTripDataSchema.index({ hostId: 1 }, { name: "hostId_single_index" });
 baseTripDataSchema.index({ createdAt: -1 }, { name: "createdAt_desc_index" });
 baseTripDataSchema.index({ scheduledWeekdays: 1 }, { name: "scheduled)weekdays_index" });
+baseTripDataSchema.index({ baseTripId: 1, hostId: 1 }, { name: "baseTripId_hostId_compound_index" });
 
 module.exports = mongoose.model("baseTripDataSchema", baseTripDataSchema);

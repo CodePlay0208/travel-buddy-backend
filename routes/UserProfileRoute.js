@@ -35,7 +35,7 @@ router
     deleteUserHandler
   );
 
-router.route("/findUserProfile").get(findUserHandler);
+router.route("/findUserProfile").get(findUserHandler); //no use of this api
 
 router
   .route("/editSecondaryKey")

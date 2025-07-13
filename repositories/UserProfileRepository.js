@@ -8,7 +8,9 @@ async function updateUser(userId, updateData) {
       { userId },
       { $set: updateData },
       { new: true }
-    ).select("-_id -password -createdAt -__v");
+    )
+      .select("-_id -password -createdAt -__v")
+      .lean();
 
     return updatedUserProfile;
   } catch (error) {
@@ -34,7 +36,10 @@ async function deleteUserByUserId(userId) {
 
 async function findUserWithEmailId(emailId, projection) {
   try {
-    const userInDatabase = await UserProfile.findOne({ emailId }, projection);
+    const userInDatabase = await UserProfile.findOne(
+      { emailId },
+      projection
+    ).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -48,7 +53,7 @@ async function findUserWithEmailId(emailId, projection) {
 
 async function findAdminByUserId(userId) {
   try {
-    const userInDatabase = await AdminProfileModel.findOne({ userId });
+    const userInDatabase = await AdminProfileModel.findOne({ userId }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -73,7 +78,10 @@ async function create(user) {
 
 async function findUserByUserId(userId, projection) {
   try {
-    const userInDatabase = await UserProfile.findOne({ userId }, projection);
+    const userInDatabase = await UserProfile.findOne(
+      { userId },
+      projection
+    ).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -92,7 +100,7 @@ async function findUsersByUserId(userIds, projection) {
         userId: { $in: userIds },
       },
       projection
-    );
+    ).lean();
     return userProfiles;
   } catch (error) {
     logger.error(
@@ -106,7 +114,7 @@ async function findUsersByUserId(userIds, projection) {
 
 async function findUserByPhoneNumber(phoneNumber) {
   try {
-    const userInDatabase = await UserProfile.findOne({ phoneNumber });
+    const userInDatabase = await UserProfile.findOne({ phoneNumber }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -124,7 +132,9 @@ async function findUsersByPrefix(prefix, projection) {
     const users = await UserProfile.find({
       $or: [{ username: { $regex: regex } }, { emailId: { $regex: regex } }],
       projection,
-    }).limit(LIMIT_FOR_SENDING_PREFIX_MATCHED_USERS);
+    })
+      .limit(LIMIT_FOR_SENDING_PREFIX_MATCHED_USERS)
+      .lean();
 
     return users;
   } catch (error) {

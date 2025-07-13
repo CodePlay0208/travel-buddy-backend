@@ -18,7 +18,9 @@ async function deleteTripsByTripId(baseTripId) {
   try {
     await BaseTripModel.deleteOne({ baseTripId });
   } catch (error) {
-    logger.error(`Error occurred while deleting trip with baseTripId=${baseTripId}`);
+    logger.error(
+      `Error occurred while deleting trip with baseTripId=${baseTripId}`
+    );
     throw new Error(`Error deleting trip with ${baseTripId}, error=${error}`);
   }
 }
@@ -28,7 +30,7 @@ async function findTripWithTripIdAndUserId(baseTripId, hostId) {
     const tripInDatabase = await BaseTripModel.findOne({
       baseTripId,
       hostId,
-    });
+    }).lean();
     return tripInDatabase;
   } catch (error) {
     logger.error(
@@ -57,7 +59,7 @@ async function createTrip(newTrip) {
 
 async function findTripWithTripId(baseTripId) {
   try {
-    const trip = await BaseTripModel.findOne({ baseTripId });
+    const trip = await BaseTripModel.findOne({ baseTripId }).lean();
     return trip;
   } catch (error) {
     logger.error(
@@ -73,7 +75,9 @@ async function updateTrip(trip) {
   try {
     return await trip.save();
   } catch (error) {
-    logger.error(`Error occurred while updating baseTrip=${trip}, error=${error}`);
+    logger.error(
+      `Error occurred while updating baseTrip=${trip}, error=${error}`
+    );
     throw new Error(
       `Error occurred while updating baseTrip=${trip}, error=${error}`
     );
@@ -85,7 +89,8 @@ async function findTripsWithQuery(query, limit, offset) {
     const trips = BaseTripModel.find(query)
       .skip(offset)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     return trips;
   } catch (error) {
     logger.error(
@@ -99,49 +104,60 @@ async function findTripsWithQuery(query, limit, offset) {
   }
 }
 
-async function findTripsWithQueryUsingAggregation(query, limit, offset, additionalFilters) {
+async function findTripsWithQueryUsingAggregation(
+  query,
+  limit,
+  offset,
+  additionalFilters
+) {
   try {
-    console.log(query, additionalFilters)
+    console.log(query, additionalFilters);
     const trips = await BaseTripModel.aggregate([
       {
-        $match: query
+        $match: query,
       },
       {
         $lookup: {
           from: "userProfiles",
           localField: "hostId",
           foreignField: "userId",
-          as: "hostProfile"
-        }
+          as: "hostProfile",
+        },
       },
       { $unwind: "$hostProfile" },
 
-
-      ...(additionalFilters.persona? [{
-        $match: {
-          "hostProfile.persona": additionalFilters.persona
-        }
-      }] : []),
+      ...(additionalFilters.persona
+        ? [
+            {
+              $match: {
+                "hostProfile.persona": additionalFilters.persona,
+              },
+            },
+          ]
+        : []),
       {
         $project: {
-          hostProfile: 0
-        }
+          hostProfile: 0,
+        },
       },
       { $sort: { createdAt: -1 } },
       { $skip: offset },
-      { $limit: limit }
+      { $limit: limit },
     ]);
     return trips;
   } catch (error) {
     logger.error(
-      `Error occurred while fetching base trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching base trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
     );
     throw new Error(
-      `Error occurred while fetching base trips with query=${JSON.stringify(query)}, limit=${limit}, offset=${offset}, error=${error}`
+      `Error occurred while fetching base trips with query=${JSON.stringify(
+        query
+      )}, limit=${limit}, offset=${offset}, error=${error}`
     );
   }
 }
-
 
 module.exports = {
   deleteTripsByUserId,
@@ -151,5 +167,5 @@ module.exports = {
   findTripWithTripId,
   updateTrip,
   findTripsWithQuery,
-  findTripsWithQueryUsingAggregation
+  findTripsWithQueryUsingAggregation,
 };
