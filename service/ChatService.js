@@ -31,7 +31,7 @@ async function populateChat(storedChat) {
     userProfilePromise,
   ]);
 
-  const fetchedUserProfiles = userProfiles.map(user => user.toObject());
+  const fetchedUserProfiles = userProfiles.map(user => user);
 
   populatedChat.users = await Promise.all(
     fetchedUserProfiles.map(async (user) => {

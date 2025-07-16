@@ -174,7 +174,7 @@ async function verifyOtp(userId, payload) {
         logger.info(`temporary user not found with userId=${userId}`);
         throw new ValidationError("User not found", 404);
       }
-      const user = tempUser.toObject();
+      const user = tempUser;
       delete user.id;
       const createdUser = await userProfileRepository.create(user);
       logger.info(`Created user=${createdUser}`);

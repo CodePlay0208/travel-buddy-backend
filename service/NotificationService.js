@@ -25,12 +25,12 @@ async function getNotification(userId) {
 
     const notifications = await Promise.all(
       fetchedNotifications.map(async (fetchedNotification) => {
-        let notification = fetchedNotification.toObject();
+        let notification = fetchedNotification;
         const userProfile = await userProfileRepository.findUserByUserId(
           notification.senderId
         );
         if (userProfile) {
-          const fetchedUserProfile = userProfile.toObject();
+          const fetchedUserProfile = userProfile;
           notification.username = userProfile.username;
           notification.profilePic = await updateMemberProfiles(
             fetchedUserProfile
