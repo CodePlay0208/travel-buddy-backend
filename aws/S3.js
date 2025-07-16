@@ -8,6 +8,15 @@ const {
 const { s3Client } = require("./Config");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const logger = require("../logger");
+const cloudfrontDomain = process.env.CLOUDFRONT_DOMAIN_FOR_IMAGES;
+
+function getCloudFrontUrl(path, key) {
+  let cleanPath = path ? path.replace(/^\/+|\/+$/g, '') : '';
+  let cleanKey = key ? key.replace(/^\/+/, '') : '';
+  let urlPath = cleanPath ? `${cleanPath}/${cleanKey}` : cleanKey;
+  return `https://${cloudfrontDomain}/${urlPath}`;
+}
+
 
 const uploadObjectToS3Bucket = async (path = "", object, s3Bucket) => {
   try {
@@ -89,15 +98,11 @@ const getObjectsFromS3Bucket = async (path, uploadedObjectNames, s3Bucket) => {
     logger.info(`Fetching objects from s3bucket=${s3Bucket}`);
     await Promise.all(
       uploadedObjectNames.map(async (object) => {
-        const uploadedFile = await getObjectFromS3Bucket(
-          path,
-          object,
-          s3Bucket
-        );
-        if (uploadedFile != null) {
+        let url= getCloudFrontUrl(path, object);
+        if (url != null) {
           uploadedObjectUrls.push({
             object: object,
-            preSignedUrl: uploadedFile,
+            preSignedUrl: url,
           });
         }
       })
