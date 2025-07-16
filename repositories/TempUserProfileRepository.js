@@ -18,7 +18,7 @@ async function findUserWithEmailId(emailId) {
   try {
     const userInDatabase = await TempUserProfile.findOne({ emailId }).sort({
       createdAt: -1,
-    });
+    }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -43,7 +43,7 @@ async function create(user) {
 
 async function findUserByUserId(userId) {
   try {
-    const userInDatabase = await TempUserProfile.findOne({ userId });
+    const userInDatabase = await TempUserProfile.findOne({ userId }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -59,7 +59,7 @@ async function findUserByPhoneNumber(phoneNumber) {
   try {
     const userInDatabase = await TempUserProfile.findOne({ phoneNumber }).sort({
       createdAt: -1,
-    });
+    }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(

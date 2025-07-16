@@ -3,7 +3,7 @@ const logger = require("../logger");
 
 async function findUserWithEmailId(emailId) {
   try {
-    const userInDatabase = await PartnerProfile.findOne({ emailId });
+    const userInDatabase = await PartnerProfile.findOne({ emailId }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(
@@ -17,7 +17,7 @@ async function findUserWithEmailId(emailId) {
 
 async function findUserByUserId(userId) {
   try {
-    const userInDatabase = await PartnerProfile.findOne({ userId });
+    const userInDatabase = await PartnerProfile.findOne({ userId }).lean();
     return userInDatabase;
   } catch (error) {
     logger.error(

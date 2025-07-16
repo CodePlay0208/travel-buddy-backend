@@ -23,7 +23,7 @@ async function findOtpWithUserId(userId) {
   try {
     const otp = await OtpSchema.findOne({ userId }).sort({
       createdAt: -1,
-    });
+    }).lean();
     return otp;
   } catch (error) {
     logger.error(
