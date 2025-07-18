@@ -21,6 +21,10 @@ const {
   deleteObjectsFromS3Bucket,
   generatePresignedUrlFromS3
 } = require("../aws/S3");
+const {
+  USER_PROFILE_PROJECTION_IN_SEARCH_BAR,
+  USER_PROFILE_PROJECTION
+} = require("../constants/Projections.js");
 const { cropAndResizeImages } = require("../Utils.js");
 
 async function findUserByUserKey(userKey) {
@@ -185,11 +189,23 @@ async function scheduleTrips(userId) {
   }
 }
 
-async function setupProfile(updateData, newProfilePic, adminId) {
+async function setupProfile(updateData, adminId) {
   try {
     const user = await partnersProfileRepository.findUserByUserId(adminId);
     if (!user) {
       throw new ValidationError(`user not authorised`, 401);
+    }
+    let { userKey } = updateData;
+    const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+    let userInDatabase = null;
+    if(isPhoneNumber){
+      userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
+    }
+    else{
+      userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
+    }
+    if(userInDatabase != null || userInDatabase != undefined){
+      throw new ValidationError("user already exists")
     }
     logger.info(`Setting up profile using partners service`);
     const sanitizedUpdateData = {};
@@ -201,8 +217,7 @@ async function setupProfile(updateData, newProfilePic, adminId) {
     if (updateData.profilePic)
       sanitizedUpdateData.profilePic = updateData.profilePic;
     if (updateData.gender) sanitizedUpdateData.gender = updateData.gender;
-    let { userKey } = updateData;
-    const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+    
     if (isPhoneNumber) {
       sanitizedUpdateData.isSignupWithEmail = false;
       sanitizedUpdateData.phoneNumber = userKey;
@@ -367,6 +382,47 @@ async function getUserProfile(payload, adminId) {
   }
 }
 
+
+async function generatePreSignedUrlForProfilePic(payload, adminId) {
+  const { files, prefix, userId} = payload;
+  try {
+    const admin = await partnersProfileRepository.findUserByUserId(adminId);
+    if (!admin) {
+      throw new ValidationError(`user not authorised`, 401);
+    }
+    const user = await userProfileRepository.findUserByUserId(
+      userId,
+      USER_PROFILE_PROJECTION
+    );
+
+    if (!user) {
+      logger.info(`User not found with userId=${userId}`);
+      throw new ValidationError(`User not present in the database`, 400);
+    }
+
+    const signedUrls = await Promise.all(
+      files.map(async ({ filename, filetype }) => {
+        const key = `${prefix}/${filename}`;
+        const params = {
+          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC,
+          Key: key,
+          ContentType: filetype,
+        };
+        const s3Url = await generatePresignedUrlFromS3("putObject", params);
+        return {s3Url, filename, filetype}
+      })
+    );
+    return signedUrls;
+  } catch (error) {
+    logger.error(
+      `Error occured while generating presigned url for files=${JSON.stringify(
+        files
+      )} with prefix=${prefix}, error=${error}`
+    );
+    throw error;
+  }
+}
+
 module.exports = {
   sendOtp,
   login,
@@ -377,4 +433,5 @@ module.exports = {
   publishTrip,
   generatePreSignedUrl,
   getUserProfile,
+  generatePreSignedUrlForProfilePic
 };
