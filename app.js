@@ -24,8 +24,16 @@ const {
 const redisClient = require("./aws/RedisClient");
 
 const startServer = async () => {
-  await redisClient.connect();
-  logger.info("Redis client connected");
+  try{
+    await redisClient.connect();
+    logger.info("Redis client connected");
+  }
+  catch(error){
+    logger.error(`Error while connecting to redis: ${error}`, {
+      stack: error.stack,
+    });
+  }
+  
   const server = app.listen(port, () => {
     logger.info(`Server is running on http://localhost:${port}`);
   });
@@ -88,12 +96,9 @@ try {
   app.use(notFound);
   app.use(errorHandler);
 
-  await startServer();
+  startServer();
 } catch (error) {
   logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
-  });
-  const server = app.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
   });
 }
