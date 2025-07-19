@@ -88,9 +88,9 @@ try {
   app.use(notFound);
   app.use(errorHandler);
 
-  startServer();
+  await startServer();
 } catch (error) {
-  logger.error(`Error while running the app: ${error.message}`, {
+  logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
   });
 }
