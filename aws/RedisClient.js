@@ -8,5 +8,6 @@ if (process.env.REDIS_PASSWORD) {
 }
 
 const redisClient = createClient(redisOptions);
+redisClient.on('error', (err) => console.error('Redis Client Error', err));
 
 module.exports = redisClient;
