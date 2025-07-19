@@ -21,6 +21,17 @@ const logger = require("./logger");
 const {
   requestContextMiddleware,
 } = require("./middleware/RequestContextMiddleware");
+const redisClient = require("./aws/RedisClient");
+
+const startServer = async () => {
+  await redisClient.connect();
+  logger.info("Redis client connected");
+  const server = app.listen(port, () => {
+    logger.info(`Server is running on http://localhost:${port}`);
+  });
+
+  handleSocketIO(server);
+};
 
 
 try {
@@ -77,11 +88,7 @@ try {
   app.use(notFound);
   app.use(errorHandler);
 
-  const server = app.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
-  });
-
-  // handleSocketIO(server);
+  startServer();
 } catch (error) {
   logger.error(`Error while running the app: ${error.message}`, {
     stack: error.stack,

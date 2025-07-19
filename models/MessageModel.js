@@ -3,10 +3,21 @@ const mongoose = require("mongoose");
 const messageSchema = new mongoose.Schema(
   {
     senderId: { type: String },
-    content: { type: String, trim: true },
-    chatId: { type: String },
-    readByReceiver: { type: Boolean },
     messageId: { type: String, required: true, unique: true },
+    chatId: { type: String },
+    content: { type: String, trim: true },
+    readBy: [
+      {
+        username: { type: String, required: true },
+        userId: { type: String, required: true },
+      },
+    ],
+    deliveredTo: [
+      {
+        username: { type: String, required: true },
+        userId: { type: String, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );
