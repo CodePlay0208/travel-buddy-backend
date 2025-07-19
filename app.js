@@ -27,18 +27,17 @@ const startServer = async () => {
   try{
     await redisClient.connect();
     logger.info("Redis client connected");
+    const server = app.listen(port, () => {
+      logger.info(`Server is running on http://localhost:${port}`);
+    });
+  
+    handleSocketIO(server);
   }
   catch(error){
     logger.error(`Error while connecting to redis: ${error}`, {
       stack: error.stack,
     });
   }
-  
-  const server = app.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
-  });
-
-  handleSocketIO(server);
 };
 
 
