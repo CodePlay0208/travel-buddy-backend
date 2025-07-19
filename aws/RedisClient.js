@@ -3,11 +3,8 @@ const { createClient } = require('redis');
 const redisOptions = {
   url: process.env.REDIS_URL
 };
-if (process.env.REDIS_PASSWORD) {
-  redisOptions.password = process.env.REDIS_PASSWORD;
-}
 
 const redisClient = createClient(redisOptions);
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
+redisClient.on('error', (err) => console.error('There is a error', err));
 
 module.exports = redisClient;
