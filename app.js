@@ -93,4 +93,7 @@ try {
   logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
   });
+  const server = app.listen(port, () => {
+    logger.info(`Server is running on http://localhost:${port}`);
+  });
 }
