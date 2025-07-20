@@ -4,7 +4,7 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const AWS = require("aws-sdk");
 
 const kinesis = new AWS.Kinesis({
-  region: "us-west-2",
+  region: process.env.KINESIS_STREAM_REGION,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });

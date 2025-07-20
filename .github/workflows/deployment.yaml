@@ -10,8 +10,8 @@ on:
 
 env:
   S3_BUCKET_PREFIX: "elasticbeanstalk-ap-south-1-"
-  ELASTIC_BEANSTALK_NAME_PROD: "Travmigoz"
-  ELASTIC_BEANSTALK_ENV_NAME_PROD: "Travmigoz-env-prod"
+  ELASTIC_BEANSTALK_NAME_PROD: "Travmigoz-prod"
+  ELASTIC_BEANSTALK_ENV_NAME_PROD: "Travmigoz-prod-env"
   ELASTIC_BEANSTALK_NAME_NON_PROD: "Travmigoz"
   ELASTIC_BEANSTALK_ENV_NAME_NON_PROD: "Travmigoz-nonprod-env"
 
