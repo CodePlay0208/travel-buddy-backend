@@ -25,13 +25,13 @@ const redisClient = require("./aws/RedisClient");
 
 const startServer = async () => {
   try{
-    await redisClient.connect();
+    // await redisClient.connect();
     logger.info("Redis client connected");
     const server = app.listen(port, '0.0.0.0',() => {
       logger.info(`Server is running on http://localhost:${port}`);
     });
   
-    handleSocketIO(server);
+    // handleSocketIO(server);
     logger.info("✅ Socket.IO initialized");
   }
   catch(error){
