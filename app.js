@@ -14,34 +14,12 @@ const partnersRoute = require("./routes/PartnersRoute");
 const notificationRoute = require("./routes/NotificationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
-const handleSocketIO = require("./config/Socket");
 const initializeDB = require("./repositories/Config");
 const scheduleTripsCron = require("./cron/ScheduleTripsCron");
 const logger = require("./logger");
 const {
   requestContextMiddleware,
 } = require("./middleware/RequestContextMiddleware");
-const redisClient = require("./aws/RedisClient");
-
-const startServer = async () => {
-  try{
-    await redisClient.connect();
-    logger.info("Redis client connected");
-    const server = app.listen(port, '0.0.0.0',() => {
-      logger.info(`Server is running on http://localhost:${port}`);
-    });
-  
-    handleSocketIO(server);
-    logger.info(" Socket.IO initialized");
-  }
-  catch(error){
-    logger.error(`Error while connecting to redis: ${error}`, {
-      stack: error.stack,
-    });
-    process.exit(1);
-  }
-};
-
 
 try {
   const allowedOrigins = process.env.ORIGIN_FOR_CLIENT.split(",");
@@ -96,6 +74,9 @@ try {
 
   app.use(notFound);
   app.use(errorHandler);
+  const server = app.listen(port, '0.0.0.0',() => {
+    logger.info(`Server is running on http://localhost:${port}`);
+  });
 
 } catch (error) {
   logger.error(`Error while running the app: ${error}`, {
@@ -103,12 +84,4 @@ try {
   });
 }
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection:', reason);
-});
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-startServer();
