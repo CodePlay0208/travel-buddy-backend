@@ -31,8 +31,8 @@ const startServer = async () => {
       logger.info(`Server is running on http://localhost:${port}`);
     });
   
-    // handleSocketIO(server);
-    logger.info("✅ Socket.IO initialized");
+    handleSocketIO(server);
+    logger.info(" Socket.IO initialized");
   }
   catch(error){
     logger.error(`Error while connecting to redis: ${error}`, {
