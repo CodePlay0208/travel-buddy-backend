@@ -27,16 +27,18 @@ const startServer = async () => {
   try{
     await redisClient.connect();
     logger.info("Redis client connected");
-    const server = app.listen(port, () => {
+    const server = app.listen(port, '0.0.0.0',() => {
       logger.info(`Server is running on http://localhost:${port}`);
     });
   
     handleSocketIO(server);
+    logger.info("✅ Socket.IO initialized");
   }
   catch(error){
     logger.error(`Error while connecting to redis: ${error}`, {
       stack: error.stack,
     });
+    process.exit(1);
   }
 };
 
@@ -95,9 +97,18 @@ try {
   app.use(notFound);
   app.use(errorHandler);
 
-  startServer();
 } catch (error) {
   logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
   });
 }
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+startServer();
