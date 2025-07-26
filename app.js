@@ -14,14 +14,12 @@ const partnersRoute = require("./routes/PartnersRoute");
 const notificationRoute = require("./routes/NotificationRoute");
 const { notFound } = require("./middleware/ErrorMiddleware");
 const { errorHandler } = require("./middleware/ErrorMiddleware");
-const handleSocketIO = require("./config/Socket");
 const initializeDB = require("./repositories/Config");
 const scheduleTripsCron = require("./cron/ScheduleTripsCron");
 const logger = require("./logger");
 const {
   requestContextMiddleware,
 } = require("./middleware/RequestContextMiddleware");
-
 
 try {
   const allowedOrigins = process.env.ORIGIN_FOR_CLIENT.split(",");
@@ -76,14 +74,14 @@ try {
 
   app.use(notFound);
   app.use(errorHandler);
-
-  const server = app.listen(port, () => {
+  const server = app.listen(port, '0.0.0.0',() => {
     logger.info(`Server is running on http://localhost:${port}`);
   });
 
-  // handleSocketIO(server);
 } catch (error) {
-  logger.error(`Error while running the app: ${error.message}`, {
+  logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
   });
 }
+
+

@@ -12,7 +12,8 @@ const {
   ADMIN_SETUP_PROFILE,
   ADMIN_PUBLISH_TRIP_IMAGES,
   ADMIN_PUBLISH_TRIP,
-  ADMIN_GET_USER_PROFILE
+  ADMIN_GET_USER_PROFILE,
+  ADMIN_SETUP_PROFILE_IMAGES
 } = require("../constants/ApiConstants");
 const { requestContext } = require("../middleware/RequestContextMiddleware");
 const partnersService = require("../service/PartnersService");
@@ -173,15 +174,12 @@ const setupProfileHandler = asyncHandler(async (req, res) => {
     logger.info(
       `Request recieved for API_NAME=${ADMIN_SETUP_PROFILE}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
     );
-
     const updateData = req.body;
-    const { files } = req;
-    const updatedUserProfile = await partnersService.setupProfile(
+    const generatedUserId = await partnersService.setupProfile(
       updateData,
-      files,
       req.userId
     );
-    res.status(200).json();
+    res.status(200).json({generatedUserId});
     const endTime = Date.now();
     logger.info(
       `API_NAME=${ADMIN_SETUP_PROFILE}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
@@ -298,6 +296,38 @@ const getUserProfileHandler = asyncHandler(async (req, res) => {
   }
 });
 
+const generatePreSignedUrlForProfilePicHandler = asyncHandler(async (req, res) => {
+  const REQUEST_TID = requestContext.getRequestTid();
+  try {
+    const startTime = Date.now();
+    logger.info(
+      `Request recieved for API_NAME=${ADMIN_SETUP_PROFILE_IMAGES}, API_STATUS=${API_STARTED}, REQUEST_TID=${REQUEST_TID}`
+    );
+    const userId = req.userId;
+    const payload = req.body;
+    const signedUrls = await partnersService.generatePreSignedUrlForProfilePic(
+      payload,
+      userId
+    );
+    res.status(200).json(signedUrls);
+    const endTime = Date.now();
+    logger.info(
+      `API_NAME=${ADMIN_SETUP_PROFILE_IMAGES}, API_STATUS=${API_SUCCESS}, REQUEST_TID=${REQUEST_TID}, API_EXECUTION_TIME_IN_MS=${
+        endTime - startTime
+      }ms`
+    );
+  } catch (error) {
+    logger.error(
+      `API_NAME=${ADMIN_SETUP_PROFILE_IMAGES}, API_STATUS=${API_FAILED}, REQUEST_TID=${REQUEST_TID}, ERROR=${error}`
+    );
+    if (error instanceof ValidationError) {
+      res.status(error.errorCode).json();
+    } else {
+      res.status(500).json();
+    }
+  }
+});
+
 module.exports = {
   loginHandler,
   sendOtpHandler,
@@ -307,5 +337,6 @@ module.exports = {
   setupProfileHandler,
   publishTripHandler,
   generatePreSignedUrlHandler,
-  getUserProfileHandler
+  getUserProfileHandler,
+  generatePreSignedUrlForProfilePicHandler
 };
