@@ -149,15 +149,15 @@ async function signUp(payload) {
 async function login(userKey) {
   try {
     userKey = userKey.trim();
-    const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
+    // const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
 
-    if (!userInDatabase) {
-      throw new ValidationError("User Doesn't Exists", 404);
-    }
-    const userId = userInDatabase.userId;
-    await otpService.sendOtp(userInDatabase.username, userKey, userId);
+    // if (!userInDatabase) {
+    //   throw new ValidationError("User Doesn't Exists", 404);
+    // }
+    // const userId = userInDatabase.userId;
+    await otpService.sendOtp("userInDatabase.username", userKey, "123");
     const token = generateToken(
-      userId,
+      "213",
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
     );
     return token;

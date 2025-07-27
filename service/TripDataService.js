@@ -23,6 +23,7 @@ const {
 } = require("../constants/Projections.js");
 const { randomFileName } = require("../Utils");
 const NotificationEvents = require("../enums/NotificationEvents.js");
+const chatService = require("../service/ChatService.js");
 
 async function addJoinedMembersProfilesToTrip(trip, projection) {
   trip.joinedMembers = await userProfileRepository.findUsersByUserId(
@@ -370,6 +371,7 @@ async function createTrip(payload, userId) {
       )
     );
 
+    chatService.createChat(tripInstances, userId, title);
     return baseTripId;
   } catch (error) {
     logger.error(
@@ -1119,6 +1121,8 @@ async function addMemberTrip(payload, userId) {
       tripInstanceId,
       queryForUpdate
     );
+
+    chatService.addMemberToChat(memberId, tripInstanceId);
 
     const notification = {
       notificationId: uuidv4(),

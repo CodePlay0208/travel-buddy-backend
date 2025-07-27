@@ -12,6 +12,8 @@ const chatValidator = require("../validators/ChatValidator");
 const {
   getObjectsFromS3Bucket,
 } = require("../aws/S3");
+const axios = require('axios');
+const TripInstanceRepository = require('../repositories/TripInstanceRepository');
 
 async function populateChat(storedChat) {
   let populatedChat = { chatId: storedChat.chatId };
@@ -49,57 +51,79 @@ async function populateChat(storedChat) {
   return populatedChat;
 }
 
-async function fetchOrCreateChats(receiverUserId, senderUserId) {
-  try {
-    
-    let chatInDatabase = await chatRepository.findChatByUsers(
-      senderUserId,
-      receiverUserId
-    );
+function formatDateToDDMMYYYY(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
 
-    if (chatInDatabase) {
-      const populatedChat = await populateChat(chatInDatabase);
-      return populatedChat;
+async function createChat(tripInstances, userId, baseTripTitle) {
+  for (const tripInstance of tripInstances) {
+    const { startDate, endDate } = tripInstance;
+
+    // Fetch username
+    const user = await userProfileRepository.findUserByUserId(userId, { username: 1 });
+    if (!user || !user.username) {
+      logger.error(`User not found for id: ${userId}`);
+      continue;
+    }
+    const username = user.username;
+
+    const formattedStartDate = formatDateToDDMMYYYY(startDate);
+    const formattedEndDate = formatDateToDDMMYYYY(endDate);
+
+    let title = baseTripTitle;
+    if (formattedStartDate && formattedEndDate) {
+      title += ` (${formattedStartDate} - ${formattedEndDate})`;
     }
 
-    const chatId = uuidv4();
-    let chatData = {
-      users: [senderUserId, receiverUserId],
-      chatId,
-      latestMessage: null,
+    const requestBody = {
+      tripInstanceId: tripInstance.tripInstanceId,
+      userId,
+      username,
+      title,
     };
 
-    logger.info(
-      `Creating new chat for users=${senderUserId},${receiverUserId}`
-    );
-    const createdChat = await chatRepository.create(chatData);
-    const populatedChat = await populateChat(createdChat);
-    return populatedChat;
-  } catch (error) {
-    logger.error(
-      `Error fetching or creating chat for users=${senderUserId},${receiverUserId}, error=${error}`
-    );
-    throw error;
+    try {
+      const response = await axios.post(`${process.env.CHAT_API_URL}/createChat`, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      logger.info(`Successfully sent chat creation to api-chat.travmigoz.com/createChat for tripInstanceId=${tripInstance.tripInstanceId}, response=${JSON.stringify(response)}`);
+    } catch (error) {
+      logger.error(`Failed to send chat creation to api-chat.travmigoz.com/createChat: ${error.message}`);
+    }
   }
 }
 
-async function getChats(userId) {
-  try {
-    let chats = await chatRepository.findChatsByUserId(userId);
-    chats = await Promise.all(
-      chats.map(async (chat) => {
-        return populateChat(chat);
-      })
-    );
+async function addMemberToChat(memberId, tripInstanceId) {
+    try {
 
-    logger.info(
-      `Fetched chat list for userId=${userId}, chats=${JSON.stringify(chats)}`
-    );
-    return chats;
-  } catch (error) {
-    logger.error(`Error fetching chats for userId=${userId}, error=${error}`);
-    throw error;
-  }
+      const user = await userProfileRepository.findUserByUserId(memberId, { username: 1 });
+      if (!user || !user.username) {
+        throw new Error(`User not found for id: ${memberId}`);
+      }
+      const memberName = user.username;
+
+      const requestBody = {
+        memberName,
+        memberId,
+        tripInstanceId,
+      };
+
+      await axios.post(`${process.env.CHAT_API_URL}/addMemberToChat`, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to add member to chat at /addMemberToChat: ${error.message}`);
+    }
+
 }
 
-module.exports = { fetchOrCreateChats, getChats };
+module.exports = { fetchOrCreateChats, getChats, createChat, addMemberToChat };
