@@ -8,6 +8,29 @@ const generateToken = require("../config/GenerateToken");
 const { v4: uuidv4 } = require("uuid");
 const authValidator = require("../validators/AuthValidator");
 const { isPhoneNumberOrEmail } = require("../Utils");
+const { MAILCHIMP_SIGNEDUP_TAG, MAILCHIMP_HASH, MAILCHIMP_USER_ACTIVE, MAILCHIMP_USER_SUBSCRIBED, MAILCHIMP_DIGEST } = require("../constants/MailChimpConstants");
+const mailChimpService = require("../mailchimp/MailChimpClient");
+const crypto = require("crypto");
+
+async function addSignedUpUserToMarketingCampaign(emailId, audienceId, tag) {
+  const subscriberHash = crypto
+    .createHash(MAILCHIMP_HASH)
+    .update(emailId.toLowerCase())
+    .digest(MAILCHIMP_DIGEST);
+
+  await mailChimpService.lists.setListMember(audienceId, subscriberHash, {
+    email_address: emailId,
+    status_if_new: MAILCHIMP_USER_SUBSCRIBED,
+  });
+
+  await mailChimpService.lists.updateListMemberTags(
+    audienceId,
+    subscriberHash,
+    {
+      tags: [{ name: tag, status: MAILCHIMP_USER_ACTIVE }],
+    }
+  );
+}
 
 async function findUserByUserKey(userKey) {
   const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
@@ -132,7 +155,7 @@ async function login(userKey) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
     const userId = userInDatabase.userId;
-    // await otpService.sendOtp(userInDatabase.username, userKey, userId);
+    await otpService.sendOtp(userInDatabase.username, userKey, userId);
     const token = generateToken(
       userId,
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
@@ -150,18 +173,18 @@ async function verifyOtp(userId, payload) {
   try {
     const { userOtp, isSignUpRequest } = payload;
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
-    // if (originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587") {
-    //   const token = generateToken(
-    //     userId,
-    //     process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
-    //   );
-    //   logger.info(`Successfully logged in system user with userId=${userId}`);
-    //   return token;
-    // }
+    if (originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587") {
+      const token = generateToken(
+        userId,
+        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+      );
+      logger.info(`Successfully logged in system user with userId=${userId}`);
+      return token;
+    }
 
-    // if (!originalOtp || originalOtp.otp != userOtp) {
-    //   throw new ValidationError("Otp Verification Failed");
-    // }
+    if (!originalOtp || originalOtp.otp != userOtp) {
+      throw new ValidationError("Otp Verification Failed");
+    }
 
     if (isSignUpRequest == null || isSignUpRequest == undefined) {
       logger.error(`isSignUpRequest param is null or undefined`);
@@ -177,6 +200,15 @@ async function verifyOtp(userId, payload) {
       const user = tempUser;
       delete user.id;
       const createdUser = await userProfileRepository.create(user);
+      if(user.emailId){
+        addSignedUpUserToMarketingCampaign(
+          user.emailId,
+          process.env.MAILCHIMP_AUDIENCE_ID,
+          MAILCHIMP_SIGNEDUP_TAG
+        );
+        logger.info(`Added user to sign up list, user=${JSON.stringify(user)}`);
+      }
+     
       logger.info(`Created user=${createdUser}`);
     } else {
       const user = await userProfileRepository.findUserByUserId(userId);
