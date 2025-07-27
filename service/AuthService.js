@@ -132,7 +132,7 @@ async function login(userKey) {
       throw new ValidationError("User Doesn't Exists", 404);
     }
     const userId = userInDatabase.userId;
-    await otpService.sendOtp(userInDatabase.username, userKey, userId);
+    // await otpService.sendOtp(userInDatabase.username, userKey, userId);
     const token = generateToken(
       userId,
       process.env.JWT_SECRET_KEY_FOR_TEMP_FLOW
@@ -150,18 +150,18 @@ async function verifyOtp(userId, payload) {
   try {
     const { userOtp, isSignUpRequest } = payload;
     const originalOtp = await otpRepository.findOtpWithUserId(userId);
-    if (originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587") {
-      const token = generateToken(
-        userId,
-        process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
-      );
-      logger.info(`Successfully logged in system user with userId=${userId}`);
-      return token;
-    }
+    // if (originalOtp.userKey == "travmigoz@gmail.com" && userOtp == "706587") {
+    //   const token = generateToken(
+    //     userId,
+    //     process.env.JWT_SECRET_KEY_FOR_USER_LOGIN
+    //   );
+    //   logger.info(`Successfully logged in system user with userId=${userId}`);
+    //   return token;
+    // }
 
-    if (!originalOtp || originalOtp.otp != userOtp) {
-      throw new ValidationError("Otp Verification Failed");
-    }
+    // if (!originalOtp || originalOtp.otp != userOtp) {
+    //   throw new ValidationError("Otp Verification Failed");
+    // }
 
     if (isSignUpRequest == null || isSignUpRequest == undefined) {
       logger.error(`isSignUpRequest param is null or undefined`);

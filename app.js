@@ -26,9 +26,8 @@ try {
   logger.info(`The allowed origins are=${JSON.stringify(allowedOrigins)}`);
   const corsOptions = {
     origin: (origin, callback) => {
-      
       if (!origin || allowedOrigins.includes(origin)) {
-        logger.info(`The origin is=${origin}`)
+        logger.info(`The origin is=${origin}`);
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -38,12 +37,11 @@ try {
   };
 
   app.use(cors(corsOptions));
-  app.use(express.json({ limit: '25mb' }));
-  app.use(express.urlencoded({ limit: '25mb', extended: true }));
+  app.use(express.json({ limit: "25mb" }));
+  app.use(express.urlencoded({ limit: "25mb", extended: true }));
   app.use(requestContextMiddleware);
 
   initializeDB();
-
 
   app.use("/login", loginRoute);
   app.use("/user", userProfileRoute);
@@ -54,10 +52,10 @@ try {
   app.use("/misc", miscRoute);
   app.use("/partners", partnersRoute);
   app.use("/notification", notificationRoute);
-  app.get('/health/status', (req, res) => {
-    logger.info(`Responding to Health Check Status`)
-    res.status(200).send('OK'); 
-});
+  app.get("/health/status", (req, res) => {
+    logger.info(`Responding to Health Check Status`);
+    res.status(200).send("OK");
+  });
 
   const blogRoute = require("./routes/BlogRoute");
   app.use("/blogs", blogRoute);
@@ -67,21 +65,17 @@ try {
     res.status(200).send("OK");
   });
 
- 
   app.get("/", (req, res) => {
     res.status(200).send("API is running");
   });
 
   app.use(notFound);
   app.use(errorHandler);
-  const server = app.listen(port, '0.0.0.0',() => {
+  const server = app.listen(port, "0.0.0.0", () => {
     logger.info(`Server is running on http://localhost:${port}`);
   });
-
 } catch (error) {
   logger.error(`Error while running the app: ${error}`, {
     stack: error.stack,
   });
 }
-
-
