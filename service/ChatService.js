@@ -1,55 +1,8 @@
-const { ValidationError } = require("../exceptions/ValidationError");
 const logger = require("../logger");
-const chatRepository = require("../repositories/ChatRepository");
-const messageRepository = require("../repositories/MessageRepository");
 const userProfileRepository = require("../repositories/UserProfileRepository");
-const { v4: uuidv4 } = require("uuid");
-const {
-  LATEST_MESSAGE_PROJECTION_IN_CHAT,
-  USER_PROFILE_PROJECTION_IN_CHAT
-} = require("../constants/Projections");
-const chatValidator = require("../validators/ChatValidator");
-const {
-  getObjectsFromS3Bucket,
-} = require("../aws/S3");
 const axios = require('axios');
-const TripInstanceRepository = require('../repositories/TripInstanceRepository');
 
-async function populateChat(storedChat) {
-  let populatedChat = { chatId: storedChat.chatId };
 
-  const messagePromise = messageRepository.findMessageByMessageId(
-    storedChat.messageId,
-    LATEST_MESSAGE_PROJECTION_IN_CHAT
-  );
-
-  const userProfilePromise = userProfileRepository.findUsersByUserId(
-    storedChat.users,
-    USER_PROFILE_PROJECTION_IN_CHAT
-  );
-
-  const [latestMessage, userProfiles] = await Promise.all([
-    messagePromise,
-    userProfilePromise,
-  ]);
-
-  const fetchedUserProfiles = userProfiles.map(user => user);
-
-  populatedChat.users = await Promise.all(
-    fetchedUserProfiles.map(async (user) => {
-      const userProfilePic = await getObjectsFromS3Bucket(
-        "",
-        user.profilePic,
-        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-      );
-      user.profilePic = userProfilePic;
-      return user
-    })
-  );
-
-  populatedChat.latestMessage = latestMessage;
-  return populatedChat;
-}
 
 function formatDateToDDMMYYYY(dateString) {
   if (!dateString) return '';
@@ -126,4 +79,4 @@ async function addMemberToChat(memberId, tripInstanceId) {
 
 }
 
-module.exports = { fetchOrCreateChats, getChats, createChat, addMemberToChat };
+module.exports = { createChat, addMemberToChat };

@@ -6,8 +6,6 @@ const cors = require("cors");
 const loginRoute = require("./routes/LoginRoute");
 const userProfileRoute = require("./routes/UserProfileRoute");
 const tripsDataRoute = require("./routes/TripsDataRoute");
-const chatRoute = require("./routes/ChatRoute");
-const messageRoute = require("./routes/MessageRoute");
 const miscRoute = require("./routes/MiscRoute");
 const locationRoute = require("./routes/LocationRoute");
 const partnersRoute = require("./routes/PartnersRoute");
@@ -46,8 +44,6 @@ try {
   app.use("/login", loginRoute);
   app.use("/user", userProfileRoute);
   app.use("/trips", tripsDataRoute);
-  app.use("/chat", chatRoute);
-  app.use("/message", messageRoute);
   app.use("/location", locationRoute);
   app.use("/misc", miscRoute);
   app.use("/partners", partnersRoute);
