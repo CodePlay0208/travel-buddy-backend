@@ -610,7 +610,7 @@ async function createTripsImages(payload) {
     logger.info(`created images for Trip with baseTripId=${baseTripId}`);
   } catch (error) {
     logger.error(
-      `Error creating images for baseTripId=${baseTripId}, error=${error}`
+      `Error creating images for baseTripId=${JSON.stringify(payload)}, error=${error}`
     );
     throw error;
   }
