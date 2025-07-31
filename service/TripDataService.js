@@ -371,7 +371,7 @@ async function createTrip(payload, userId) {
       )
     );
 
-    chatService.createChat(tripInstances, userId, title);
+    chatService.createChat(tripInstances, userId, payload.title);
     return baseTripId;
   } catch (error) {
     logger.error(

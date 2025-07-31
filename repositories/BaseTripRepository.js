@@ -73,7 +73,8 @@ async function findTripWithTripId(baseTripId) {
 
 async function updateTrip(trip) {
   try {
-    return await trip.save();
+    const tripInDatabase = new BaseTripModel(trip);
+    return await tripInDatabase.save();
   } catch (error) {
     logger.error(
       `Error occurred while updating baseTrip=${trip}, error=${error}`
