@@ -28,11 +28,11 @@ const chatService = require("../service/ChatService.js");
 async function addJoinedMembersProfilesToTrip(trip, projection) {
   try {
     logger.debug(`Adding joined members profiles to trip: tripInstanceId=${trip?.tripInstanceId}`);
-    
+
     trip.joinedMembers = await userProfileRepository.findUsersByUserId(
       trip.tripMembersIds
     );
-    
+
     logger.debug(`Successfully added ${trip.joinedMembers?.length || 0} joined members to trip: tripInstanceId=${trip?.tripInstanceId}`);
   } catch (error) {
     logger.error(`Failed to add joined members profiles to trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
@@ -46,11 +46,11 @@ async function addJoinedMembersProfilesToTrip(trip, projection) {
 async function addRequestedMembersProfilesToTrip(trip, projection) {
   try {
     logger.debug(`Adding requested members profiles to trip: tripInstanceId=${trip?.tripInstanceId}`);
-    
+
     trip.requestingMembers = await userProfileRepository.findUsersByUserId(
       trip.requestingTripMembersIds
     );
-    
+
     logger.debug(`Successfully added ${trip.requestingMembers?.length || 0} requested members to trip: tripInstanceId=${trip?.tripInstanceId}`);
   } catch (error) {
     logger.error(`Failed to add requested members profiles to trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
@@ -64,23 +64,23 @@ async function addRequestedMembersProfilesToTrip(trip, projection) {
 async function updateMemberProfiles(members) {
   try {
     logger.debug(`Updating ${members?.length || 0} member profiles`);
-    
+
     const updatedMembers = await Promise.all(
       members.map(async (originalMember, index) => {
         logger.debug(`Processing member ${index + 1}/${members.length}: userId=${originalMember?.userId}`);
-        
+
         let member = originalMember;
         member.profilePic = await getObjectsFromS3Bucket(
           "",
           member.profilePic,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
         );
-        
+
         logger.debug(`Successfully updated member profile: userId=${member?.userId}`);
         return member;
       })
     );
-    
+
     logger.debug(`Successfully updated ${updatedMembers.length} member profiles`);
     return updatedMembers;
   } catch (error) {
@@ -95,13 +95,13 @@ async function updateMemberProfiles(members) {
 async function updateJoinedMembersProfilesInTrip(trip, projection) {
   try {
     logger.debug(`Updating joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-    
+
     await addJoinedMembersProfilesToTrip(trip, projection);
     const [updatedJoinedMembers] = await Promise.all([
       updateMemberProfiles(trip.joinedMembers),
     ]);
     trip.joinedMembers = updatedJoinedMembers;
-    
+
     logger.debug(`Successfully updated joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
   } catch (error) {
     logger.error(`Failed to update joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
@@ -115,13 +115,13 @@ async function updateJoinedMembersProfilesInTrip(trip, projection) {
 async function updateRequestedMembersProfilesInTrip(trip, projection) {
   try {
     logger.debug(`Updating requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-    
+
     await addRequestedMembersProfilesToTrip(trip, projection);
     const [updatedRequestedMembers] = await Promise.all([
       updateMemberProfiles(trip.requestingMembers),
     ]);
     trip.requestingMembers = updatedRequestedMembers;
-    
+
     logger.debug(`Successfully updated requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
   } catch (error) {
     logger.error(`Failed to update requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
@@ -135,30 +135,30 @@ async function updateRequestedMembersProfilesInTrip(trip, projection) {
 async function getRelatedDatesToBaseTrip(fetchedTrips) {
   try {
     logger.info(`Getting related dates for ${fetchedTrips?.length || 0} base trips`);
-    
+
     const tripsWithRelatedDates = await Promise.all(
       fetchedTrips.map(async (trip, index) => {
         logger.debug(`Processing base trip ${index + 1}/${fetchedTrips.length}: baseTripId=${trip?.baseTripId}`);
-        
+
         const baseTripId = trip.baseTripId;
         const tripInstances = await tripInstancesRepository.getTripsByBaseTripId(
           baseTripId
         );
-        
+
         logger.debug(`Found ${tripInstances?.length || 0} trip instances for baseTripId=${baseTripId}`);
-        
+
         trip.relatedTrips = tripInstances.map((tripInstance) => {
           const startDate = tripInstance.startDate;
           const endDate = tripInstance.endDate;
           const tripInstanceId = tripInstance.tripInstanceId;
           return { startDate, endDate, tripInstanceId };
         });
-        
+
         logger.debug(`Successfully processed base trip: baseTripId=${baseTripId}, relatedTrips count=${trip.relatedTrips?.length || 0}`);
         return trip;
       })
     );
-    
+
     logger.info(`Successfully got related dates for ${tripsWithRelatedDates.length} base trips`);
     return tripsWithRelatedDates;
   } catch (error) {
@@ -173,7 +173,7 @@ async function getRelatedDatesToBaseTrip(fetchedTrips) {
 async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
   try {
     logger.info(`Populating trips using user trips query: skip=${skip}, limitNumber=${limitNumber}`);
-    
+
     logger.debug(`Fetching user trips from database`);
     const userTrips = await userTripsRepository.getUserTripsUsingQuery(
       query,
@@ -225,7 +225,7 @@ async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
         );
       })
     );
-    
+
     logger.info(`Successfully populated ${fetchedTripsObj.length} trips using user trips query`);
     return fetchedTripsObj;
   } catch (error) {
@@ -298,34 +298,43 @@ function addBaseTripIdToQuery(query, baseTripId) {
   }
 }
 
+function addStartLocationToQuery(query, startLocation) {
+  if (startLocation) {
+    logger.debug(`Adding startLocation to query: startLocation=${startLocation}`);
+    query.startLocation = { $in: [startLocation] };
+  }
+}
+
 function createQuery(
   destination,
   date,
   userId,
   includeUser,
   tripInstanceId,
-  fetchPastTrips
+  fetchPastTrips,
+  startLocation
 ) {
-  logger.debug(`Creating query: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, tripInstanceId=${tripInstanceId}, fetchPastTrips=${fetchPastTrips}`);
-  
+  logger.debug(`Creating query: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, tripInstanceId=${tripInstanceId}, fetchPastTrips=${fetchPastTrips}, startLocation=${startLocation}`);
+
   let query = {};
   addDestinationToQuery(query, destination);
+  addStartLocationToQuery(query, startLocation);
   addDateToQuery(query, date, fetchPastTrips);
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
   addTripInstanceIdToQuery(query, tripInstanceId);
-  
+
   logger.debug(`Created query: ${JSON.stringify(query)}`);
   return query;
 }
 
 function createAdditionalFilters(filter) {
   logger.debug(`Creating additional filters: filter=${JSON.stringify(filter)}`);
-  
+
   let query = {};
   addPersonaToQuery(query, filter.persona);
-  
+
   logger.debug(`Created additional filters: ${JSON.stringify(query)}`);
   return query;
 }
@@ -335,18 +344,20 @@ function createQueryForBaseTrips(
   date,
   userId,
   includeUser,
-  baseTripId
+  baseTripId,
+  startLocation
 ) {
-  logger.debug(`Creating query for base trips: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, baseTripId=${baseTripId}`);
-  
+  logger.debug(`Creating query for base trips: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, baseTripId=${baseTripId}, startLocation=${startLocation}`);
+
   let query = {};
   addDestinationToQuery(query, destination);
+  addStartLocationToQuery(query, startLocation);
   addDateToQuery(query, date, true);
   includeUser
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
   addBaseTripIdToQuery(query, baseTripId);
-  
+
   logger.debug(`Created base trips query: ${JSON.stringify(query)}`);
   return query;
 }
@@ -360,7 +371,7 @@ function createQueryForUserTrips(
   isPublished
 ) {
   logger.debug(`Creating query for user trips: userId=${userId}, tripInstanceId=${tripInstanceId}, isJoined=${isJoined}, isRequested=${isRequested}, isWishlisted=${isWishlisted}, isPublished=${isPublished}`);
-  
+
   let query = {};
   if (userId) {
     query.userId = userId;
@@ -380,7 +391,7 @@ function createQueryForUserTrips(
   if (isPublished != null) {
     query.isPublished = isPublished;
   }
-  
+
   logger.debug(`Created user trips query: ${JSON.stringify(query)}`);
   return query;
 }
@@ -393,15 +404,15 @@ async function getTripsUsingQueryWithLimitAndOffset(
 ) {
   try {
     logger.info(`Getting trips using query with limit and offset: limit=${limit}, offset=${offset}`);
-    
+
     const { skip, limitNumber, newOffset } = parseLimitAndOffset(
       limit,
       offset,
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
-    
+
     logger.debug(`Parsed pagination: skip=${skip}, limitNumber=${limitNumber}, newOffset=${newOffset}`);
-    
+
     const trips = await baseTripRepository.findTripsWithQueryUsingAggregation(
       query,
       limitNumber,
@@ -428,15 +439,15 @@ async function getTripInstancesUsingQueryWithLimitAndOffset(
 ) {
   try {
     logger.info(`Getting trip instances using query with limit and offset: limit=${limit}, offset=${offset}`);
-    
+
     const { skip, limitNumber, newOffset } = parseLimitAndOffset(
       limit,
       offset,
       parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
     );
-    
+
     logger.debug(`Parsed pagination: skip=${skip}, limitNumber=${limitNumber}, newOffset=${newOffset}`);
-    
+
     const trips =
       await tripInstancesRepository.findTripsWithQueryUsingAggregation(
         query,
@@ -459,18 +470,18 @@ async function getTripInstancesUsingQueryWithLimitAndOffset(
 async function addCroppedDestinationImagesToTrips(trips, path) {
   try {
     logger.info(`Adding cropped destination images to ${trips?.length || 0} trips`);
-    
+
     const tripsWithImages = await Promise.all(
       trips.map(async (trip, index) => {
         logger.debug(`Processing trip ${index + 1}/${trips.length}: tripInstanceId=${trip?.tripInstanceId}`);
-        
+
         const res = await getObjectsFromS3Bucket(
           path,
           trip.croppedDestinationImages,
           process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
         );
         trip.croppedDestinationImages = res;
-        
+
         logger.debug(`Successfully added cropped destination images to trip: tripInstanceId=${trip?.tripInstanceId}`);
         return trip;
       })
@@ -490,10 +501,10 @@ async function addCroppedDestinationImagesToTrips(trips, path) {
 async function createTrip(payload, userId) {
   try {
     logger.info(`Creating trip for userId=${userId}`);
-    
+
     const baseTripId = uuidv4();
     logger.debug(`Generated baseTripId=${baseTripId} for userId=${userId}`);
-    
+
     const baseTrip = {
       destination: payload.destination,
       startLocation: payload.startLocation,
@@ -512,19 +523,19 @@ async function createTrip(payload, userId) {
     logger.info(`Creating base trip in database: baseTripId=${baseTripId}, title=${payload.title}`);
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
     logger.info(`Successfully created base trip: baseTripId=${baseTripId}`);
-    
+
     const { tripDates: strTripDates } = payload;
     const tripDates = Array.from(strTripDates);
     logger.debug(`Processing ${tripDates.length} trip dates for baseTripId=${baseTripId}`);
 
     const tripInstances = tripDates.map((tripDate, index) => {
       logger.debug(`Processing trip date ${index + 1}/${tripDates.length}: startDate=${tripDate.startDate}, endDate=${tripDate.endDate}`);
-      
+
       const { startDate, endDate } = tripDate;
       const queryStartDate = dateFromDateString(startDate);
       const queryEndDate = dateFromDateString(endDate);
       const tripInstanceId = uuidv4();
-      
+
       const tripInstance = {
         tripInstanceId,
         baseTripId,
@@ -534,7 +545,7 @@ async function createTrip(payload, userId) {
         startDate: queryStartDate,
         endDate: queryEndDate,
       };
-      
+
       logger.debug(`Created trip instance: tripInstanceId=${tripInstanceId}, baseTripId=${baseTripId}`);
       return tripInstance;
     });
@@ -549,7 +560,7 @@ async function createTrip(payload, userId) {
     await Promise.all(
       tripInstances.map(async (tripInstance, index) => {
         logger.debug(`Updating user trip ${index + 1}/${tripInstances.length}: tripInstanceId=${tripInstance.tripInstanceId}`);
-        await userTripsRepository.updateUserTrips(
+        await userTripsRepository.updateUserTripsUsingQuery(
           userId,
           tripInstance.tripInstanceId,
           true,
@@ -564,7 +575,7 @@ async function createTrip(payload, userId) {
     logger.info(`Creating chat for trip: baseTripId=${baseTripId}, title=${payload.title}`);
     chatService.createChat(tripInstances, userId, payload.title);
     logger.info(`Successfully created chat for trip: baseTripId=${baseTripId}`);
-    
+
     logger.info(`Successfully completed trip creation: baseTripId=${baseTripId}, userId=${userId}`);
     return baseTripId;
   } catch (error) {
@@ -579,7 +590,7 @@ async function createTrip(payload, userId) {
 async function getTripById(tripInstanceId, userId) {
   try {
     logger.info(`Getting trip by ID: tripInstanceId=${tripInstanceId}, userId=${userId}`);
-    
+
     logger.debug(`Fetching trip from database: tripInstanceId=${tripInstanceId}`);
     let trip = await tripInstancesRepository.findTripWithTripId(tripInstanceId);
     if (!trip || trip.length == 0) {
@@ -592,7 +603,7 @@ async function getTripById(tripInstanceId, userId) {
 
     logger.info(`Found trip: tripInstanceId=${tripInstanceId}`);
     let fetchedTrip = trip[0];
-    
+
     logger.debug(`Fetching destination images from S3 for tripInstanceId=${tripInstanceId}`);
     fetchedTrip.destinationImages = await getObjectsFromS3Bucket(
       process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
@@ -870,6 +881,7 @@ async function getTripsWithFilter(filter, userId) {
   try {
     const {
       destination,
+      startLocation,
       offset = 0,
       limit = parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10),
     } = filter;
@@ -884,7 +896,8 @@ async function getTripsWithFilter(filter, userId) {
         userId,
         false,
         null,
-        false
+        false,
+        startLocation
       );
 
       const additionalFilters = createAdditionalFilters(filter);
@@ -930,7 +943,8 @@ async function getTripsWithFilter(filter, userId) {
         null,
         userId,
         false,
-        null
+        null,
+        startLocation
       );
       const additionalFilters = createAdditionalFilters(filter);
       var { trips, newOffset } = await getTripsUsingQueryWithLimitAndOffset(
