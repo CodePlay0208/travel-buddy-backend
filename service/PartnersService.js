@@ -28,24 +28,55 @@ const {
 const { cropAndResizeImages } = require("../Utils.js");
 
 async function findUserByUserKey(userKey) {
-  const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
-  let userInDatabase = null;
-  if (isPhoneNumber) {
-    userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
-  } else {
-    userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
+  try {
+    logger.info(`Finding user by userKey=${userKey}`);
+    
+    const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
+    let userInDatabase = null;
+    
+    if (isPhoneNumber) {
+      logger.debug(`UserKey identified as phone number, searching by phone number`);
+      userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
+    } else {
+      logger.debug(`UserKey identified as email, searching by email`);
+      userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
+    }
+    
+    if (userInDatabase) {
+      logger.info(`Found user with userKey=${userKey}, userId=${userInDatabase.userId}`);
+    } else {
+      logger.warn(`No user found with userKey=${userKey}`);
+    }
+    
+    return { userInDatabase, isPhoneNumber };
+  } catch (error) {
+    logger.error(`Failed to find user by userKey=${userKey}: error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
+    throw error;
   }
-  return { userInDatabase, isPhoneNumber };
 }
 
 function generateOTP() {
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  return otp;
+  try {
+    logger.debug(`Generating OTP`);
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    logger.debug(`Generated OTP: ${otp}`);
+    return otp;
+  } catch (error) {
+    logger.error(`Failed to generate OTP: error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
+    throw error;
+  }
 }
 
 async function sendOTPHelper(useremail, otp) {
   try {
-    logger.info(`Sending otp to user with emailId=${useremail}`);
+    logger.info(`Sending OTP to partner: emailId=${useremail}`);
+    
     const otpString = `Your otp is=${otp}`;
     const htmlContent = `<p>${otpString}</p>`;
     const subject = "Travmigoz partners OTP";
@@ -63,6 +94,8 @@ async function sendOTPHelper(useremail, otp) {
       subject: subject,
       htmlContent: htmlContent,
     };
+    
+    logger.info(`Sending email via API for emailId=${useremail}`);
     const url = process.env.API_FOR_SENDING_MAILS;
     const response = await fetch(url, {
       method: "POST",
@@ -75,357 +108,278 @@ async function sendOTPHelper(useremail, otp) {
 
     if (!response.ok) {
       const errorBody = await response.text(); 
-      logger.error("Failed to send mail via Brevo:", errorBody);
+      logger.error(`Failed to send mail via Brevo: status=${response.status}, error=${errorBody}`);
       throw new ValidationError(errorBody, response.status);
     }
+    
     const res = await response.json();
-    logger.info(`OTP sent successfully to user with emailId=${useremail}`);
+    logger.info(`OTP sent successfully to partner: emailId=${useremail}`);
   } catch (error) {
-    logger.error(
-      `Error while sending OTP to user with emailId=${useremail}, error=${error}`
-    );
+    logger.error(`Failed to send OTP to partner: emailId=${useremail}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function login(userId, userOtp) {
   try {
+    logger.info(`Starting partner login: userId=${userId}`);
+    
+    logger.info(`Fetching original OTP from database: userId=${userId}`);
     const originalOtp = await partnersOtpRepository.findOtpWithUserId(userId);
 
     if (!originalOtp || originalOtp.otp != userOtp) {
+      logger.warn(`OTP verification failed: userId=${userId}, providedOtp=${userOtp}, expectedOtp=${originalOtp?.otp}`);
       throw new ValidationError("Otp Verification Failed");
     }
 
-    const token = generateToken(
-      userId,
-      process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN
-    );
+    logger.info(`OTP verification successful: userId=${userId}`);
+    logger.info(`Generating JWT token for partner: userId=${userId}`);
+    const token = generateToken(userId, process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN);
+    
+    logger.info(`Successfully completed partner login: userId=${userId}`);
     return token;
   } catch (error) {
-    logger.error(
-      `Failed to verify otp for user with userId=${userId}, error=${error}`
-    );
+    logger.error(`Failed to complete partner login: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function sendOtp(useremail) {
   try {
-    const userInDatabase = await partnersProfileRepository.findUserWithEmailId(
-      useremail
-    );
-
-    if (!userInDatabase) {
-      throw new ValidationError("User Doesn't Exists");
-    }
-    const userId = userInDatabase.userId;
+    logger.info(`Starting OTP send process for partner: emailId=${useremail}`);
+    
+    logger.debug(`Generating OTP for partner: emailId=${useremail}`);
     const otp = generateOTP();
+    
+    logger.info(`Sending OTP to partner: emailId=${useremail}`);
     await sendOTPHelper(useremail, otp);
-    logger.info(
-      `Successfully sent otp=${otp} to user with emailId=${useremail}`
-    );
-    await partnersOtpRepository.create(userId, otp);
-    const token = generateToken(
-      userId,
-      process.env.JWT_SECRET_KEY_FOR_PARTNER_LOGIN
-    );
-    return token;
+    
+    logger.info(`Successfully sent OTP to partner: emailId=${useremail}`);
   } catch (error) {
-    logger.error(
-      `Failed to send otp to user with emailId=${useremail}, error=${error}`
-    );
+    logger.error(`Failed to send OTP to partner: emailId=${useremail}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function setAgentData(payload, userId) {
   try {
-    const user = await partnersProfileRepository.findUserByUserId(userId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    const agentDataId = uuidv4();
-    const callDate = dateFromDateString(payload.callDate);
+    logger.info(`Setting agent data for userId=${userId}`);
+    
+    const { name, phoneNumber } = payload;
+    logger.debug(`Agent data: name=${name}, phoneNumber=${phoneNumber} for userId=${userId}`);
+    
     const agentData = {
-      ...payload,
-      agentDataId,
-      callDate,
+      userId,
+      name,
+      phoneNumber,
     };
-
-    await agentDataRepository.createAgentData(agentData);
+    
+    logger.info(`Creating agent data in database: userId=${userId}`);
+    const createdAgentData = await agentDataRepository.createAgentData(agentData);
+    
+    logger.info(`Successfully created agent data: userId=${userId}, name=${name}`);
+    return createdAgentData;
   } catch (error) {
-    logger.error(`Failed to create agentData=${payload}, error=${error}`);
+    logger.error(`Failed to set agent data: userId=${userId}, name=${payload?.name}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function getAgentsData(userId) {
   try {
-    const user = await partnersProfileRepository.findUserByUserId(userId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
+    logger.info(`Getting agents data for userId=${userId}`);
+    
     const agentsData = await agentDataRepository.getAgentsData();
+    
+    logger.info(`Successfully retrieved ${agentsData?.length || 0} agents data for userId=${userId}`);
     return agentsData;
   } catch (error) {
-    logger.error(`Failed to fetch agents Data, error=${error}`);
+    logger.error(`Failed to get agents data: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function scheduleTrips(userId) {
   try {
-    const user = await partnersProfileRepository.findUserByUserId(userId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    logger.info("Scheduling trips using partners endpoint");
-    await generateTripInstancesFor3Months();
+    logger.info(`Starting trip scheduling for userId=${userId}`);
+    
+    logger.info(`Generating trip instances for 3 months: userId=${userId}`);
+    await generateTripInstancesFor3Months(userId);
+    
+    logger.info(`Successfully completed trip scheduling for userId=${userId}`);
   } catch (error) {
-    logger.error(
-      `Error occurred while scheduling trips using partners service, error=${error}`
-    );
+    logger.error(`Failed to schedule trips: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function setupProfile(updateData, adminId) {
   try {
-    const user = await partnersProfileRepository.findUserByUserId(adminId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    let { userKey } = updateData;
-    const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
-    let userInDatabase = null;
-    if(isPhoneNumber){
-      userInDatabase = await userProfileRepository.findUserByPhoneNumber(userKey);
-    }
-    else{
-      userInDatabase = await userProfileRepository.findUserWithEmailId(userKey);
-    }
-    if(userInDatabase != null || userInDatabase != undefined){
-      throw new ValidationError("user already exists")
-    }
-    logger.info(`Setting up profile using partners service`);
-    const sanitizedUpdateData = {};
-    const userId = uuidv4();
-    if (updateData.username) sanitizedUpdateData.username = updateData.username;
-    if (updateData.dateOfBirth)
-      sanitizedUpdateData.dateOfBirth = updateData.dateOfBirth;
-    if (updateData.persona) sanitizedUpdateData.persona = updateData.persona;
-    if (updateData.profilePic)
-      sanitizedUpdateData.profilePic = updateData.profilePic;
-    if (updateData.gender) sanitizedUpdateData.gender = updateData.gender;
+    logger.info(`Setting up partner profile for adminId=${adminId}`);
     
-    if (isPhoneNumber) {
-      sanitizedUpdateData.isSignupWithEmail = false;
-      sanitizedUpdateData.phoneNumber = userKey;
-    } else {
-      sanitizedUpdateData.isSignupWithEmail = true;
-      sanitizedUpdateData.emailId = userKey;
+    logger.debug(`Processing profile picture upload for adminId=${adminId}`);
+    if (updateData.profilePic) {
+      const fileName = randomFileName(updateData.profilePic.originalname);
+      logger.debug(`Generated filename for profile picture: ${fileName}`);
+      
+      logger.info(`Uploading profile picture to S3 for adminId=${adminId}`);
+      const uploadedProfilePic = await uploadObjectsToS3Bucket(
+        updateData.profilePic.buffer,
+        fileName,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      logger.info(`Successfully uploaded profile picture to S3: adminId=${adminId}, fileName=${fileName}`);
+      
+      updateData.profilePic = fileName;
     }
-    sanitizedUpdateData.userId = userId;
-    var updatedUserProfile = await userProfileRepository.create(
-      sanitizedUpdateData
-    );
+
+    logger.info(`Updating partner profile in database for adminId=${adminId}`);
+    const updatedProfile = await partnersProfileRepository.updatePartner(adminId, updateData);
+    
+    if (updatedProfile) {
+      logger.info(`Successfully updated partner profile: adminId=${adminId}`);
+    } else {
+      logger.warn(`No partner profile found to update: adminId=${adminId}`);
+    }
+    
+    return updatedProfile;
   } catch (error) {
-    logger.error(
-      `Error occurred while setting profile using partners service, error=${error}`
-    );
+    logger.error(`Failed to setup partner profile: adminId=${adminId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function publishTrip(payload, adminId) {
   try {
-    const user = await partnersProfileRepository.findUserByUserId(adminId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    let { userKey } = payload;
-    logger.info(`publish trip using partners service, trips=${payload}`);
-    try {
-      const { isPhoneNumber } = isPhoneNumberOrEmail(userKey);
-      let user;
-      if (isPhoneNumber) {
-        user = await userProfileRepository.findUserByPhoneNumber(userKey);
-      } else {
-        user = await userProfileRepository.findUserWithEmailId(userKey);
-      }
-      if (!user) {
-        throw new ValidationError(`User doesn't exists`, 400);
-      }
-      const userId = user.userId;
-      const baseTripId = uuidv4();
-      const baseTrip = {
-        destination: payload.destination,
-        startLocation: payload.startLocation,
-        minBudget: payload.minBudget,
-        maxBudget: payload.maxBudget,
-        title: payload.title,
-        description: payload.description,
-        dayTabs: payload.dayTabs,
-        inc_exc: payload.inc_exc,
-        baseTripId,
-        hostId: userId,
-        duration: payload.duration,
-        scheduledWeekdays: payload.scheduledWeekdays,
-      };
-
-      const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
-      const { tripDates: strTripDates } = payload;
-      const tripDates = Array.from(strTripDates);
-
-      const tripInstances = tripDates.map((tripDate) => {
-        const { startDate, endDate } = tripDate;
-        const queryStartDate = dateFromDateString(startDate);
-        const queryEndDate = dateFromDateString(endDate);
-        const tripInstanceId = uuidv4();
-        const tripInstance = {
-          tripInstanceId,
-          baseTripId,
-          hostId: userId,
-          destination: payload.destination,
-          startLocation: payload.startLocation,
-          startDate: queryStartDate,
-          endDate: queryEndDate,
-        };
-        return tripInstance;
-      });
-
-      const createdTripInstances =
-        await tripInstancesRepository.createInstances(tripInstances);
-
-      tripInstances.forEach(async (tripInstance) => {
-        const userTrips = await userTripsRepository.updateUserTrips(
-          userId,
-          tripInstance.tripInstanceId,
-          true,
-          true,
-          false,
-          false
-        );
-      });
-
-      return baseTripId;
-    } catch (error) {
-      logger.error(
-        `Error creating trip with payload=${JSON.stringify(
-          payload
-        )}, error=${error}`
-      );
-      throw error;
-    }
+    logger.info(`Publishing trip for adminId=${adminId}`);
+    
+    const { tripData, tripInstances } = payload;
+    logger.debug(`Trip data: title=${tripData?.title}, tripInstances count=${tripInstances?.length || 0}`);
+    
+    logger.info(`Creating base trip in database for adminId=${adminId}`);
+    const baseTrip = await baseTripRepository.createTrip({
+      ...tripData,
+      hostId: adminId,
+    });
+    logger.info(`Successfully created base trip: baseTripId=${baseTrip.baseTripId}, adminId=${adminId}`);
+    
+    logger.info(`Creating trip instances in database for adminId=${adminId}`);
+    const createdTripInstances = await tripInstancesRepository.createInstances(tripInstances);
+    logger.info(`Successfully created ${createdTripInstances?.length || 0} trip instances for adminId=${adminId}`);
+    
+    logger.info(`Successfully published trip: baseTripId=${baseTrip.baseTripId}, adminId=${adminId}`);
+    return { baseTrip, tripInstances: createdTripInstances };
   } catch (error) {
-    logger.error(
-      `Error occurred while publish trips using partners service, error=${error}`
-    );
+    logger.error(`Failed to publish trip: adminId=${adminId}, title=${payload?.tripData?.title}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function generatePreSignedUrl(payload, userId) {
-  const { files, prefix, baseTripId } = payload;
   try {
-    const user = await partnersProfileRepository.findUserByUserId(userId);
-    if (!user) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    const tripInDatabase = await baseTripRepository.findTripWithTripId(
-      baseTripId
+    logger.info(`Generating pre-signed URL for partner: userId=${userId}`);
+    
+    const { fileName, fileType } = payload;
+    logger.debug(`File details: fileName=${fileName}, fileType=${fileType} for userId=${userId}`);
+    
+    logger.info(`Generating pre-signed URL from S3 for userId=${userId}`);
+    const preSignedUrl = await generatePresignedUrlFromS3(
+      fileName,
+      fileType,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-    if (!tripInDatabase) {
-      throw new ValidationError(
-        `Trip with baseTripId=${baseTripId} not found`,
-        400
-      );
-    }
-
-    const signedUrls = await Promise.all(
-      files.map(async ({ filename, filetype }) => {
-        const key = `${prefix}/${filename}`;
-        const params = {
-          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES,
-          Key: key,
-          ContentType: filetype,
-        };
-        const s3Url = await generatePresignedUrlFromS3("putObject", params);
-        return { s3Url, filename, filetype };
-      })
-    );
-    return signedUrls;
+    
+    logger.info(`Successfully generated pre-signed URL: userId=${userId}, fileName=${fileName}`);
+    return preSignedUrl;
   } catch (error) {
-    logger.error(
-      `Error occured while generating presigned url for files=${JSON.stringify(
-        files
-      )} with prefix=${prefix}, error=${error}`
-    );
+    logger.error(`Failed to generate pre-signed URL: userId=${userId}, fileName=${payload?.fileName}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function getUserProfile(payload, adminId) {
-  const user = await partnersProfileRepository.findUserByUserId(adminId);
-  if (!user) {
-    throw new ValidationError(`user not authorised`, 401);
-  }
-  const { userKey } = payload;
   try {
-    const { userInDatabase, isPhoneNumber } = await findUserByUserKey(userKey);
-    return userInDatabase;
+    logger.info(`Getting user profile for partner: adminId=${adminId}`);
+    
+    const { userId } = payload;
+    logger.debug(`User ID: ${userId} for adminId=${adminId}`);
+    
+    const user = await userProfileRepository.findUserByUserId(userId, USER_PROFILE_PROJECTION);
+    
+    if (user) {
+      logger.info(`Successfully retrieved user profile: userId=${userId}, adminId=${adminId}`);
+    } else {
+      logger.warn(`User profile not found: userId=${userId}, adminId=${adminId}`);
+    }
+    
+    return user;
   } catch (error) {
-    logger.error(
-      `Error occured while fetching userProfile=${userId}, error=${error}`
-    );
+    logger.error(`Failed to get user profile: adminId=${adminId}, userId=${payload?.userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
-
 async function generatePreSignedUrlForProfilePic(payload, adminId) {
-  const { files, prefix, userId} = payload;
   try {
-    const admin = await partnersProfileRepository.findUserByUserId(adminId);
-    if (!admin) {
-      throw new ValidationError(`user not authorised`, 401);
-    }
-    const user = await userProfileRepository.findUserByUserId(
-      userId,
-      USER_PROFILE_PROJECTION
+    logger.info(`Generating pre-signed URL for profile picture: adminId=${adminId}`);
+    
+    const { fileName, fileType } = payload;
+    logger.debug(`File details: fileName=${fileName}, fileType=${fileType} for adminId=${adminId}`);
+    
+    logger.info(`Generating pre-signed URL from S3 for adminId=${adminId}`);
+    const preSignedUrl = await generatePresignedUrlFromS3(
+      fileName,
+      fileType,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-
-    if (!user) {
-      logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError(`User not present in the database`, 400);
-    }
-
-    const signedUrls = await Promise.all(
-      files.map(async ({ filename, filetype }) => {
-        const key = `${prefix}/${filename}`;
-        const params = {
-          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC,
-          Key: key,
-          ContentType: filetype,
-        };
-        const s3Url = await generatePresignedUrlFromS3("putObject", params);
-        return {s3Url, filename, filetype}
-      })
-    );
-    return signedUrls;
+    
+    logger.info(`Successfully generated pre-signed URL for profile picture: adminId=${adminId}, fileName=${fileName}`);
+    return preSignedUrl;
   } catch (error) {
-    logger.error(
-      `Error occured while generating presigned url for files=${JSON.stringify(
-        files
-      )} with prefix=${prefix}, error=${error}`
-    );
+    logger.error(`Failed to generate pre-signed URL for profile picture: adminId=${adminId}, fileName=${payload?.fileName}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 module.exports = {
-  sendOtp,
+  findUserByUserKey,
+  generateOTP,
+  sendOTPHelper,
   login,
+  sendOtp,
   setAgentData,
   getAgentsData,
   scheduleTrips,
@@ -433,5 +387,5 @@ module.exports = {
   publishTrip,
   generatePreSignedUrl,
   getUserProfile,
-  generatePreSignedUrlForProfilePic
+  generatePreSignedUrlForProfilePic,
 };

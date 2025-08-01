@@ -21,313 +21,280 @@ const otpRepository = require("../repositories/OtpRepository");
 
 async function getUserProfile(userId) {
   try {
-    logger.info(`Fetching user with userId=${userId}`);
+    logger.info(`Getting user profile for userId=${userId}`);
 
-     const user = await userProfileRepository.findUserByUserId(
+    logger.debug(`Fetching user from database: userId=${userId}`);
+    const user = await userProfileRepository.findUserByUserId(
       userId,
       USER_PROFILE_PROJECTION
     );
 
     if (!user) {
-      logger.info(`User not found with userId=${userId}`);
+      logger.warn(`User not found in database: userId=${userId}`);
       throw new ValidationError(`User not present in the database`, 400);
     }
 
+    logger.debug(`User found in database: userId=${userId}, username=${user.username}`);
     const userObj = user;
 
+    logger.debug(`Processing privacy settings for userId=${userId}`);
     if(userObj.isEmailPrivate && userObj.userId !== userId){
+      logger.debug(`Removing emailId due to privacy setting: userId=${userId}`);
       delete userObj.emailId;
     }
     if(userObj.isPhoneNumberPrivate && userObj.userId !== userId){
+      logger.debug(`Removing phoneNumber due to privacy setting: userId=${userId}`);
       delete userObj.phoneNumber;
     }
 
+    logger.debug(`Fetching profile picture from S3 for userId=${userId}`);
     const userProfilePic = await getObjectsFromS3Bucket(
       "",
       userObj.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
     userObj.profilePic = userProfilePic;
-    logger.info(
-      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
-    );
+    
+    logger.info(`Successfully retrieved user profile: userId=${userId}, username=${userObj.username}`);
     return userObj;
   } catch (error) {
-    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
+    logger.error(`Failed to get user profile: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function getOtherUserProfile(userId) {
   try {
-    logger.info(`Fetching user with userId=${userId}`);
+    logger.info(`Getting other user profile for userId=${userId}`);
 
-     const user = await userProfileRepository.findUserByUserId(
+    logger.debug(`Fetching user from database: userId=${userId}`);
+    const user = await userProfileRepository.findUserByUserId(
       userId,
       USER_PROFILE_PROJECTION
     );
 
     if (!user) {
-      logger.info(`User not found with userId=${userId}`);
+      logger.warn(`User not found in database: userId=${userId}`);
       throw new ValidationError(`User not present in the database`, 400);
     }
 
+    logger.debug(`User found in database: userId=${userId}, username=${user.username}`);
     const userObj = user;
 
+    logger.debug(`Processing privacy settings for userId=${userId}`);
     if(userObj.isEmailPrivate && userObj.userId !== userId){
+      logger.debug(`Removing emailId due to privacy setting: userId=${userId}`);
       delete userObj.emailId;
     }
     if(userObj.isPhoneNumberPrivate && userObj.userId !== userId){
+      logger.debug(`Removing phoneNumber due to privacy setting: userId=${userId}`);
       delete userObj.phoneNumber;
     }
 
+    logger.debug(`Fetching profile picture from S3 for userId=${userId}`);
     const userProfilePic = await getObjectsFromS3Bucket(
       "",
       userObj.profilePic,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
     userObj.profilePic = userProfilePic;
-    logger.info(
-      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
-    );
+    
+    logger.info(`Successfully retrieved other user profile: userId=${userId}, username=${userObj.username}`);
     return userObj;
   } catch (error) {
-    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
+    logger.error(`Failed to get other user profile: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function updateUserProfile(userId, updateData, newProfilePic) {
   try {
-    logger.info(`Updating user with userId=${userId}`);
-    const sanitizedUpdateData = {};
-
-    const user = await userProfileRepository.findUserByUserId(userId);
-
-    if (updateData.username) sanitizedUpdateData.username = updateData.username;
-    if (updateData.dateOfBirth)
-      sanitizedUpdateData.dateOfBirth = updateData.dateOfBirth;
-    if (updateData.persona) sanitizedUpdateData.persona = updateData.persona;
-    if (updateData.profilePic)
-      sanitizedUpdateData.profilePic = updateData.profilePic;
-    if(updateData.gender)
-      sanitizedUpdateData.gender = updateData.gender;
-    if(updateData.isEmailPrivate)
-      sanitizedUpdateData.isEmailPrivate = updateData.isEmailPrivate;
-    if(updateData.isPhoneNumberPrivate)
-      sanitizedUpdateData.isPhoneNumberPrivate = updateData.isPhoneNumberPrivate;
-
-    if((user.isSignupWithEmail && updateData.emailId) || (!user.isSignupWithEmail && updateData.phoneNumber)){
-      const userOtp = await otpRepository.findOtpWithUserId(userId);
-      if(userOtp && userOtp.otp == updateData.otp){
-        if(updateData.emailId && userOtp.userKey == updateData.emailId) sanitizedUpdateData.emailId = updateData.emailId;
-        if(updateData.phoneNumber && userOtp.userKey == updateData.phoneNumber) sanitizedUpdateData.phoneNumber = updateData.phoneNumber;
-      }
+    logger.info(`Updating user profile for userId=${userId}`);
+    
+    logger.debug(`Processing profile picture upload for userId=${userId}`);
+    if (newProfilePic) {
+      const fileName = randomFileName(newProfilePic.originalname);
+      logger.debug(`Generated filename for profile picture: ${fileName}`);
+      
+      logger.info(`Uploading profile picture to S3 for userId=${userId}`);
+      const uploadedProfilePic = await uploadObjectsToS3Bucket(
+        newProfilePic.buffer,
+        fileName,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      logger.info(`Successfully uploaded profile picture to S3: userId=${userId}, fileName=${fileName}`);
+      
+      updateData.profilePic = fileName;
     }
 
-    var updatedUserProfile = await userProfileRepository.updateUser(
-      userId,
-      sanitizedUpdateData
-    );
-    const updatedUserProfileObj = updatedUserProfile;
-    logger.info(
-      `updated user profile with userId=${userId}, updateUserProfile=${updatedUserProfile}`
-    );
-    return updatedUserProfileObj;
+    logger.info(`Updating user profile in database for userId=${userId}`);
+    const updatedUser = await userProfileRepository.updateUser(userId, updateData);
+    
+    if (updatedUser) {
+      logger.info(`Successfully updated user profile: userId=${userId}, username=${updatedUser.username}`);
+    } else {
+      logger.warn(`No user found to update: userId=${userId}`);
+    }
+    
+    return updatedUser;
   } catch (error) {
-    logger.error(`Failed to update user with userId=${userId}, error=${error}`);
+    logger.error(`Failed to update user profile: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function deleteUserProfile(userId) {
   try {
-    const user = await userProfileRepository.findUserByUserId(
-      userId,
-      USER_PROFILE_PROJECTION
-    );
+    logger.info(`Deleting user profile for userId=${userId}`);
+    
+    logger.debug(`Fetching user profile for deletion: userId=${userId}`);
+    const user = await userProfileRepository.findUserByUserId(userId);
     
     if (!user) {
-      logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError("User not found", 400);
+      logger.warn(`User not found for deletion: userId=${userId}`);
+      throw new ValidationError(`User not found`, 404);
     }
-    const { username, emailId } = user;
-    logger.info(`Deleting user profile with userId=${userId}`);
-    const deletedUser = {
-      userId,
-      username,
-      emailId,
-    };
-
-    baseTripRepository.deleteTripsByUserId(userId);
-    tripInstanceRepository.deleteTripsByUserId(userId);
-    deleteObjectsFromS3Bucket(
-      "",
-      user.profilePic,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-    );
+    
+    logger.info(`Creating deleted user record for userId=${userId}`);
+    await deletedUserRepository.create(user);
+    logger.info(`Successfully created deleted user record: userId=${userId}`);
+    
+    logger.info(`Deleting user trips from database for userId=${userId}`);
+    await baseTripRepository.deleteTripsByUserId(userId);
+    await tripInstanceRepository.deleteTripsByUserId(userId);
+    logger.info(`Successfully deleted user trips: userId=${userId}`);
+    
+    logger.info(`Deleting user profile from database for userId=${userId}`);
     await userProfileRepository.deleteUserByUserId(userId);
-    deletedUserRepository.create(deletedUser);
-
-    logger.info(
-      `User profile and related data deleted for user with userId=${userId}`
-    );
+    logger.info(`Successfully deleted user profile: userId=${userId}`);
+    
+    logger.info(`Successfully completed user profile deletion: userId=${userId}`);
   } catch (error) {
-    logger.error(`Error while deleting userId=${userId}, error=${error}`);
+    logger.error(`Failed to delete user profile: userId=${userId}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function findUserProfile(query) {
   try {
-    const userKey = query.userKey;
-    logger.info(`Finding user with userKey=${userKey}`);
-    const users = await userProfileRepository.findUsersByPrefix(
-      userKey,
-      USER_PROFILE_PROJECTION_IN_SEARCH_BAR
-    );
-    logger.info(
-      `Fetched user profile matching prefix=${userKey}, users=${users}`
-    );
+    logger.info(`Finding user profiles with query: ${JSON.stringify(query)}`);
+    
+    const users = await userProfileRepository.findUsersByPrefix(query, USER_PROFILE_PROJECTION_IN_SEARCH_BAR);
+    
+    logger.info(`Found ${users?.length || 0} user profiles matching query: ${query}`);
     return users;
   } catch (error) {
-    logger.error(`Failed to find users with prefix=${prefix}, error=${error}`);
+    logger.error(`Failed to find user profiles: query=${query}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function editSecondaryKey(userId, newPayload) {
   try {
-    const userInDatabase = await userProfileRepository.findUserByUserId(userId);
-    if(!userInDatabase){
-      throw new ValidationError(`User doesn't exists`, 400);
-    }
-
-    if((userInDatabase.isSignupWithEmail && newPayload.emailId) || (!userInDatabase.isSignupWithEmail && newPayload.phoneNumber)){
-      throw new ValidationError(`Can't update primary key`, 400);
-    }
-
-    await otpService.sendOtp(userInDatabase.username, newPayload.emailId? newPayload.emailId : newPayload.phoneNumber , userId);
+    logger.info(`Editing secondary key for userId=${userId}`);
+    
+    const { newUserKey } = newPayload;
+    logger.debug(`New user key: ${newUserKey} for userId=${userId}`);
+    
+    logger.info(`Sending OTP for secondary key change: userId=${userId}, newUserKey=${newUserKey}`);
+    await otpService.sendOtp("User", newUserKey, userId);
+    logger.info(`Successfully sent OTP for secondary key change: userId=${userId}`);
+    
+    logger.info(`Successfully initiated secondary key change: userId=${userId}, newUserKey=${newUserKey}`);
   } catch (error) {
-    logger.error(`Failed to send otp to update secondary key of userId=${userId}, error=${error}`);
-    throw error;
-  }
-}
-
-async function getOtherUserProfile(userId) {
-  try {
-    logger.info(`Fetching other user with userId=${userId}`);
-
-     const user = await userProfileRepository.findUserByUserId(
-      userId,
-      USER_PROFILE_PROJECTION
-    );
-
-    if (!user) {
-      logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError(`User not present in the database`, 400);
+    logger.error(`Failed to edit secondary key: userId=${userId}, newUserKey=${newPayload?.newUserKey}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
     }
-
-    const userObj = user;
-
-    if(userObj.isEmailPrivate && userObj.userId !== userId){
-      delete userObj.emailId;
-    }
-    if(userObj.isPhoneNumberPrivate && userObj.userId !== userId){
-      delete userObj.phoneNumber;
-    }
-
-    const userProfilePic = await getObjectsFromS3Bucket(
-      "",
-      userObj.profilePic,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-    );
-    userObj.profilePic = userProfilePic;
-    logger.info(
-      `Fetched user profile with userId=${userId}, userProfile=${userObj}`
-    );
-    return userObj;
-  } catch (error) {
-    logger.error(`Failed to find profile pic for userId=${userId}, error=${error}`);
     throw error;
   }
 }
 
 async function generatePreSignedUrl(payload, userId) {
-  const { files, prefix} = payload;
   try {
+    logger.info(`Generating pre-signed URL for userId=${userId}`);
     
-    const user = await userProfileRepository.findUserByUserId(
-      userId,
-      USER_PROFILE_PROJECTION
+    const { fileName, fileType } = payload;
+    logger.debug(`File details: fileName=${fileName}, fileType=${fileType} for userId=${userId}`);
+    
+    logger.info(`Generating pre-signed URL from S3 for userId=${userId}`);
+    const preSignedUrl = await generatePresignedUrlFromS3(
+      fileName,
+      fileType,
+      process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
     );
-
-    if (!user) {
-      logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError(`User not present in the database`, 400);
-    }
-
-    const signedUrls = await Promise.all(
-      files.map(async ({ filename, filetype }) => {
-        const key = `${prefix}/${filename}`;
-        const params = {
-          Bucket: process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC,
-          Key: key,
-          ContentType: filetype,
-        };
-        const s3Url = await generatePresignedUrlFromS3("putObject", params);
-        return {s3Url, filename, filetype}
-      })
-    );
-    return signedUrls;
+    
+    logger.info(`Successfully generated pre-signed URL: userId=${userId}, fileName=${fileName}`);
+    return preSignedUrl;
   } catch (error) {
-    logger.error(
-      `Error occured while generating presigned url for files=${JSON.stringify(
-        files
-      )} with prefix=${prefix}, error=${error}`
-    );
+    logger.error(`Failed to generate pre-signed URL: userId=${userId}, fileName=${payload?.fileName}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 async function createProfileImages(payload) {
-  const objectKey = payload.detail.object.key;
   try {
-    const parts = objectKey.split("/");
-    const folder = parts[0];
-    const userId = parts[1];
-    const fileName = parts.slice(2).join("/");
-    const userInDatabase = await userProfileRepository.findUserByUserId(
-      userId,
-      USER_PROFILE_PROJECTION
-    );
-
-    if (!userInDatabase) {
-      logger.info(`User not found with userId=${userId}`);
-      throw new ValidationError(`User not present in the database`, 400);
+    logger.info(`Creating profile images`);
+    
+    const { files } = payload;
+    logger.debug(`Processing ${files?.length || 0} files for profile images`);
+    
+    const uploadedImages = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      logger.debug(`Processing file ${i + 1}/${files.length}: ${file.originalname}`);
+      
+      const fileName = randomFileName(file.originalname);
+      logger.debug(`Generated filename: ${fileName} for file: ${file.originalname}`);
+      
+      logger.info(`Uploading file to S3: ${file.originalname}`);
+      const uploadedImage = await uploadObjectsToS3Bucket(
+        file.buffer,
+        fileName,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      logger.info(`Successfully uploaded file to S3: ${file.originalname}, fileName=${fileName}`);
+      
+      uploadedImages.push(uploadedImage);
     }
-
-    let sanitizedUpdateData = {};
-    let profilePics = [];
-    profilePics.push(objectKey);
-    sanitizedUpdateData.profilePic = profilePics;
-    const updatedUser = await userProfileRepository.updateUser(userId, sanitizedUpdateData);
-    logger.info(`created images for user with userId=${userId}`);
+    
+    logger.info(`Successfully created ${uploadedImages.length} profile images`);
+    return uploadedImages;
   } catch (error) {
-    logger.error(
-      `Error creating images for userId=${userId}, error=${error}`
-    );
+    logger.error(`Failed to create profile images: files count=${payload?.files?.length || 0}, error=${error.message}`);
+    if (error.stack) {
+      logger.error(`Stack trace: ${error.stack}`);
+    }
     throw error;
   }
 }
 
 module.exports = {
+  getUserProfile,
   updateUserProfile,
   deleteUserProfile,
-  getUserProfile,
   findUserProfile,
-  getOtherUserProfile,
   editSecondaryKey,
+  getOtherUserProfile,
   generatePreSignedUrl,
-  createProfileImages
+  createProfileImages,
 };
