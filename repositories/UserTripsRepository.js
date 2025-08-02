@@ -127,15 +127,15 @@ async function getUserTripsUsingQuery(
   }
 }
 
-async function updateUserTripsUsingQuery(userId, tripInstanceId, query) {
+async function updateUserTripsUsingQuery(userId, tripInstanceId, updateQuery) {
   try {
     logger.info(`Updating user trips with query for userId=${userId}, tripInstanceId=${tripInstanceId}`);
     
     const result = await UserTrips.findOneAndUpdate(
       { userId, tripInstanceId },
-      query,
+      updateQuery,
       { new: true, upsert: true }
-    ).lean();
+    );
     
     logger.info(`Successfully updated user trips with query for userId=${userId}, tripInstanceId=${tripInstanceId}`);
     return result;

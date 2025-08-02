@@ -563,10 +563,12 @@ async function createTrip(payload, userId) {
         await userTripsRepository.updateUserTripsUsingQuery(
           userId,
           tripInstance.tripInstanceId,
-          true,
-          true,
-          false,
-          false
+          {
+            isJoined: true,
+            isPublished: true,
+            isRequested: false,
+            isWishlisted: false
+          }
         );
       })
     );
