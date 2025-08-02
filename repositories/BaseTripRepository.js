@@ -84,7 +84,7 @@ async function findTripWithTripId(baseTripId) {
   try {
     logger.info(`Finding base trip with baseTripId=${baseTripId}`);
     
-    const trip = await BaseTripModel.findOne({ baseTripId }).lean();
+    const trip = await BaseTripModel.findOne({ baseTripId });
     
     if (trip) {
       logger.info(`Found base trip with baseTripId=${baseTripId}`);
@@ -106,8 +106,7 @@ async function updateTrip(trip) {
   try {
     logger.info(`Updating base trip with baseTripId=${trip?.baseTripId}`);
     
-    const tripInDatabase = new BaseTripModel(trip);
-    const updatedTrip = await tripInDatabase.save();
+    const updatedTrip = await trip.save();
     
     logger.info(`Successfully updated base trip with baseTripId=${trip?.baseTripId}`);
     return updatedTrip;
