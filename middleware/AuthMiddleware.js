@@ -13,17 +13,13 @@ const tokenProtect = (jwtSecretKey) => {
     ) {
       try {
         token = req.headers.authorization.split(" ")[1];
-        logger.info(`Processing token authorization for request`);
         const decoded = jwt.verify(token, jwtSecretKey);
 
         req.userId = decoded.id;
-        logger.info(`Successfully authorized user with userId=${decoded.id}`);
+        logger.info(`Authorized User with userId=${decoded.id}`);
         next();
       } catch (error) {
-        logger.error(`Failed to authorize token: error=${error.message}`);
-        if (error.stack) {
-          logger.error(`Stack trace: ${error.stack}`);
-        }
+        logger.error(`Error in authorization middleware, error=${error}`);
         res.status(401).json();
       }
     } else {
@@ -37,13 +33,10 @@ const googleTokenProtect = asyncHandler(async (req, res, next) => {
   if (req.headers.googletoken && req.headers.googletoken.startsWith("Bearer")) {
     try {
       req.googleToken = req.headers.googletoken.split(" ")[1];
-      logger.info(`Successfully authorized user for google auth`);
+      logger.info(`Authorized user for google auth`);
       next();
     } catch (error) {
-      logger.error(`Failed to process google token: error=${error.message}`);
-      if (error.stack) {
-        logger.error(`Stack trace: ${error.stack}`);
-      }
+      logger.error(`Error in googleTokenProtect middleware, error=${error}`);
       res.status(401).json();
     }
   } else {
@@ -62,19 +55,15 @@ const jwtTokenDecoder = (jwtSecretKey) => {
     ) {
       try {
         token = req.headers.authorization.split(" ")[1];
-        logger.info(`Decoding JWT token`);
         const decoded = jwt.verify(
           token,
           jwtSecretKey
         );
 
         req.userId = decoded.id;
-        logger.info(`Successfully decoded token with userId=${decoded.id}`);
+        logger.info(`Token decoded successfully with userId=${decoded.id}`);
       } catch (error) {
-        logger.error(`Failed to decode token: error=${error.message}`);
-        if (error.stack) {
-          logger.error(`Stack trace: ${error.stack}`);
-        }
+        logger.error(`Error while decoding token, error=${error}`);
       }
     }
     next();

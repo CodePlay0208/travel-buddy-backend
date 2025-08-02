@@ -3,37 +3,31 @@ const logger = require("../logger");
 
 async function createAgentData(agentData) {
   try {
-    logger.info(`Creating agent data for phoneNumber=${agentData?.phoneNumber}, name=${agentData?.name}`);
-    
     const agentDataPojo = new AgentData(agentData);
     const createdAgentData = await agentDataPojo.save();
-    
-    logger.info(`Successfully created agent data for phoneNumber=${agentData?.phoneNumber}, name=${agentData?.name}`);
     return createdAgentData;
   } catch (error) {
-    logger.error(`Failed to create agent data: phoneNumber=${agentData?.phoneNumber}, name=${agentData?.name}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw new Error(`Error occurred while creating data for agent with phoneNumber=${agentData?.phoneNumber}, name=${agentData?.name}, error=${error.message}`);
+    logger.error(
+      `Error occurred while creating data for agent with phoneNumber=${agentData.phoneNumber}, name=${agentData.name}, error=${error}`
+    );
+    throw new Error(
+      `Error occurred while creating data for agent with phoneNumber=${agentData.phoneNumber}, name=${agentData.name}, error=${error}`
+    );
   }
 }
 
 async function getAgentsData(agentData) {
-  try {
-    logger.info(`Getting all agents data`);
-    
-    const agentsData = await AgentData.find({});
-    
-    logger.info(`Successfully retrieved ${agentsData?.length || 0} agents data`);
-    return agentsData;
-  } catch (error) {
-    logger.error(`Failed to get agents data: error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
+    try {
+      const agentsData = await AgentData.find({});
+      return agentsData;
+    } catch (error) {
+      logger.error(
+        `Error occurred while getting agents data, error=${error}`
+      );
+      throw new Error(
+        `Error occurred while getting agents data, error=${error}`
+      );
     }
-    throw new Error(`Error occurred while getting agents data, error=${error.message}`);
   }
-}
 
 module.exports = { createAgentData, getAgentsData };

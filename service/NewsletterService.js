@@ -9,38 +9,25 @@ const {
 
 const subscribeUser = async (emailId) => {
   try {
-    logger.info(`Starting newsletter subscription for emailId=${emailId}`);
-    
-    logger.info(`Validating email format for emailId=${emailId}`);
+    logger.info(
+      `Subscribing user with emailId=${emailId} to the newsletter`
+    );
     newsletterValidator.validateEmail(emailId);
-    logger.info(`Email validation successful for emailId=${emailId}`);
-    
     const userId = uuidv4();
-    logger.info(`Generated userId=${userId} for emailId=${emailId}`);
-    
     const subscriptionData = {
       emailId,
       userId,
     };
-    
-    logger.info(`Creating newsletter subscription in database for emailId=${emailId}`);
     await newsletterRepository.createSubscription(subscriptionData);
-    logger.info(`Successfully created newsletter subscription in database for emailId=${emailId}`);
-    
-    logger.info(`Adding member to MailChimp for emailId=${emailId}`);
     await mailChimpService.addMemberWithTag(
       emailId,
       process.env.MAILCHIMP_AUDIENCE_ID,
       MAILCHIMP_NEWSLETTER_TAG
     );
-    logger.info(`Successfully added member to MailChimp for emailId=${emailId}`);
-    
-    logger.info(`Completed newsletter subscription for emailId=${emailId}`);
   } catch (error) {
-    logger.error(`Failed to subscribe user to newsletter: emailId=${emailId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
+    logger.error(
+      `Error occurred while subscribing user with emailId=${emailId} to the newsletter, error=${error}`
+    );
     throw error;
   }
 };

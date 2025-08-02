@@ -26,227 +26,120 @@ const NotificationEvents = require("../enums/NotificationEvents.js");
 const chatService = require("../service/ChatService.js");
 
 async function addJoinedMembersProfilesToTrip(trip, projection) {
-  try {
-    logger.debug(`Adding joined members profiles to trip: tripInstanceId=${trip?.tripInstanceId}`);
-
-    trip.joinedMembers = await userProfileRepository.findUsersByUserId(
-      trip.tripMembersIds
-    );
-
-    logger.debug(`Successfully added ${trip.joinedMembers?.length || 0} joined members to trip: tripInstanceId=${trip?.tripInstanceId}`);
-  } catch (error) {
-    logger.error(`Failed to add joined members profiles to trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  trip.joinedMembers = await userProfileRepository.findUsersByUserId(
+    trip.tripMembersIds
+  );
 }
 
 async function addRequestedMembersProfilesToTrip(trip, projection) {
-  try {
-    logger.debug(`Adding requested members profiles to trip: tripInstanceId=${trip?.tripInstanceId}`);
-
-    trip.requestingMembers = await userProfileRepository.findUsersByUserId(
-      trip.requestingTripMembersIds
-    );
-
-    logger.debug(`Successfully added ${trip.requestingMembers?.length || 0} requested members to trip: tripInstanceId=${trip?.tripInstanceId}`);
-  } catch (error) {
-    logger.error(`Failed to add requested members profiles to trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  trip.requestingMembers = await userProfileRepository.findUsersByUserId(
+    trip.requestingTripMembersIds
+  );
 }
 
 async function updateMemberProfiles(members) {
-  try {
-    logger.debug(`Updating ${members?.length || 0} member profiles`);
-
-    const updatedMembers = await Promise.all(
-      members.map(async (originalMember, index) => {
-        logger.debug(`Processing member ${index + 1}/${members.length}: userId=${originalMember?.userId}`);
-
-        let member = originalMember;
-        member.profilePic = await getObjectsFromS3Bucket(
-          "",
-          member.profilePic,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
-        );
-
-        logger.debug(`Successfully updated member profile: userId=${member?.userId}`);
-        return member;
-      })
-    );
-
-    logger.debug(`Successfully updated ${updatedMembers.length} member profiles`);
-    return updatedMembers;
-  } catch (error) {
-    logger.error(`Failed to update member profiles: members count=${members?.length || 0}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  return Promise.all(
+    members.map(async (originaMember) => {
+      let member = originaMember;
+      member.profilePic = await getObjectsFromS3Bucket(
+        "",
+        member.profilePic,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_PROFILE_PIC
+      );
+      return member;
+    })
+  );
 }
 
 async function updateJoinedMembersProfilesInTrip(trip, projection) {
-  try {
-    logger.debug(`Updating joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-
-    await addJoinedMembersProfilesToTrip(trip, projection);
-    const [updatedJoinedMembers] = await Promise.all([
-      updateMemberProfiles(trip.joinedMembers),
-    ]);
-    trip.joinedMembers = updatedJoinedMembers;
-
-    logger.debug(`Successfully updated joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-  } catch (error) {
-    logger.error(`Failed to update joined members profiles in trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  await addJoinedMembersProfilesToTrip(trip, projection);
+  const [updatedJoinedMembers] = await Promise.all([
+    updateMemberProfiles(trip.joinedMembers),
+  ]);
+  trip.joinedMembers = updatedJoinedMembers;
 }
 
 async function updateRequestedMembersProfilesInTrip(trip, projection) {
-  try {
-    logger.debug(`Updating requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-
-    await addRequestedMembersProfilesToTrip(trip, projection);
-    const [updatedRequestedMembers] = await Promise.all([
-      updateMemberProfiles(trip.requestingMembers),
-    ]);
-    trip.requestingMembers = updatedRequestedMembers;
-
-    logger.debug(`Successfully updated requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}`);
-  } catch (error) {
-    logger.error(`Failed to update requested members profiles in trip: tripInstanceId=${trip?.tripInstanceId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  await addRequestedMembersProfilesToTrip(trip, projection);
+  const [updatedRequestedMembers] = await Promise.all([
+    updateMemberProfiles(trip.requestingMembers),
+  ]);
+  trip.requestingMembers = updatedRequestedMembers;
 }
 
 async function getRelatedDatesToBaseTrip(fetchedTrips) {
-  try {
-    logger.info(`Getting related dates for ${fetchedTrips?.length || 0} base trips`);
-
-    const tripsWithRelatedDates = await Promise.all(
-      fetchedTrips.map(async (trip, index) => {
-        logger.debug(`Processing base trip ${index + 1}/${fetchedTrips.length}: baseTripId=${trip?.baseTripId}`);
-
-        const baseTripId = trip.baseTripId;
-        const tripInstances = await tripInstancesRepository.getTripsByBaseTripId(
-          baseTripId
-        );
-
-        logger.debug(`Found ${tripInstances?.length || 0} trip instances for baseTripId=${baseTripId}`);
-
-        trip.relatedTrips = tripInstances.map((tripInstance) => {
-          const startDate = tripInstance.startDate;
-          const endDate = tripInstance.endDate;
-          const tripInstanceId = tripInstance.tripInstanceId;
-          return { startDate, endDate, tripInstanceId };
-        });
-
-        logger.debug(`Successfully processed base trip: baseTripId=${baseTripId}, relatedTrips count=${trip.relatedTrips?.length || 0}`);
-        return trip;
-      })
-    );
-
-    logger.info(`Successfully got related dates for ${tripsWithRelatedDates.length} base trips`);
-    return tripsWithRelatedDates;
-  } catch (error) {
-    logger.error(`Failed to get related dates for base trips: trips count=${fetchedTrips?.length || 0}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  return await Promise.all(
+    fetchedTrips.map(async (trip) => {
+      const baseTripId = trip.baseTripId;
+      const tripInstances = await tripInstancesRepository.getTripsByBaseTripId(
+        baseTripId
+      );
+      trip.relatedTrips = tripInstances.map((trip) => {
+        const startDate = trip.startDate;
+        const endDate = trip.endDate;
+        const tripInstanceId = trip.tripInstanceId;
+        return { startDate, endDate, tripInstanceId };
+      });
+      return trip;
+    })
+  );
 }
 
 async function populateTripsUsingUserTripsQuery(query, skip, limitNumber) {
-  try {
-    logger.info(`Populating trips using user trips query: skip=${skip}, limitNumber=${limitNumber}`);
+  const userTrips = await userTripsRepository.getUserTripsUsingQuery(
+    query,
+    skip,
+    limitNumber
+  );
 
-    logger.debug(`Fetching user trips from database`);
-    const userTrips = await userTripsRepository.getUserTripsUsingQuery(
-      query,
-      skip,
-      limitNumber
-    );
-
-    if (!userTrips || userTrips.length === 0) {
-      logger.info(`No user trips found for query`);
-      return [];
-    }
-
-    logger.info(`Found ${userTrips.length} user trips`);
-    const fetchedUserTrips = userTrips;
-
-    var fetchedUserTripsIds = [];
-
-    fetchedUserTrips.forEach((fetchedUserTrip) => {
-      fetchedUserTripsIds.push(fetchedUserTrip.tripInstanceId);
-    });
-
-    logger.debug(`Fetching trip instances for ${fetchedUserTripsIds.length} trip instance IDs`);
-    const fetchedTrips =
-      await tripInstancesRepository.findTripsWithQueryUsingAggregation(
-        {
-          tripInstanceId: { $in: fetchedUserTripsIds },
-        },
-        limitNumber,
-        skip,
-        {}
-      );
-
-    logger.info(`Found ${fetchedTrips?.length || 0} trip instances`);
-    let fetchedTripsObj = fetchedTrips;
-
-    logger.debug(`Adding cropped destination images to trips`);
-    fetchedTripsObj = await addCroppedDestinationImagesToTrips(
-      fetchedTripsObj,
-      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
-    );
-
-    logger.debug(`Updating joined members profiles for ${fetchedTripsObj.length} trips`);
-    await Promise.all(
-      fetchedTripsObj.map(async (trip, index) => {
-        logger.debug(`Processing trip ${index + 1}/${fetchedTripsObj.length}: tripInstanceId=${trip?.tripInstanceId}`);
-        await updateJoinedMembersProfilesInTrip(
-          trip,
-          USER_PROFILE_PROJECTION_IN_SEARCH_CARD
-        );
-      })
-    );
-
-    logger.info(`Successfully populated ${fetchedTripsObj.length} trips using user trips query`);
-    return fetchedTripsObj;
-  } catch (error) {
-    logger.error(`Failed to populate trips using user trips query: skip=${skip}, limitNumber=${limitNumber}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
+  if (!userTrips || userTrips.length === 0) {
+    return [];
   }
+
+  const fetchedUserTrips = userTrips;
+
+  var fetchedUserTripsIds = [];
+
+  fetchedUserTrips.forEach((fetchedUserTrip) => {
+    fetchedUserTripsIds.push(fetchedUserTrip.tripInstanceId);
+  });
+
+  const fetchedTrips =
+    await tripInstancesRepository.findTripsWithQueryUsingAggregation(
+      {
+        tripInstanceId: { $in: fetchedUserTripsIds },
+      },
+      limitNumber,
+      skip,
+      {}
+    );
+
+  let fetchedTripsObj = fetchedTrips;
+
+  fetchedTripsObj = await addCroppedDestinationImagesToTrips(
+    fetchedTripsObj,
+    process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES
+  );
+
+  await Promise.all(
+    fetchedTripsObj.map(async (trip) => {
+      await updateJoinedMembersProfilesInTrip(
+        trip,
+        USER_PROFILE_PROJECTION_IN_SEARCH_CARD
+      );
+    })
+  );
+  return fetchedTripsObj;
 }
 
 function addDestinationToQuery(query, destination) {
   if (destination) {
-    logger.debug(`Adding destination to query: destination=${destination}`);
     query.destination = { $in: [destination] };
   }
 }
 
 function addPersonaToQuery(query, persona) {
   if (persona) {
-    logger.debug(`Adding persona to query: persona=${persona}`);
     query.persona = persona;
   }
 }
@@ -254,16 +147,14 @@ function addPersonaToQuery(query, persona) {
 function addDateToQuery(query, queryDate, fetchPastTrips) {
   if (queryDate) {
     if (!isNaN(queryDate)) {
-      logger.debug(`Adding date to query: queryDate=${queryDate}`);
       const queryStartDate = new Date(queryDate);
       const queryEndDate = queryDate.setUTCHours(23, 59, 59, 999);
       query.startDate = { $gte: queryStartDate, $lt: queryDate };
     } else {
-      logger.error(`Invalid date passed in query: queryDate=${queryDate}`);
+      logger.error("Invalid date passed in query");
       throw new ValidationError("Invalid Date Passed");
     }
   } else if (!fetchPastTrips) {
-    logger.debug(`Adding today's date filter to query (excluding past trips)`);
     const todayDate = new Date();
     todayDate.setUTCHours(0, 0, 0, 0);
     query.startDate = { $gte: todayDate };
@@ -272,28 +163,24 @@ function addDateToQuery(query, queryDate, fetchPastTrips) {
 
 function excludeUserIdFromQuery(query, userId) {
   if (userId) {
-    logger.debug(`Excluding userId from query: userId=${userId}`);
     query.hostId = { $ne: userId };
   }
 }
 
 function addUserIdToQuery(query, userId) {
   if (userId) {
-    logger.debug(`Adding userId to query: userId=${userId}`);
     query.hostId = userId;
   }
 }
 
 function addTripInstanceIdToQuery(query, tripInstanceId) {
   if (tripInstanceId) {
-    logger.debug(`Adding tripInstanceId to query: tripInstanceId=${tripInstanceId}`);
     query.tripInstanceId = tripInstanceId;
   }
 }
 
 function addBaseTripIdToQuery(query, baseTripId) {
   if (baseTripId) {
-    logger.debug(`Adding baseTripId to query: baseTripId=${baseTripId}`);
     query.baseTripId = baseTripId;
   }
 }
@@ -314,8 +201,6 @@ function createQuery(
   fetchPastTrips,
   startLocation
 ) {
-  logger.debug(`Creating query: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, tripInstanceId=${tripInstanceId}, fetchPastTrips=${fetchPastTrips}, startLocation=${startLocation}`);
-
   let query = {};
   addDestinationToQuery(query, destination);
   addStartLocationToQuery(query, startLocation);
@@ -324,18 +209,12 @@ function createQuery(
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
   addTripInstanceIdToQuery(query, tripInstanceId);
-
-  logger.debug(`Created query: ${JSON.stringify(query)}`);
   return query;
 }
 
 function createAdditionalFilters(filter) {
-  logger.debug(`Creating additional filters: filter=${JSON.stringify(filter)}`);
-
   let query = {};
   addPersonaToQuery(query, filter.persona);
-
-  logger.debug(`Created additional filters: ${JSON.stringify(query)}`);
   return query;
 }
 
@@ -347,8 +226,6 @@ function createQueryForBaseTrips(
   baseTripId,
   startLocation
 ) {
-  logger.debug(`Creating query for base trips: destination=${destination}, date=${date}, userId=${userId}, includeUser=${includeUser}, baseTripId=${baseTripId}, startLocation=${startLocation}`);
-
   let query = {};
   addDestinationToQuery(query, destination);
   addStartLocationToQuery(query, startLocation);
@@ -357,8 +234,6 @@ function createQueryForBaseTrips(
     ? addUserIdToQuery(query, userId)
     : excludeUserIdFromQuery(query, userId);
   addBaseTripIdToQuery(query, baseTripId);
-
-  logger.debug(`Created base trips query: ${JSON.stringify(query)}`);
   return query;
 }
 
@@ -370,8 +245,6 @@ function createQueryForUserTrips(
   isWishlisted,
   isPublished
 ) {
-  logger.debug(`Creating query for user trips: userId=${userId}, tripInstanceId=${tripInstanceId}, isJoined=${isJoined}, isRequested=${isRequested}, isWishlisted=${isWishlisted}, isPublished=${isPublished}`);
-
   let query = {};
   if (userId) {
     query.userId = userId;
@@ -391,8 +264,6 @@ function createQueryForUserTrips(
   if (isPublished != null) {
     query.isPublished = isPublished;
   }
-
-  logger.debug(`Created user trips query: ${JSON.stringify(query)}`);
   return query;
 }
 
@@ -402,33 +273,19 @@ async function getTripsUsingQueryWithLimitAndOffset(
   offset,
   additionalFilters
 ) {
-  try {
-    logger.info(`Getting trips using query with limit and offset: limit=${limit}, offset=${offset}`);
+  const { skip, limitNumber, newOffset } = parseLimitAndOffset(
+    limit,
+    offset,
+    parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
+  );
+  const trips = await baseTripRepository.findTripsWithQueryUsingAggregation(
+    query,
+    limitNumber,
+    skip,
+    additionalFilters
+  );
 
-    const { skip, limitNumber, newOffset } = parseLimitAndOffset(
-      limit,
-      offset,
-      parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
-    );
-
-    logger.debug(`Parsed pagination: skip=${skip}, limitNumber=${limitNumber}, newOffset=${newOffset}`);
-
-    const trips = await baseTripRepository.findTripsWithQueryUsingAggregation(
-      query,
-      limitNumber,
-      skip,
-      additionalFilters
-    );
-
-    logger.info(`Successfully retrieved ${trips?.length || 0} trips`);
-    return { trips, newOffset };
-  } catch (error) {
-    logger.error(`Failed to get trips using query: limit=${limit}, offset=${offset}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  return { trips, newOffset };
 }
 
 async function getTripInstancesUsingQueryWithLimitAndOffset(
@@ -437,74 +294,41 @@ async function getTripInstancesUsingQueryWithLimitAndOffset(
   offset,
   additionalFilters
 ) {
-  try {
-    logger.info(`Getting trip instances using query with limit and offset: limit=${limit}, offset=${offset}`);
-
-    const { skip, limitNumber, newOffset } = parseLimitAndOffset(
-      limit,
-      offset,
-      parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
+  const { skip, limitNumber, newOffset } = parseLimitAndOffset(
+    limit,
+    offset,
+    parseInt(process.env.LIMIT_FOR_SENDING_TRIPS, 10)
+  );
+  const trips =
+    await tripInstancesRepository.findTripsWithQueryUsingAggregation(
+      query,
+      limitNumber,
+      skip,
+      additionalFilters
     );
 
-    logger.debug(`Parsed pagination: skip=${skip}, limitNumber=${limitNumber}, newOffset=${newOffset}`);
-
-    const trips =
-      await tripInstancesRepository.findTripsWithQueryUsingAggregation(
-        query,
-        limitNumber,
-        skip,
-        additionalFilters
-      );
-
-    logger.info(`Successfully retrieved ${trips?.length || 0} trip instances`);
-    return { trips, newOffset };
-  } catch (error) {
-    logger.error(`Failed to get trip instances using query: limit=${limit}, offset=${offset}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  return { trips, newOffset };
 }
 
 async function addCroppedDestinationImagesToTrips(trips, path) {
-  try {
-    logger.info(`Adding cropped destination images to ${trips?.length || 0} trips`);
+  trips = await Promise.all(
+    trips.map(async (trip) => {
+      const res = await getObjectsFromS3Bucket(
+        path,
+        trip.croppedDestinationImages,
+        process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+      );
+      trip.croppedDestinationImages = res;
+      return trip;
+    })
+  );
 
-    const tripsWithImages = await Promise.all(
-      trips.map(async (trip, index) => {
-        logger.debug(`Processing trip ${index + 1}/${trips.length}: tripInstanceId=${trip?.tripInstanceId}`);
-
-        const res = await getObjectsFromS3Bucket(
-          path,
-          trip.croppedDestinationImages,
-          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-        );
-        trip.croppedDestinationImages = res;
-
-        logger.debug(`Successfully added cropped destination images to trip: tripInstanceId=${trip?.tripInstanceId}`);
-        return trip;
-      })
-    );
-
-    logger.info(`Successfully added cropped destination images to ${tripsWithImages.length} trips`);
-    return tripsWithImages;
-  } catch (error) {
-    logger.error(`Failed to add cropped destination images to trips: trips count=${trips?.length || 0}, path=${path}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
-    throw error;
-  }
+  return trips;
 }
 
 async function createTrip(payload, userId) {
   try {
-    logger.info(`Creating trip for userId=${userId}`);
-
     const baseTripId = uuidv4();
-    logger.debug(`Generated baseTripId=${baseTripId} for userId=${userId}`);
-
     const baseTrip = {
       destination: payload.destination,
       startLocation: payload.startLocation,
@@ -520,22 +344,15 @@ async function createTrip(payload, userId) {
       scheduledWeekdays: payload.scheduledWeekdays,
     };
 
-    logger.info(`Creating base trip in database: baseTripId=${baseTripId}, title=${payload.title}`);
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
-    logger.info(`Successfully created base trip: baseTripId=${baseTripId}`);
-
     const { tripDates: strTripDates } = payload;
     const tripDates = Array.from(strTripDates);
-    logger.debug(`Processing ${tripDates.length} trip dates for baseTripId=${baseTripId}`);
 
-    const tripInstances = tripDates.map((tripDate, index) => {
-      logger.debug(`Processing trip date ${index + 1}/${tripDates.length}: startDate=${tripDate.startDate}, endDate=${tripDate.endDate}`);
-
+    const tripInstances = tripDates.map((tripDate) => {
       const { startDate, endDate } = tripDate;
       const queryStartDate = dateFromDateString(startDate);
       const queryEndDate = dateFromDateString(endDate);
       const tripInstanceId = uuidv4();
-
       const tripInstance = {
         tripInstanceId,
         baseTripId,
@@ -545,76 +362,55 @@ async function createTrip(payload, userId) {
         startDate: queryStartDate,
         endDate: queryEndDate,
       };
-
-      logger.debug(`Created trip instance: tripInstanceId=${tripInstanceId}, baseTripId=${baseTripId}`);
       return tripInstance;
     });
 
-    logger.info(`Creating ${tripInstances.length} trip instances in database`);
     const createdTripInstances = await tripInstancesRepository.createInstances(
       tripInstances
     );
-    logger.info(`Successfully created ${createdTripInstances.length} trip instances`);
 
-    logger.info(`Updating user trips for ${tripInstances.length} trip instances`);
     await Promise.all(
-      tripInstances.map(async (tripInstance, index) => {
-        logger.debug(`Updating user trip ${index + 1}/${tripInstances.length}: tripInstanceId=${tripInstance.tripInstanceId}`);
-        await userTripsRepository.updateUserTripsUsingQuery(
+      tripInstances.map((tripInstance) =>
+        userTripsRepository.updateUserTrips(
           userId,
           tripInstance.tripInstanceId,
-          {
-            isJoined: true,
-            isPublished: true,
-            isRequested: false,
-            isWishlisted: false
-          }
-        );
-      })
+          true,
+          true,
+          false,
+          false
+        )
+      )
     );
-    logger.info(`Successfully updated user trips for all trip instances`);
 
-    logger.info(`Creating chat for trip: baseTripId=${baseTripId}, title=${payload.title}`);
     chatService.createChat(tripInstances, userId, payload.title);
-    logger.info(`Successfully created chat for trip: baseTripId=${baseTripId}`);
-
-    logger.info(`Successfully completed trip creation: baseTripId=${baseTripId}, userId=${userId}`);
     return baseTripId;
   } catch (error) {
-    logger.error(`Failed to create trip: userId=${userId}, title=${payload?.title}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
+    logger.error(
+      `Error creating trip with payload=${JSON.stringify(
+        payload
+      )}, error=${error}`
+    );
     throw error;
   }
 }
 
 async function getTripById(tripInstanceId, userId) {
   try {
-    logger.info(`Getting trip by ID: tripInstanceId=${tripInstanceId}, userId=${userId}`);
-
-    logger.debug(`Fetching trip from database: tripInstanceId=${tripInstanceId}`);
     let trip = await tripInstancesRepository.findTripWithTripId(tripInstanceId);
     if (!trip || trip.length == 0) {
-      logger.warn(`Trip not found: tripInstanceId=${tripInstanceId}`);
       throw new ValidationError(
         `Trip not found for tripInstanceId=${tripInstanceId}`,
         400
       );
     }
 
-    logger.info(`Found trip: tripInstanceId=${tripInstanceId}`);
     let fetchedTrip = trip[0];
-
-    logger.debug(`Fetching destination images from S3 for tripInstanceId=${tripInstanceId}`);
     fetchedTrip.destinationImages = await getObjectsFromS3Bucket(
       process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
       fetchedTrip.destinationImages,
       process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
     );
-    logger.debug(`Successfully fetched destination images for tripInstanceId=${tripInstanceId}`);
 
-    logger.debug(`Creating query for joined trips: tripInstanceId=${tripInstanceId}`);
     const query = createQueryForUserTrips(
       null,
       tripInstanceId,
@@ -624,7 +420,6 @@ async function getTripById(tripInstanceId, userId) {
       null
     );
 
-    logger.debug(`Fetching joined trips from database: tripInstanceId=${tripInstanceId}`);
     const joinedTrips = await userTripsRepository.getUserTripsUsingQuery(query);
 
     let joinedUsers = [];
@@ -632,14 +427,12 @@ async function getTripById(tripInstanceId, userId) {
     joinedTrips.forEach((userTrip) => {
       joinedUsers.push(userTrip.userId);
     });
-    logger.debug(`Found ${joinedUsers.length} joined users for tripInstanceId=${tripInstanceId}`);
 
     fetchedTrip.isJoined = false;
     fetchedTrip.isWishlisted = false;
     fetchedTrip.isRequested = false;
 
     if (userId) {
-      logger.debug(`Checking user trip status for userId=${userId}, tripInstanceId=${tripInstanceId}`);
       const userQuery = createQueryForUserTrips(
         userId,
         tripInstanceId,
@@ -658,30 +451,28 @@ async function getTripById(tripInstanceId, userId) {
         fetchedTrip.isJoined = userBasedTrips[0].isJoined;
         fetchedTrip.isWishlisted = userBasedTrips[0].isWishlisted;
         fetchedTrip.isRequested = userBasedTrips[0].isRequested;
-        logger.debug(`Updated trip status for userId=${userId}: isJoined=${fetchedTrip.isJoined}, isWishlisted=${fetchedTrip.isWishlisted}, isRequested=${fetchedTrip.isRequested}`);
-      } else {
-        logger.debug(`No user trip status found for userId=${userId}, tripInstanceId=${tripInstanceId}`);
       }
     }
 
     fetchedTrip.tripMembersIds = joinedUsers;
 
-    logger.debug(`Updating joined members profiles for tripInstanceId=${tripInstanceId}`);
     await updateJoinedMembersProfilesInTrip(
       fetchedTrip,
       USER_PROFILE_PROJECTION_IN_TRIP_DETAILS
     );
 
-    logger.debug(`Getting related dates for tripInstanceId=${tripInstanceId}`);
     fetchedTrip = await getRelatedDatesToBaseTrip(Array.of(fetchedTrip));
 
-    logger.info(`Successfully retrieved trip: tripInstanceId=${tripInstanceId}, destination=${fetchedTrip.destination}, joinedMembers=${joinedUsers.length}`);
+    logger.info(
+      `fetched trip with tripInstanceId=${tripInstanceId}, trip=${JSON.stringify(
+        fetchedTrip
+      )}`
+    );
     return fetchedTrip;
   } catch (error) {
-    logger.error(`Failed to get trip by ID: tripInstanceId=${tripInstanceId}, userId=${userId}, error=${error.message}`);
-    if (error.stack) {
-      logger.error(`Stack trace: ${error.stack}`);
-    }
+    logger.error(
+      `Error while fetching trip with tripInstanceId=${tripInstanceId}, error=${error}`
+    );
     throw error;
   }
 }
