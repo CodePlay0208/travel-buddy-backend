@@ -536,18 +536,41 @@ async function editTrip(baseTripId, userId, newPayload) {
       await tripInstancesRepository.deleteTripDates(deletedDates);
     }
 
-    deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
-      newPayload.removedDestinationImages,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-    );
+    if (
+      newPayload.removedDestinationImages &&
+      newPayload.removedDestinationImages.length > 0
+    ) {
+    
+      const imagesToRemove = new Set([
+        ...(newPayload.removedDestinationImages || []),
+        ...(newPayload.removedCroppedDestinationImages || [])
+      ]);
 
-    deleteObjectsFromS3Bucket(
-      process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
-      newPayload.removedCroppedDestinationImages,
-      process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
-    );
+      tripInDatabase.destinationImages = tripInDatabase.destinationImages.filter(
+        (image) => !imagesToRemove.has(image)
+      );
+      tripInDatabase.croppedDestinationImages = tripInDatabase.croppedDestinationImages.filter(
+        (image) => !imagesToRemove.has(image)
+      );
 
+      const s3Promises = [
+        deleteObjectsFromS3Bucket(
+          process.env.PATH_FOR_FULL_DESTINATION_IMAGES,
+          newPayload.removedDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        ),
+        deleteObjectsFromS3Bucket(
+          process.env.PATH_FOR_CROPPED_DESTINATION_IMAGES,
+          newPayload.removedCroppedDestinationImages,
+          process.env.S3_BUCKET_NAME_FOR_UPLOADING_DESTINATION_IMAGES
+        )
+      ];
+
+      const s3Results = await Promise.all(s3Promises);
+      if (!s3Results.every((result) => result)) {
+        throw new Error("Failed to delete all images from S3");
+      }
+    }
     Object.entries(newPayload).forEach(([key, value]) => {
       if (
         value !== undefined &&
@@ -555,7 +578,11 @@ async function editTrip(baseTripId, userId, newPayload) {
         key != "__v" &&
         key != "_id" &&
         key != "createdAt" &&
-        key != "hostId"
+        key != "hostId" &&
+        key != "removedDestinationImages" &&
+        key != "removedCroppedDestinationImages"&&
+        key != "croppedDestinationImages"&&
+        key != "destinationImages" 
       ) {
         tripInDatabase[key] = value;
       }
