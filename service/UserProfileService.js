@@ -108,8 +108,6 @@ async function updateUserProfile(userId, updateData, newProfilePic) {
     if (updateData.dateOfBirth)
       sanitizedUpdateData.dateOfBirth = updateData.dateOfBirth;
     if (updateData.persona) sanitizedUpdateData.persona = updateData.persona;
-    if (updateData.profilePic)
-      sanitizedUpdateData.profilePic = updateData.profilePic;
     if(updateData.gender)
       sanitizedUpdateData.gender = updateData.gender;
     if(updateData.isEmailPrivate)
