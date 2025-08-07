@@ -138,6 +138,18 @@ function addDestinationToQuery(query, destination) {
   }
 }
 
+function addMinTotalMemberToQuery(query, minTotalMember) {
+  if (minTotalMember) {
+    query.minTotalMember = minTotalMember;
+  }
+}
+
+function addMaxTotalMemberToQuery(query, maxTotalMember) {
+  if (maxTotalMember) {
+    query.maxTotalMember = maxTotalMember;
+  }
+}
+
 function addPersonaToQuery(query, persona) {
   if (persona) {
     query.persona = persona;
@@ -215,6 +227,21 @@ function createQuery(
 function createAdditionalFilters(filter) {
   let query = {};
   addPersonaToQuery(query, filter.persona);
+  addMinTotalMemberToQuery(query, filter.minTotalMember);
+  addMaxTotalMemberToQuery(query, filter.maxTotalMember);
+
+  // Add duration and budget range
+  if (filter.minDuration) query.minDuration = filter.minDuration;
+  if (filter.maxDuration) query.maxDuration = filter.maxDuration;
+  if (filter.minBudget) query.minBudget = filter.minBudget;
+  if (filter.maxBudget) query.maxBudget = filter.maxBudget;
+
+  // Add sorting
+  if (filter.sortBy) query.sortBy = filter.sortBy;
+
+  // Add other filters as needed
+  if (filter.tripDatesSoonest) query.tripDatesSoonest = filter.tripDatesSoonest;
+
   return query;
 }
 
@@ -540,7 +567,7 @@ async function editTrip(baseTripId, userId, newPayload) {
       newPayload.removedDestinationImages &&
       newPayload.removedDestinationImages.length > 0
     ) {
-    
+
       const imagesToRemove = new Set([
         ...(newPayload.removedDestinationImages || []),
         ...(newPayload.removedCroppedDestinationImages || [])
@@ -580,9 +607,9 @@ async function editTrip(baseTripId, userId, newPayload) {
         key != "createdAt" &&
         key != "hostId" &&
         key != "removedDestinationImages" &&
-        key != "removedCroppedDestinationImages"&&
-        key != "croppedDestinationImages"&&
-        key != "destinationImages" 
+        key != "removedCroppedDestinationImages" &&
+        key != "croppedDestinationImages" &&
+        key != "destinationImages"
       ) {
         tripInDatabase[key] = value;
       }
@@ -709,7 +736,7 @@ async function getTripsWithFilter(filter, userId) {
     const queryDate = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
     let fetchedTrips;
-    if (filter.date) {
+    if (!filter.date || filter.minTotalMember || filter.maxTotalMembers) {
       const query = createQuery(
         destination,
         queryDate,
@@ -752,7 +779,7 @@ async function getTripsWithFilter(filter, userId) {
           joinedTrips.forEach((userTrip) => {
             joinedUsers.push(userTrip.userId);
           });
-
+          
           trip.tripMembersIds = joinedUsers;
           return trip;
         })

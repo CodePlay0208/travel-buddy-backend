@@ -41,7 +41,7 @@ async function findTripWithTripId(tripInstanceId) {
       },
       {
         $project: {
-          baseTripData: 0, // optional: remove the now-unneeded nested object
+          baseTripData: 0,
         },
       },
     ]);
@@ -77,10 +77,9 @@ async function findTripsWithQueryUsingAggregation(
   additionalFilters
 ) {
   try {
-    const trips = await TripInstance.aggregate([
-      {
-        $match: query,
-      },
+    const aggregationPipeline = [
+      { $match: query },
+
       {
         $lookup: {
           from: "basetripdataschemas",
@@ -101,16 +100,38 @@ async function findTripsWithQueryUsingAggregation(
       },
       { $unwind: "$hostProfile" },
 
-      ...(additionalFilters.persona
-        ? [
+      {
+        $addFields: {
+          tripInstanceId: { $toString: "$tripInstanceId" }
+        }
+      },
+
+      {
+        $lookup: {
+          from: "usertrips",
+          let: { tripInstanceId: "$tripInstanceId" },
+          pipeline: [
+            { $addFields: { tripInstanceId: { $toString: "$tripInstanceId" } } },
             {
               $match: {
-                "hostProfile.persona": additionalFilters.persona,
-              },
-            },
-          ]
-        : []),
+                $expr: {
+                  $and: [
+                    { $eq: ["$tripInstanceId", "$$tripInstanceId"] },
+                    { $eq: ["$isJoined", true] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "userTripsData"
+        }
+      },
 
+      {
+        $addFields: {
+          memberCount: { $size: "$userTripsData" },
+        },
+      },
       {
         $replaceRoot: {
           newRoot: {
@@ -118,16 +139,97 @@ async function findTripsWithQueryUsingAggregation(
           },
         },
       },
+
+      ...(additionalFilters?.persona
+        ? [
+          {
+            $match: {
+              "hostProfile.persona": additionalFilters.persona,
+            },
+          },
+        ]
+        : []),
+
+      ...(additionalFilters?.minTotalMember || additionalFilters?.maxTotalMember
+        ? [
+          {
+            $match: {
+              ...(additionalFilters.minTotalMember && {
+                memberCount: { $gte: Number(additionalFilters.minTotalMember) },
+              }),
+              ...(additionalFilters.maxTotalMember && {
+                memberCount: {
+                  ...((additionalFilters.minTotalMember && {
+                    $gte: Number(additionalFilters.minTotalMember),
+                  }) || {}),
+                  $lte: Number(additionalFilters.maxTotalMember),
+                },
+              }),
+            },
+          },
+        ]
+        : []),
+
+
+      ...(additionalFilters?.minDuration || additionalFilters?.maxDuration
+        ? [
+          {
+            $match: {
+              ...(additionalFilters.minDuration && {
+                duration: { $gte: Number(additionalFilters.minDuration) },
+              }),
+              ...(additionalFilters.maxDuration && {
+                duration: {
+                  ...((additionalFilters.minDuration && {
+                    $gte: Number(additionalFilters.minDuration),
+                  }) || {}),
+                  $lte: Number(additionalFilters.maxDuration),
+                },
+              }),
+            },
+          },
+        ]
+        : []),
+
+      ...(additionalFilters?.minBudget || additionalFilters?.maxBudget
+        ? [
+          {
+            $match: {
+              ...(additionalFilters.minBudget && {
+                minBudget: { $gte: Number(additionalFilters.minBudget) },
+              }),
+              ...(additionalFilters.maxBudget && {
+                maxBudget: {
+                  ...((additionalFilters.minBudget && {
+                    $gte: Number(additionalFilters.minBudget),
+                  }) || {}),
+                  $lte: Number(additionalFilters.maxBudget),
+                },
+              }),
+            },
+          },
+        ]
+        : []),
       {
         $project: {
-          baseTripData: 0,
           hostProfile: 0,
+          userTripsData: 0,
         },
       },
-      { $sort: { createdAt: -1 } },
+
+      ...((additionalFilters?.sortBy === 'budgetLowToHigh') ? [{ $sort: { minBudget: 1 } }] : []),
+      ...((additionalFilters?.sortBy === 'budgetHighToLow') ? [{ $sort: { maxBudget: -1 } }] : []),
+      ...((additionalFilters?.sortBy === 'durationShortest') ? [{ $sort: { duration: 1 } }] : []),
+      ...((additionalFilters?.sortBy === 'durationLongest') ? [{ $sort: { duration: -1 } }] : []),
+      ...((additionalFilters?.sortBy === 'groupSizeSmallest') ? [{ $sort: { memberCount: 1 } }] : []),
+      ...((additionalFilters?.sortBy === 'groupSizeLargest') ? [{ $sort: { memberCount: -1 } }] : []),
+
+      ...((!additionalFilters?.sortBy) ? [{ $sort: { createdAt: -1 } }] : []),
       { $skip: offset },
       { $limit: limit },
-    ]);
+    ];
+
+    const trips = await TripInstance.aggregate(aggregationPipeline);
     return trips;
   } catch (error) {
     logger.error(
