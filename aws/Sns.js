@@ -3,7 +3,6 @@ const { snsClient } = require("./Config");
 const logger = require("../logger");
 
 async function sendTextMessagesToPhoneNumber(phoneNumber, otp, username) {
-  phoneNumber = "9896311789"
   const params = {
     Message: `Hi ${username} your otp for signing up at travmigoz is ${otp}. This code is valid for 5 minutes. Please don't share it with anyone`,
     PhoneNumber: `+91${phoneNumber}`,
