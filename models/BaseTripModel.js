@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const WEEKDAYS = require("../enums/Weekdays");
 
 const baseTripDataSchema = new mongoose.Schema({
+  preferences: [{ type: String }],
   destination: [{ type: String, required: true }],
   startLocation: [{ type: String, required: true }],
   minBudget: { type: Number },

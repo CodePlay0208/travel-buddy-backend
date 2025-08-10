@@ -210,6 +210,15 @@ async function findTripsWithQueryUsingAggregation(
           },
         ]
         : []),
+      ...(additionalFilters?.preferences && Array.isArray(additionalFilters.preferences) && additionalFilters.preferences.length
+        ? [
+          {
+            $match: {
+              preferences: { $in: additionalFilters.preferences },
+            },
+          },
+        ]
+        : []),
       {
         $project: {
           hostProfile: 0,

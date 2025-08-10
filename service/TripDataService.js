@@ -230,16 +230,31 @@ function createAdditionalFilters(filter) {
   addMinTotalMemberToQuery(query, filter.minTotalMember);
   addMaxTotalMemberToQuery(query, filter.maxTotalMember);
 
-  // Add duration and budget range
+
   if (filter.minDuration) query.minDuration = filter.minDuration;
   if (filter.maxDuration) query.maxDuration = filter.maxDuration;
   if (filter.minBudget) query.minBudget = filter.minBudget;
   if (filter.maxBudget) query.maxBudget = filter.maxBudget;
 
-  // Add sorting
+
   if (filter.sortBy) query.sortBy = filter.sortBy;
 
-  // Add other filters as needed
+
+  if (filter.preferences) {
+    let preferencesArr = filter.preferences;
+    if (typeof preferencesArr === "string") {
+      try {
+        preferencesArr = JSON.parse(preferencesArr);
+      } catch (e) {
+        preferencesArr = [preferencesArr];
+      }
+    }
+    if (Array.isArray(preferencesArr) && preferencesArr.length > 0) {
+      query.preferences = preferencesArr;
+    }
+  }
+
+
   if (filter.tripDatesSoonest) query.tripDatesSoonest = filter.tripDatesSoonest;
 
   return query;
@@ -369,6 +384,7 @@ async function createTrip(payload, userId) {
       hostId: userId,
       duration: payload.duration,
       scheduledWeekdays: payload.scheduledWeekdays,
+      preferences: payload.preferences || [],
     };
 
     const createdBaseTrip = await baseTripRepository.createTrip(baseTrip);
@@ -388,6 +404,7 @@ async function createTrip(payload, userId) {
         startLocation: payload.startLocation,
         startDate: queryStartDate,
         endDate: queryEndDate,
+        preferences: payload.preferences || [],
       };
       return tripInstance;
     });
@@ -736,7 +753,7 @@ async function getTripsWithFilter(filter, userId) {
     const queryDate = dateFromDateString(filter.date);
     tripValidator.validateFilter(filter);
     let fetchedTrips;
-    if (!filter.date || filter.minTotalMember || filter.maxTotalMembers) {
+    if (filter.date || filter.minTotalMember || filter.maxTotalMembers) {
       const query = createQuery(
         destination,
         queryDate,
@@ -779,7 +796,7 @@ async function getTripsWithFilter(filter, userId) {
           joinedTrips.forEach((userTrip) => {
             joinedUsers.push(userTrip.userId);
           });
-          
+
           trip.tripMembersIds = joinedUsers;
           return trip;
         })

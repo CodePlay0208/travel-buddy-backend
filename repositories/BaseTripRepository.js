@@ -127,6 +127,15 @@ async function findTripsWithQueryUsingAggregation(
       },
       { $unwind: "$hostProfile" },
 
+     ...(additionalFilters?.preferences && Array.isArray(additionalFilters.preferences) && additionalFilters.preferences.length
+        ? [
+          {
+            $match: {
+              preferences: { $in: additionalFilters.preferences },
+            },
+          },
+        ]
+        : []),
       ...(additionalFilters.persona
         ? [
           {
