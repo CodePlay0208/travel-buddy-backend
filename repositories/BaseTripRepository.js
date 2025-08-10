@@ -127,7 +127,46 @@ async function findTripsWithQueryUsingAggregation(
       },
       { $unwind: "$hostProfile" },
 
-     ...(additionalFilters?.preferences && Array.isArray(additionalFilters.preferences) && additionalFilters.preferences.length
+      ...(additionalFilters?.minDuration || additionalFilters?.maxDuration
+        ? [
+          {
+            $match: {
+              ...(additionalFilters.minDuration && {
+                duration: { $gte: Number(additionalFilters.minDuration) },
+              }),
+              ...(additionalFilters.maxDuration && {
+                duration: {
+                  ...((additionalFilters.minDuration && {
+                    $gte: Number(additionalFilters.minDuration),
+                  }) || {}),
+                  $lte: Number(additionalFilters.maxDuration),
+                },
+              }),
+            },
+          },
+        ]
+        : []),
+
+      ...(additionalFilters?.minBudget || additionalFilters?.maxBudget
+        ? [
+          {
+            $match: {
+              ...(additionalFilters.minBudget && {
+                minBudget: { $gte: Number(additionalFilters.minBudget) },
+              }),
+              ...(additionalFilters.maxBudget && {
+                maxBudget: {
+                  ...((additionalFilters.minBudget && {
+                    $gte: Number(additionalFilters.minBudget),
+                  }) || {}),
+                  $lte: Number(additionalFilters.maxBudget),
+                },
+              }),
+            },
+          },
+        ]
+        : []),
+      ...(additionalFilters?.preferences && Array.isArray(additionalFilters.preferences) && additionalFilters.preferences.length
         ? [
           {
             $match: {
