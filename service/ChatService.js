@@ -34,26 +34,27 @@ async function createChat(tripInstances, userId, baseTripTitle) {
     }
 
     const requestBody = {
-      tripInstanceId: tripInstance.tripInstanceId,
+      tripId: tripInstance.tripInstanceId,
       userId,
       username,
       title,
     };
 
     try {
-      const response = await axios.post(`${process.env.CHAT_API_URL}/createChat`, requestBody, {
+      const response = await axios.post(`${process.env.CHAT_API_URL}/chat/createChat`, requestBody, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      logger.info(`Successfully sent chat creation to api-chat.travmigoz.com/createChat for tripInstanceId=${tripInstance.tripInstanceId}, response=${JSON.stringify(response)}`);
+      console.log(response)
+      logger.info(`Successfully sent chat creation to api-chat.travmigoz.com/chat/createChat for tripInstanceId=${tripInstance.tripInstanceId}, response=${JSON.stringify(response.data)}`);
     } catch (error) {
-      logger.error(`Failed to send chat creation to api-chat.travmigoz.com/createChat: ${error.message}`);
+      logger.error(`Failed to send chat creation to api-chat.travmigoz.com/chat/createChat: ${error.message}`);
     }
   }
 }
 
-async function addMemberToChat(memberId, tripInstanceId) {
+async function addMemberToChat(hostId, memberId, tripInstanceId) {
     try {
 
       const user = await userProfileRepository.findUserByUserId(memberId, { username: 1 });
@@ -63,18 +64,19 @@ async function addMemberToChat(memberId, tripInstanceId) {
       const memberName = user.username;
 
       const requestBody = {
+        hostId,
         memberName,
         memberId,
-        tripInstanceId,
+        tripId: tripInstanceId,
       };
 
-      await axios.post(`${process.env.CHAT_API_URL}/addMemberToChat`, requestBody, {
+      await axios.post(`${process.env.CHAT_API_URL}/chat/addMemberToChat`, requestBody, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
     } catch (error) {
-      console.error(`Failed to add member to chat at /addMemberToChat: ${error.message}`);
+      console.error(`Failed to add member to chat at /chat/addMemberToChat: ${error.message}`);
     }
 
 }

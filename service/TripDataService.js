@@ -1207,7 +1207,7 @@ async function addMemberTrip(payload, userId) {
       queryForUpdate
     );
 
-    chatService.addMemberToChat(memberId, tripInstanceId);
+    chatService.addMemberToChat(userId, memberId, tripInstanceId);
 
     const notification = {
       notificationId: uuidv4(),
