@@ -34,7 +34,7 @@ async function createChat(tripInstances, userId, baseTripTitle) {
     }
 
     const requestBody = {
-      tripInstanceId: tripInstance.tripInstanceId,
+      tripId: tripInstance.tripInstanceId,
       userId,
       username,
       title,
