@@ -189,7 +189,15 @@ async function findTripsWithQueryUsingAggregation(
           hostProfile: 0,
         },
       },
-      { $sort: { createdAt: -1 } },
+      
+            ...((additionalFilters?.sortBy === 'budgetLowToHigh') ? [{ $sort: { minBudget: 1 } }] : []),
+            ...((additionalFilters?.sortBy === 'budgetHighToLow') ? [{ $sort: { maxBudget: -1 } }] : []),
+            ...((additionalFilters?.sortBy === 'durationShortest') ? [{ $sort: { duration: 1 } }] : []),
+            ...((additionalFilters?.sortBy === 'durationLongest') ? [{ $sort: { duration: -1 } }] : []),
+            ...((additionalFilters?.sortBy === 'groupSizeSmallest') ? [{ $sort: { memberCount: 1 } }] : []),
+            ...((additionalFilters?.sortBy === 'groupSizeLargest') ? [{ $sort: { memberCount: -1 } }] : []),
+      
+            ...((!additionalFilters?.sortBy) ? [{ $sort: { createdAt: -1 } }] : []),
       { $skip: offset },
       { $limit: limit },
     ]);
